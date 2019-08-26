@@ -70,12 +70,12 @@ setup(name='Spitfire',
 
 print('\n- done installing spitfire!')
 unit_test_line = python_cmd + ' -m unittest discover -s spitfire_test/unit'
+regr_test_line = python_cmd + ' -m unittest discover -s spitfire_test/regression -v'
 docs_line = 'cd docs; make html; make latexpdf; cd ..'
-docs_html = 'copy this link to your browser: file://' + os.path.join(os.getcwd(), 'docs', 'build', 'html', 'index.html')
-demo_line = 'cd demo/reactors   OR   cd demo/flamelet   OR   cd demo/time_integration'
+docs_html = 'open in a browser: file://' + os.path.join(os.getcwd(), 'docs', 'build', 'html', 'index.html')
 
 print('- Run the unit tests         : ' + unit_test_line)
+print('- Run the regression tests   : ' + regr_test_line)
 print('- Build the documentation    : ' + docs_line)
 print('- View the html documentation: ' + docs_html)
-print('- Go to the demonstrations   : ' + demo_line)
 print('\n')

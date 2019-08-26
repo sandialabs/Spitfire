@@ -10,6 +10,8 @@ Spitfire is a Python/C++ code for scientific computing that has several objectiv
 
 Spitfire is hosted internally on the CEE GitLab server: https://cee-gitlab.sandia.gov/spitfirecodes/spitfire
 
+Mike Hansen is the primary author of Spitfire.
+Important contributors include Elizabeth Armstrong, James Sutherland, and Josh McConnell.
 
 Applications
 ------------

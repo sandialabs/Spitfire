@@ -45,7 +45,9 @@
 <li><p>Solve combustion problems with complex chemical kinetics, namely homogeneous reactors and non-premixed flamelets, both steady and unsteady, with advanced time integration and continuation techniques.</p></li>
 <li><p>Design and rapidly prototype nonlinear solvers and time integration techniques for ordinary and partial differential equations.</p></li>
 </ul>
-<p>Spitfire is hosted on <a class="reference external" href="http://gitlab.multiscale.utah.edu/common/spitfire.git">GitLab</a> by the <a class="reference external" href="https://multiscale.utah.edu/">Multiscale Simulation Group</a> at the University of Utah.</p>
+<p>Spitfire is hosted internally on the CEE GitLab server: <a class="reference external" href="https://cee-gitlab.sandia.gov/spitfirecodes/spitfire">https://cee-gitlab.sandia.gov/spitfirecodes/spitfire</a></p>
+<p>Mike Hansen is the primary author of Spitfire.
+Important contributors include Elizabeth Armstrong, James Sutherland, and Josh McConnell.</p>
 </div>
 <div class="section" id="applications">
 <h2>1.2. Applications<a class="headerlink" href="#applications" title="Permalink to this headline">¶</a></h2>
@@ -54,7 +56,7 @@ Design of this solver stack is crucial to efficient solution of reacting flow pr
 and the exploration of these algorithms and study of combustion chemistry was Spitfire’s original purpose.
 Spitfire combines Python with a C++ code called Griffon in addition to NumPy, SciPy, and Cython to attain the convenience and extensibility of Python and the performance of C/C++.
 Python drives processes at an abstract level while either the Griffon code contained in Spitfire or NumPy- and SciPy-wrapped C/Fortran routines are used in performance critical operations.
-Spitfire has been used by researchers at the University of Utah and Sandia National Laboratories for a number of applications:</p>
+Spitfire has been used by researchers at Sandia National Laboratories and the University of Utah for a number of applications:</p>
 <ul class="simple">
 <li><p>study chemical explosive modes and low-temperature oxidation pathways of complex fuels in non-premixed systems</p></li>
 <li><p>study the formulation of state vectors and analytical Jacobian matrices for combustion simulation</p></li>
