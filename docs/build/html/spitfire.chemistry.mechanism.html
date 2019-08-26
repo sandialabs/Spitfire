@@ -1,0 +1,253 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>5.1.1.1.1.3. spitfire.chemistry.mechanism module &#8212; Spitfire 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5.1.1.1.1.4. spitfire.chemistry.reactors module" href="spitfire.chemistry.reactors.html" />
+    <link rel="prev" title="5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module" href="spitfire.chemistry.general_diff_rxn.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="index.html">
+          <span>Spitfire 1.0 documentation</span></a></h1>
+        <h2 class="heading"><span>5.1.1.1.1.3. spitfire.chemistry.mechanism module</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.chemistry.general_diff_rxn.html">5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.chemistry.reactors.html">5.1.1.1.1.4. spitfire.chemistry.reactors module</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-spitfire.chemistry.mechanism">
+<span id="spitfire-chemistry-mechanism-module"></span><h1>5.1.1.1.1.3. spitfire.chemistry.mechanism module<a class="headerlink" href="#module-spitfire.chemistry.mechanism" title="Permalink to this headline">¶</a></h1>
+<p>This module facilitates loading chemical reaction mechanisms in Cantera format and mixing streams in useful ways.</p>
+<dl class="class">
+<dt id="spitfire.chemistry.mechanism.CanteraWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.chemistry.mechanism.</code><code class="sig-name descname">CanteraWrapper</code><span class="sig-paren">(</span><em class="sig-param">mech_xml_path</em>, <em class="sig-param">group_name</em>, <em class="sig-param">solution=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.CanteraWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.CanteraWrapper.group_name">
+<em class="property">property </em><code class="sig-name descname">group_name</code><a class="headerlink" href="#spitfire.chemistry.mechanism.CanteraWrapper.group_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.CanteraWrapper.mech_xml_path">
+<em class="property">property </em><code class="sig-name descname">mech_xml_path</code><a class="headerlink" href="#spitfire.chemistry.mechanism.CanteraWrapper.mech_xml_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.CanteraWrapper.solution">
+<em class="property">property </em><code class="sig-name descname">solution</code><a class="headerlink" href="#spitfire.chemistry.mechanism.CanteraWrapper.solution" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.chemistry.mechanism.</code><code class="sig-name descname">ChemicalMechanismSpec</code><span class="sig-paren">(</span><em class="sig-param">cantera_xml=None</em>, <em class="sig-param">group_name=None</em>, <em class="sig-param">cantera_solution=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class that loads chemical mechanisms and mixes streams.</p>
+<p>This class facilitates some simple way of specifying the fuel and oxidizer streams for flamelets
+and of blending these streams to make mixtures for zero-dimensional simulations.</p>
+<p><strong>Constructor</strong>: specify a chemical mechanism in cantera XML format</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>cantera_xml</strong><span class="classifier">str</span></dt><dd><p>a cantera XML file describing the thermochemistry and (optionally) transport properties</p>
+</dd>
+<dt><strong>group_name</strong><span class="classifier">str</span></dt><dd><p>the phase to use (e.g. a phase with transport properties vs without, if such a split exists in the XML file)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.copy_stream">
+<code class="sig-name descname">copy_stream</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">stream</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.copy_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a duplicate of a stream - use this to avoid inadvertently modifying a stream by reference.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.copy_streams">
+<code class="sig-name descname">copy_streams</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">streams</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.copy_streams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a copy of a list of streams, returning a list with copies of each stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.from_solution">
+<em class="property">classmethod </em><code class="sig-name descname">from_solution</code><span class="sig-paren">(</span><em class="sig-param">solution:cantera.composite.Solution</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.from_solution" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.gas">
+<em class="property">property </em><code class="sig-name descname">gas</code><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.gas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain this mechanism’s cantera Solution object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.griffon">
+<em class="property">property </em><code class="sig-name descname">griffon</code><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.griffon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain this mechanism’s griffon PyCombustionKernels object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.group_name">
+<em class="property">property </em><code class="sig-name descname">group_name</code><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.group_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the group name of the identified mechanism’s XML specification</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.mech_xml_path">
+<em class="property">property </em><code class="sig-name descname">mech_xml_path</code><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.mech_xml_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the path of the identified mechanism’s XML specification</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_for_equivalence_ratio">
+<code class="sig-name descname">mix_for_equivalence_ratio</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">phi</em>, <em class="sig-param">fuel</em>, <em class="sig-param">oxy</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_for_equivalence_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix a stream of fuel and oxidizer such that the mixture has a specified equivalence ratio.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_for_normalized_equivalence_ratio">
+<code class="sig-name descname">mix_for_normalized_equivalence_ratio</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">normalized_phi</em>, <em class="sig-param">fuel</em>, <em class="sig-param">oxy</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_for_normalized_equivalence_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix a stream of fuel and oxidizer such that the mixture has a specified normalized equivalence ratio.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_fuels_for_stoich_mixture_fraction">
+<code class="sig-name descname">mix_fuels_for_stoich_mixture_fraction</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">fuel1</em>, <em class="sig-param">fuel2</em>, <em class="sig-param">zstoich</em>, <em class="sig-param">oxy</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_fuels_for_stoich_mixture_fraction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix two fuel streams for a specified stoichiometric mixture fraction given a particular oxidizer.
+As an example, this can be used to dilute a fuel with Nitrogen to hit a particular stoichiometric mixture fraction.</p>
+<p>Note that it is not possible to reach all stoichiometric mixture fractions with any fuel combinations!
+In such a case this function will throw an error.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_streams">
+<em class="property">static </em><code class="sig-name descname">mix_streams</code><span class="sig-paren">(</span><em class="sig-param">streams</em>, <em class="sig-param">basis</em>, <em class="sig-param">constant='HP'</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.mix_streams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix a number of streams by mass/mole and at constant HP, TP, UV, etc. (as supported by Cantera)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>streams</strong> – a list of tuples as [(stream, amount)] where amount is the mass/moles (depending on the basis)</p></li>
+<li><p><strong>basis</strong> – whether amounts are masses or moles</p></li>
+<li><p><strong>constant</strong> – property pair held constant, such as HP, TP, UV - any combination supported by Cantera</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the requested mixture</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.molecular_weight">
+<code class="sig-name descname">molecular_weight</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">id</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.molecular_weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.n_reactions">
+<em class="property">property </em><code class="sig-name descname">n_reactions</code><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.n_reactions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the number of reactions in this chemical mechanism</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.n_species">
+<em class="property">property </em><code class="sig-name descname">n_species</code><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.n_species" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the number of species in this chemical mechanism</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.species_index">
+<code class="sig-name descname">species_index</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.species_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the index of a particular species</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.species_names">
+<em class="property">property </em><code class="sig-name descname">species_names</code><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.species_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the names of speciesin this chemical mechanism</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.stoich_mass_fuel_to_oxy_ratio">
+<code class="sig-name descname">stoich_mass_fuel_to_oxy_ratio</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">fuel_stream</em>, <em class="sig-param">oxy_stream</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.stoich_mass_fuel_to_oxy_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mass ratio of fuel to oxidizer at stoichiometric conditions.
+Assumes C, O, and H combustion of single fuel and single oxidizer streams.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.stoich_mixture_fraction">
+<code class="sig-name descname">stoich_mixture_fraction</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">fuel_stream</em>, <em class="sig-param">oxy_stream</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.stoich_mixture_fraction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mixture fraction at stoichiometric conditions.
+Assumes C, O, and H combustion of single fuel and single oxidizer streams.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.stoich_molar_fuel_to_oxy_ratio">
+<code class="sig-name descname">stoich_molar_fuel_to_oxy_ratio</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">fuel_stream</em>, <em class="sig-param">oxy_stream</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.stoich_molar_fuel_to_oxy_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the molar ratio of fuel to oxidizer at stoichiometric conditions.
+Assumes C, O, and H combustion of single fuel and single oxidizer streams.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.mechanism.ChemicalMechanismSpec.stream">
+<code class="sig-name descname">stream</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">properties=None</em>, <em class="sig-param">values=None</em>, <em class="sig-param">stp_air=False</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.mechanism.ChemicalMechanismSpec.stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a mixture of species with certain properties</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>properties</strong> – a string of keys used in building a cantera Quantity (e.g., ‘TPX’ or ‘TP’ or ‘X’, etc.)</p></li>
+<li><p><strong>values</strong> – the values of the properties</p></li>
+<li><p><strong>stp_air</strong> – special option to make a stream of air at standard temperature and pressure
+This produces a stream of 3.74 mol N2 per mole O2 at 300 K and one atmosphere</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a cantera Quantity object with the specified properties</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.chemistry.general_diff_rxn.html">5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.chemistry.reactors.html">5.1.1.1.1.4. spitfire.chemistry.reactors module</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2019.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

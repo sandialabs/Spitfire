@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module &#8212; Spitfire 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5.1.1.1.1.3. spitfire.chemistry.mechanism module" href="spitfire.chemistry.mechanism.html" />
+    <link rel="prev" title="5.1.1.1.1.1. spitfire.chemistry.flamelet module" href="spitfire.chemistry.flamelet.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="index.html">
+          <span>Spitfire 1.0 documentation</span></a></h1>
+        <h2 class="heading"><span>5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.chemistry.flamelet.html">5.1.1.1.1.1. spitfire.chemistry.flamelet module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.chemistry.mechanism.html">5.1.1.1.1.3. spitfire.chemistry.mechanism module</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-spitfire.chemistry.general_diff_rxn">
+<span id="spitfire-chemistry-general-diff-rxn-module"></span><h1>5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module<a class="headerlink" href="#module-spitfire.chemistry.general_diff_rxn" title="Permalink to this headline">¶</a></h1>
+<p>Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
+You may use, distribute and modify this code under the terms of the MIT license.</p>
+<p>You should have received a copy of the MIT license with this file.
+If not, please write to <a class="reference external" href="mailto:mahanse&#37;&#52;&#48;sandia&#46;gov">mahanse<span>&#64;</span>sandia<span>&#46;</span>gov</a> or <a class="reference external" href="mailto:mike&#46;hansen&#37;&#52;&#48;chemeng&#46;utah&#46;edu">mike<span>&#46;</span>hansen<span>&#64;</span>chemeng<span>&#46;</span>utah<span>&#46;</span>edu</a></p>
+<dl class="class">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.chemistry.general_diff_rxn.</code><code class="sig-name descname">DiffusionReaction1D_FiniteDifference</code><span class="sig-paren">(</span><em class="sig-param">initial_conditions</em>, <em class="sig-param">diffusion_coefficient</em>, <em class="sig-param">source_term</em>, <em class="sig-param">source_term_jacobian=None</em>, <em class="sig-param">left_boundary_state=None</em>, <em class="sig-param">right_boundary_state=None</em>, <em class="sig-param">lewis_numbers=None</em>, <em class="sig-param">variable_names=None</em>, <em class="sig-param">grid=None</em>, <em class="sig-param">grid_points=None</em>, <em class="sig-param">grid_type='uniform'</em>, <em class="sig-param">grid_cluster_intensity=2.0</em>, <em class="sig-param">grid_cluster_point=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.diffusion_coefficient">
+<em class="property">property </em><code class="sig-name descname">diffusion_coefficient</code><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.diffusion_coefficient" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.final_state">
+<em class="property">property </em><code class="sig-name descname">final_state</code><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.final_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.grid">
+<em class="property">property </em><code class="sig-name descname">grid</code><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.grid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.initial_state">
+<em class="property">property </em><code class="sig-name descname">initial_state</code><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.initial_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.integrate">
+<code class="sig-name descname">integrate</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">termination</em>, <em class="sig-param">time_method='implicit-esdirk64'</em>, <em class="sig-param">time_step='adaptive'</em>, <em class="sig-param">first_time_step=1e-06</em>, <em class="sig-param">max_time_step=1.0</em>, <em class="sig-param">minimum_time_step_count=40</em>, <em class="sig-param">transient_tolerance=1e-10</em>, <em class="sig-param">write_log=False</em>, <em class="sig-param">log_rate=100</em>, <em class="sig-param">maximum_steps_per_jacobian=1</em>, <em class="sig-param">linear_solve_tolerance=1e-15</em>, <em class="sig-param">nonlinear_solve_tolerance=1e-12</em>, <em class="sig-param">linear_solver='superlu'</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.integrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for flamelet integration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>termination</strong><span class="classifier">Termination object as in spitfire.time.governor</span></dt><dd><p>how integration is stopped - instead of calling integrate() directly, use the integrate_to_time(), integrate_to_steady(), etc. methods of this class</p>
+</dd>
+<dt><strong>first_time_step</strong><span class="classifier">float</span></dt><dd><p>The time step size initially used by the time integrator</p>
+</dd>
+<dt><strong>minimum_time_step_count</strong><span class="classifier">int</span></dt><dd><p>The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)</p>
+</dd>
+<dt><strong>transient_tolerance</strong><span class="classifier">float</span></dt><dd><p>the target temporal error for transient integration</p>
+</dd>
+<dt><strong>write_log</strong><span class="classifier">bool</span></dt><dd><p>whether or not to print integration statistics and status during the simulation</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often to print log information</p>
+</dd>
+<dt><strong>maximum_steps_per_jacobian</strong><span class="classifier">int</span></dt><dd><p>maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms</p>
+</dd>
+<dt><strong>linear_solver</strong><span class="classifier">str</span></dt><dd><p>which linear solver to use, at the moment either ‘lapack’ (dense, direct) or ‘superlu’ (sparse, direct) are available</p>
+</dd>
+<dt><strong>plot</strong><span class="classifier">list</span></dt><dd><p>List of variables (temperature and/or specific species names) to be plotted after the time integration completes.
+No plot is shown if a list is not provided.
+Temperature is plotted in the first subplot if any list of variables is provided for plotting (even if temperature is not specified in the list of variables).
+Species mass fractions will be plotted in a second subplot if any species names are provided in the list of variables.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.integrate_to_steady">
+<code class="sig-name descname">integrate_to_steady</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">steady_tolerance=0.0001</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.integrate_to_steady" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrate a flamelet until steady state is reached</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>steady_tolerance</strong><span class="classifier">float</span></dt><dd><p>residual tolerance below which steady state is defined</p>
+</dd>
+<dt><strong>**kwargs</strong></dt><dd><p>Arbitrary keyword arguments - see the integrate() method documentation</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.integrate_to_time">
+<code class="sig-name descname">integrate_to_time</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">final_time</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.integrate_to_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrate a flamelet until it reaches a specified simulation time</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>final_time</strong><span class="classifier">float</span></dt><dd><p>time at which integration ceases</p>
+</dd>
+<dt><strong>**kwargs</strong></dt><dd><p>Arbitrary keyword arguments - see the integrate() method documentation</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.solution_times">
+<em class="property">property </em><code class="sig-name descname">solution_times</code><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.solution_times" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain this reactor’s integration times</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.trajectory_data">
+<code class="sig-name descname">trajectory_data</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.trajectory_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.variable_names">
+<em class="property">property </em><code class="sig-name descname">variable_names</code><a class="headerlink" href="#spitfire.chemistry.general_diff_rxn.DiffusionReaction1D_FiniteDifference.variable_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.chemistry.flamelet.html">5.1.1.1.1.1. spitfire.chemistry.flamelet module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.chemistry.mechanism.html">5.1.1.1.1.3. spitfire.chemistry.mechanism module</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2019.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

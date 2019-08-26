@@ -1,0 +1,33 @@
+project(griffon CXX)
+cmake_minimum_required(VERSION 3.7)
+
+SET(CMAKE_PROJECT_VERSION_MAJOR 2)
+SET(CMAKE_PROJECT_VERSION_MINOR 0)
+SET(CMAKE_PROJECT_VERSION_PATCH 0)
+SET(CMAKE_PROJECT_VERSION_TWEAK 0)
+
+SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math")
+
+if(APPLE)
+  find_library(BLASLAPACK Accelerate REQUIRED)
+  if(NOT BLASLAPACK)
+    message(FATAL_ERROR "Mac OS X: framework Accelerate not found!")
+  endif()
+  set(MACOSX_DEPLOYMENT_TARGET "10.12")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -stdlib=libc++")
+else()
+    find_package(BLAS REQUIRED)
+    find_package(LAPACK REQUIRED)
+    set(BLASLAPACK ${LAPACK_LIBRARIES})
+    if(NOT BLASLAPACK)
+        message(FATAL_ERROR "BLAS and LAPACK not found!")
+    endif()
+endif()
+message(STATUS "BLAS/LAPACK found: " ${BLASLAPACK} )
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+add_subdirectory(src)

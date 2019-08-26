@@ -1,0 +1,628 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>5.1.1.1.1.1. spitfire.chemistry.flamelet module &#8212; Spitfire 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module" href="spitfire.chemistry.general_diff_rxn.html" />
+    <link rel="prev" title="5.1.1.1. spitfire.chemistry package" href="spitfire.chemistry.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="index.html">
+          <span>Spitfire 1.0 documentation</span></a></h1>
+        <h2 class="heading"><span>5.1.1.1.1.1. spitfire.chemistry.flamelet module</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.chemistry.html">5.1.1.1. spitfire.chemistry package</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.chemistry.general_diff_rxn.html">5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-spitfire.chemistry.flamelet">
+<span id="spitfire-chemistry-flamelet-module"></span><h1>5.1.1.1.1.1. spitfire.chemistry.flamelet module<a class="headerlink" href="#module-spitfire.chemistry.flamelet" title="Permalink to this headline">¶</a></h1>
+<p>This module contains the Flamelet class that provides a high-level interface for nonpremixed flamelets</p>
+<dl class="class">
+<dt id="spitfire.chemistry.flamelet.Flamelet">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.chemistry.flamelet.</code><code class="sig-name descname">Flamelet</code><span class="sig-paren">(</span><em class="sig-param">mech_spec</em>, <em class="sig-param">initial_condition</em>, <em class="sig-param">pressure</em>, <em class="sig-param">oxy_stream</em>, <em class="sig-param">fuel_stream</em>, <em class="sig-param">max_dissipation_rate=None</em>, <em class="sig-param">stoich_dissipation_rate=None</em>, <em class="sig-param">dissipation_rate=None</em>, <em class="sig-param">dissipation_rate_form='Peters'</em>, <em class="sig-param">lewis_numbers=None</em>, <em class="sig-param">grid=None</em>, <em class="sig-param">grid_points=None</em>, <em class="sig-param">grid_type='clustered'</em>, <em class="sig-param">grid_cluster_intensity=4.0</em>, <em class="sig-param">grid_cluster_point='stoichiometric'</em>, <em class="sig-param">heat_transfer='adiabatic'</em>, <em class="sig-param">convection_temperature=None</em>, <em class="sig-param">radiation_temperature=None</em>, <em class="sig-param">convection_coefficient=None</em>, <em class="sig-param">radiative_emissivity=None</em>, <em class="sig-param">rates_sensitivity_type='exact'</em>, <em class="sig-param">sensitivity_transform_type='exact'</em>, <em class="sig-param">include_enthalpy_flux=False</em>, <em class="sig-param">include_variable_cp=False</em>, <em class="sig-param">use_scaled_heat_loss=False</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class for solving one-dimensional non-premixed flamelets</p>
+<p><strong>Constructor</strong>: specify boundary streams, mixing rates, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mech_spec</strong><span class="classifier">spitfire.chemistry.mechanism.ChemicalMechanismSpec instance</span></dt><dd><p>the mechanism</p>
+</dd>
+<dt><strong>initial_condition</strong><span class="classifier">str or np.ndarray</span></dt><dd><p>the initial state of the flamelet, either ‘equilibrium’, ‘unreacted’, ‘linear-TY’, or a state vector from another flamelet</p>
+</dd>
+<dt><strong>pressure</strong><span class="classifier">float</span></dt><dd><p>the pressure of the flamelet</p>
+</dd>
+<dt><strong>oxy_stream</strong><span class="classifier">Cantera.Quantity (a Spitfire stream) or Cantera.gas object</span></dt><dd><p>the oxidizer stream</p>
+</dd>
+<dt><strong>fuel_stream</strong><span class="classifier">Cantera.Quantity (a Spitfire stream) or Cantera.gas object</span></dt><dd><p>the fuel stream</p>
+</dd>
+<dt><strong>max_dissipation_rate</strong><span class="classifier">float</span></dt><dd><p>the maximum dissipation rate</p>
+</dd>
+<dt><strong>dissipation_rate</strong><span class="classifier">np.ndarray</span></dt><dd><p>the dissipation rate over mixture fraction</p>
+</dd>
+<dt><strong>dissipation_rate_form</strong><span class="classifier">str</span></dt><dd><p>the form of dissipation rate to use if the maximum value is specified (‘Peters’ (default) or ‘constant’)</p>
+</dd>
+<dt><strong>lewis_numbers</strong><span class="classifier">np.ndarray</span></dt><dd><p>the Lewis numbers - do not use at the moment, as the nonunity Le formulation does not currently have consistent enthalpy fluxes</p>
+</dd>
+<dt><strong>grid</strong><span class="classifier">np.ndarray</span></dt><dd><p>the location of the grid points (specifying the grid directly invalidates other grid arguments)</p>
+</dd>
+<dt><strong>grid_points</strong><span class="classifier">int</span></dt><dd><p>the number of grid points to use if Spitfire is to build the grid (if the grid argument is not specified, this is required)</p>
+</dd>
+<dt><strong>grid_type</strong><span class="classifier">str</span></dt><dd><p>the type of grid, either ‘clustered’ (default) or ‘uniform’</p>
+</dd>
+<dt><strong>grid_cluster_intensity</strong><span class="classifier">float</span></dt><dd><p>how tightly clustered grid points will be around the grid_cluster_point if grid_type is ‘clustered’ (default: 4)</p>
+</dd>
+<dt><strong>grid_cluster_point</strong><span class="classifier">float</span></dt><dd><p>the location of grid point clustering (default is the stoichiometric mixture fraction)</p>
+</dd>
+<dt><strong>heat_transfer</strong><span class="classifier">str</span></dt><dd><p>whether or not the flamelet is ‘adiabatic’ or ‘nonadiabatic’</p>
+</dd>
+<dt><strong>convection_temperature</strong><span class="classifier">float</span></dt><dd><p>the convective heat loss reference temperature</p>
+</dd>
+<dt><strong>radiation_temperature</strong><span class="classifier">float</span></dt><dd><p>the radiation heat loss reference temperature</p>
+</dd>
+<dt><strong>convection_coefficient</strong><span class="classifier">float</span></dt><dd><p>the convective heat loss coefficient</p>
+</dd>
+<dt><strong>radiative_emissivity</strong><span class="classifier">float</span></dt><dd><p>the radiative heat loss coefficient</p>
+</dd>
+<dt><strong>use_scaled_heat_loss</strong><span class="classifier">bool</span></dt><dd><p>whether or not to use a special form of reference temperature and coefficients for heat loss</p>
+</dd>
+<dt><strong>include_enthalpy_flux</strong><span class="classifier">bool</span></dt><dd><p>whether or not to use a consistent formulation of the enthalpy flux (True) or the simplest flamelet formulation (False)</p>
+</dd>
+<dt><strong>include_variable_cp</strong><span class="classifier">bool</span></dt><dd><p>whether or not to include variation of the heat capacity (True) or use the simplest flamelet formulation (False)</p>
+</dd>
+<dt><strong>rates_sensitivity_type</strong><span class="classifier">str</span></dt><dd><p>how the chemical source term Jacobian is formed, either ‘exact’ or ‘no-TBAF’ which ignores third-body and falloff sensitivities</p>
+</dd>
+<dt><strong>sensitivity_transform_type</strong><span class="classifier">str</span></dt><dd><p>how the Jacobian is transformed, currently only ‘exact’ is supported</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.check_ignition_delay">
+<code class="sig-name descname">check_ignition_delay</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.check_ignition_delay" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.compute_ignition_delay">
+<code class="sig-name descname">compute_ignition_delay</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">delta_temperature_ignition=None</em>, <em class="sig-param">minimum_allowable_residual=1e-12</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.compute_ignition_delay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrate in time until ignition (exceeding a specified threshold of the increase in temperature)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>delta_temperature_ignition</strong><span class="classifier">float</span></dt><dd><p>how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K</p>
+</dd>
+<dt><strong>minimum_allowable_residual</strong><span class="classifier">float</span></dt><dd><p>how small the residual can be before the reactor is deemed to ‘never’ ignite, default is 1.e-12</p>
+</dd>
+<dt><strong>first_time_step</strong><span class="classifier">float</span></dt><dd><p>The time step size initially used by the time integrator</p>
+</dd>
+<dt><strong>max_time_step</strong><span class="classifier">float</span></dt><dd><p>The maximum time step allowed by the integrator</p>
+</dd>
+<dt><strong>minimum_time_step_count</strong><span class="classifier">int</span></dt><dd><p>The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)</p>
+</dd>
+<dt><strong>transient_tolerance</strong><span class="classifier">float</span></dt><dd><p>the target temporal error for transient integration</p>
+</dd>
+<dt><strong>write_log</strong><span class="classifier">bool</span></dt><dd><p>whether or not to print integration statistics and status during the simulation</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often to print log information</p>
+</dd>
+<dt><strong>maximum_steps_per_jacobian</strong><span class="classifier">int</span></dt><dd><p>maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms</p>
+</dd>
+<dt><strong>nonlinear_solve_tolerance</strong><span class="classifier">float</span></dt><dd><p>tolerance for the nonlinear solver</p>
+</dd>
+<dt><strong>linear_solver</strong><span class="classifier">str</span></dt><dd><p>which linear solver to use - only ‘block thomas’ (default, heavily recommended) or ‘superlu’ are supported</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>the ignition delay of the reactor, in seconds</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.compute_steady_state">
+<code class="sig-name descname">compute_steady_state</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">tolerance=1e-06</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.compute_steady_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solve for the steady state of this flamelet, using a number of numerical algorithms</p>
+<p>This will first try Newton’s method, which is fast if it manages to converge.
+If Newton’s method fails, the pseudo-transient continuation (psitc) method is used.
+Finally, if both Newton’s method and psitc fail, ESDIRK64 time integration with adaptive stepping is attempted.</p>
+<p>This is meant to be a convenient interface for common usage.
+If it fails, try utilizing each of the steady solvers on their own with special parameters specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>tolerance</strong><span class="classifier">float</span></dt><dd><p>residual tolerance below which the solution has converged</p>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">bool</span></dt><dd><p>whether or not to write out status and failure messages</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.dissipation_rate">
+<em class="property">property </em><code class="sig-name descname">dissipation_rate</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.dissipation_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.final_interior_state">
+<em class="property">property </em><code class="sig-name descname">final_interior_state</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.final_interior_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.final_mass_fraction">
+<code class="sig-name descname">final_mass_fraction</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.final_mass_fraction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.final_state">
+<em class="property">property </em><code class="sig-name descname">final_state</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.final_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.final_temperature">
+<em class="property">property </em><code class="sig-name descname">final_temperature</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.final_temperature" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.fuel_state">
+<em class="property">property </em><code class="sig-name descname">fuel_state</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.fuel_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.fuel_stream">
+<em class="property">property </em><code class="sig-name descname">fuel_stream</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.fuel_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.initial_interior_state">
+<em class="property">property </em><code class="sig-name descname">initial_interior_state</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.initial_interior_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.initial_mass_fraction">
+<code class="sig-name descname">initial_mass_fraction</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.initial_mass_fraction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.initial_state">
+<em class="property">property </em><code class="sig-name descname">initial_state</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.initial_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.initial_temperature">
+<em class="property">property </em><code class="sig-name descname">initial_temperature</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.initial_temperature" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.insitu_process_cantera_method">
+<code class="sig-name descname">insitu_process_cantera_method</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">label</em>, <em class="sig-param">method=None</em>, <em class="sig-param">index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.insitu_process_cantera_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a general cantera function as an in situ processor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>label</strong><span class="classifier">str</span></dt><dd><p>the label of the computed result (also the cantera method to compute if the method parameter is not given)</p>
+</dd>
+<dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>the cantera method to evaluate</p>
+</dd>
+<dt><strong>index</strong><span class="classifier">str or int</span></dt><dd><p>the integer index or species name of the vector element of interest, if the cantera function returns a vector</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.insitu_process_cema">
+<code class="sig-name descname">insitu_process_cema</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">explosion_indices=False</em>, <em class="sig-param">participation_indices=False</em>, <em class="sig-param">secondary_mode=False</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.insitu_process_cema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turn on chemical explosive mode analysis, at least computing the explosive eigenvalue</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>explosion_indices</strong><span class="classifier">bool</span></dt><dd><p>whether or not to compute variable explosion indices</p>
+</dd>
+<dt><strong>participation_indices</strong><span class="classifier">bool</span></dt><dd><p>whether or not to compute reaction participation indices</p>
+</dd>
+<dt><strong>secondary_mode</strong><span class="classifier">bool</span></dt><dd><p>whether or not to compute the secondary explosive eigenvalue and (if specified already) its associated explosion/participation indices</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.insitu_process_quantity">
+<code class="sig-name descname">insitu_process_quantity</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.insitu_process_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify that a quantity be processed in situ.</p>
+<blockquote>
+<div><p>Available keys: ‘temperature’, ‘density’, ‘pressure’, ‘energy’, ‘enthalpy’, ‘heat capacity cv’, ‘heat capacity cp’,
+‘mass fractions’, ‘mole fractions’, ‘production rates’, ‘heat release rate’</p>
+<p>If a key is not in this list then cantera will be used.
+This will cause a failure if cantera can not compute the requested quantity.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">str</span></dt><dd><p>the quantity to process</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.integrate">
+<code class="sig-name descname">integrate</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">termination</em>, <em class="sig-param">first_time_step=1e-06</em>, <em class="sig-param">max_time_step=0.001</em>, <em class="sig-param">minimum_time_step_count=40</em>, <em class="sig-param">transient_tolerance=1e-10</em>, <em class="sig-param">write_log=False</em>, <em class="sig-param">log_rate=100</em>, <em class="sig-param">maximum_steps_per_jacobian=1</em>, <em class="sig-param">nonlinear_solve_tolerance=1e-12</em>, <em class="sig-param">linear_solver='block thomas'</em>, <em class="sig-param">stepper_type=&lt;class 'spitfire.time.methods.ESDIRK64'&gt;</em>, <em class="sig-param">nlsolver_type=&lt;class 'spitfire.time.nonlinear.SimpleNewtonSolver'&gt;</em>, <em class="sig-param">stepcontrol_type=&lt;class 'spitfire.time.stepcontrol.PIController'&gt;</em>, <em class="sig-param">extra_governor_args={}</em>, <em class="sig-param">extra_stepper_args={}</em>, <em class="sig-param">extra_nlsolver_args={}</em>, <em class="sig-param">extra_stepcontrol_args={}</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.integrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for flamelet integration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>termination</strong><span class="classifier">Termination object as in spitfire.time.governor</span></dt><dd><p>how integration is stopped - instead of calling integrate() directly, use the integrate_to_time(), integrate_to_steady(), etc. methods of this class</p>
+</dd>
+<dt><strong>first_time_step</strong><span class="classifier">float</span></dt><dd><p>The time step size initially used by the time integrator</p>
+</dd>
+<dt><strong>max_time_step</strong><span class="classifier">float</span></dt><dd><p>The maximum time step allowed by the integrator</p>
+</dd>
+<dt><strong>minimum_time_step_count</strong><span class="classifier">int</span></dt><dd><p>The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)</p>
+</dd>
+<dt><strong>transient_tolerance</strong><span class="classifier">float</span></dt><dd><p>the target temporal error for transient integration</p>
+</dd>
+<dt><strong>write_log</strong><span class="classifier">bool</span></dt><dd><p>whether or not to print integration statistics and status during the simulation</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often to print log information</p>
+</dd>
+<dt><strong>maximum_steps_per_jacobian</strong><span class="classifier">int</span></dt><dd><p>maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms</p>
+</dd>
+<dt><strong>nonlinear_solve_tolerance</strong><span class="classifier">float</span></dt><dd><p>tolerance for the nonlinear solver</p>
+</dd>
+<dt><strong>linear_solver</strong><span class="classifier">str</span></dt><dd><p>which linear solver to use - only ‘block thomas’ (default, heavily recommended) or ‘superlu’ are supported</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.integrate_for_heat_loss">
+<code class="sig-name descname">integrate_for_heat_loss</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">temperature_tolerance=0.05</em>, <em class="sig-param">steady_tolerance=0.0001</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.integrate_for_heat_loss" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Integrate a flamelet until the temperature profile is sufficiently linear.</dt><dd><p>This is used to generate the heat loss dimension for flamelet libraries.
+Note that this will terminate the integration if a steady state is identified,
+which may simply indicate that the heat transfer settings were insufficient to
+drive the temperature to a linear enough profile.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>temperature_tolerance</strong><span class="classifier">float</span></dt><dd><p>tolerance for termination, where max(T) &lt;= (1 + tolerance) max(T_oxy, T_fuel)</p>
+</dd>
+<dt><strong>steady_tolerance</strong><span class="classifier">float</span></dt><dd><p>residual tolerance below which steady state is defined</p>
+</dd>
+<dt><strong>first_time_step</strong><span class="classifier">float</span></dt><dd><p>The time step size initially used by the time integrator</p>
+</dd>
+<dt><strong>max_time_step</strong><span class="classifier">float</span></dt><dd><p>The maximum time step allowed by the integrator</p>
+</dd>
+<dt><strong>minimum_time_step_count</strong><span class="classifier">int</span></dt><dd><p>The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)</p>
+</dd>
+<dt><strong>transient_tolerance</strong><span class="classifier">float</span></dt><dd><p>the target temporal error for transient integration</p>
+</dd>
+<dt><strong>write_log</strong><span class="classifier">bool</span></dt><dd><p>whether or not to print integration statistics and status during the simulation</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often to print log information</p>
+</dd>
+<dt><strong>maximum_steps_per_jacobian</strong><span class="classifier">int</span></dt><dd><p>maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms</p>
+</dd>
+<dt><strong>nonlinear_solve_tolerance</strong><span class="classifier">float</span></dt><dd><p>tolerance for the nonlinear solver</p>
+</dd>
+<dt><strong>linear_solver</strong><span class="classifier">str</span></dt><dd><p>which linear solver to use - only ‘block thomas’ (default, heavily recommended) or ‘superlu’ are supported</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.integrate_to_steady">
+<code class="sig-name descname">integrate_to_steady</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">steady_tolerance=0.0001</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.integrate_to_steady" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrate a flamelet until steady state is reached</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>steady_tolerance</strong><span class="classifier">float</span></dt><dd><p>residual tolerance below which steady state is defined</p>
+</dd>
+<dt><strong>first_time_step</strong><span class="classifier">float</span></dt><dd><p>The time step size initially used by the time integrator</p>
+</dd>
+<dt><strong>max_time_step</strong><span class="classifier">float</span></dt><dd><p>The maximum time step allowed by the integrator</p>
+</dd>
+<dt><strong>minimum_time_step_count</strong><span class="classifier">int</span></dt><dd><p>The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)</p>
+</dd>
+<dt><strong>transient_tolerance</strong><span class="classifier">float</span></dt><dd><p>the target temporal error for transient integration</p>
+</dd>
+<dt><strong>write_log</strong><span class="classifier">bool</span></dt><dd><p>whether or not to print integration statistics and status during the simulation</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often to print log information</p>
+</dd>
+<dt><strong>maximum_steps_per_jacobian</strong><span class="classifier">int</span></dt><dd><p>maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms</p>
+</dd>
+<dt><strong>nonlinear_solve_tolerance</strong><span class="classifier">float</span></dt><dd><p>tolerance for the nonlinear solver</p>
+</dd>
+<dt><strong>linear_solver</strong><span class="classifier">str</span></dt><dd><p>which linear solver to use - only ‘block thomas’ (default, heavily recommended) or ‘superlu’ are supported</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.integrate_to_steady_after_ignition">
+<code class="sig-name descname">integrate_to_steady_after_ignition</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">steady_tolerance=0.0001</em>, <em class="sig-param">delta_temperature_ignition=400.0</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.integrate_to_steady_after_ignition" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Integrate a flamelet until steady state is reached after ignition (based on temperature) has occurred.</dt><dd><p>This is helpful in slowly-evolving systems whose initial residual may be lower than the prescribed tolerance.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>steady_tolerance</strong><span class="classifier">float</span></dt><dd><p>residual tolerance below which steady state is defined</p>
+</dd>
+<dt><strong>delta_temperature_ignition</strong><span class="classifier">float</span></dt><dd><p>how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K</p>
+</dd>
+<dt><strong>first_time_step</strong><span class="classifier">float</span></dt><dd><p>The time step size initially used by the time integrator</p>
+</dd>
+<dt><strong>max_time_step</strong><span class="classifier">float</span></dt><dd><p>The maximum time step allowed by the integrator</p>
+</dd>
+<dt><strong>minimum_time_step_count</strong><span class="classifier">int</span></dt><dd><p>The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)</p>
+</dd>
+<dt><strong>transient_tolerance</strong><span class="classifier">float</span></dt><dd><p>the target temporal error for transient integration</p>
+</dd>
+<dt><strong>write_log</strong><span class="classifier">bool</span></dt><dd><p>whether or not to print integration statistics and status during the simulation</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often to print log information</p>
+</dd>
+<dt><strong>maximum_steps_per_jacobian</strong><span class="classifier">int</span></dt><dd><p>maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms</p>
+</dd>
+<dt><strong>nonlinear_solve_tolerance</strong><span class="classifier">float</span></dt><dd><p>tolerance for the nonlinear solver</p>
+</dd>
+<dt><strong>linear_solver</strong><span class="classifier">str</span></dt><dd><p>which linear solver to use - only ‘block thomas’ (default, heavily recommended) or ‘superlu’ are supported</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.integrate_to_time">
+<code class="sig-name descname">integrate_to_time</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">final_time</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.integrate_to_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrate a flamelet until it reaches a specified simulation time</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>final_time</strong><span class="classifier">float</span></dt><dd><p>time at which integration ceases</p>
+</dd>
+<dt><strong>first_time_step</strong><span class="classifier">float</span></dt><dd><p>The time step size initially used by the time integrator</p>
+</dd>
+<dt><strong>max_time_step</strong><span class="classifier">float</span></dt><dd><p>The maximum time step allowed by the integrator</p>
+</dd>
+<dt><strong>minimum_time_step_count</strong><span class="classifier">int</span></dt><dd><p>The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)</p>
+</dd>
+<dt><strong>transient_tolerance</strong><span class="classifier">float</span></dt><dd><p>the target temporal error for transient integration</p>
+</dd>
+<dt><strong>write_log</strong><span class="classifier">bool</span></dt><dd><p>whether or not to print integration statistics and status during the simulation</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often to print log information</p>
+</dd>
+<dt><strong>maximum_steps_per_jacobian</strong><span class="classifier">int</span></dt><dd><p>maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms</p>
+</dd>
+<dt><strong>nonlinear_solve_tolerance</strong><span class="classifier">float</span></dt><dd><p>tolerance for the nonlinear solver</p>
+</dd>
+<dt><strong>linear_solver</strong><span class="classifier">str</span></dt><dd><p>which linear solver to use - only ‘block thomas’ (default, heavily recommended) or ‘superlu’ are supported</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.iteration_count">
+<em class="property">property </em><code class="sig-name descname">iteration_count</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.iteration_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.linear_temperature">
+<em class="property">property </em><code class="sig-name descname">linear_temperature</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.linear_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the linear temperature profile</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.mechanism">
+<em class="property">property </em><code class="sig-name descname">mechanism</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.mechanism" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.mixfrac_grid">
+<em class="property">property </em><code class="sig-name descname">mixfrac_grid</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.mixfrac_grid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.oxy_state">
+<em class="property">property </em><code class="sig-name descname">oxy_state</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.oxy_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.oxy_stream">
+<em class="property">property </em><code class="sig-name descname">oxy_stream</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.oxy_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.pressure">
+<em class="property">property </em><code class="sig-name descname">pressure</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.pressure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.process_quantities_on_state">
+<code class="sig-name descname">process_quantities_on_state</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">quantities=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.process_quantities_on_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the specified in situ quantities on a given flamelet state.
+This will return a dictionary that maps each quantity’s name to its computed values for the state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>state</strong><span class="classifier">np.ndarray</span></dt><dd><p>the flamelet state - get this from a Flamelet object</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.solution_times">
+<em class="property">property </em><code class="sig-name descname">solution_times</code><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.solution_times" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain this reactor’s integration times</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.state_with_bcs">
+<code class="sig-name descname">state_with_bcs</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.state_with_bcs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.steady_solve_newton">
+<code class="sig-name descname">steady_solve_newton</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">initial_guess=None</em>, <em class="sig-param">tolerance=1e-06</em>, <em class="sig-param">max_iterations=10</em>, <em class="sig-param">max_factor_line_search=1.5</em>, <em class="sig-param">max_allowed_residual=1000000.0</em>, <em class="sig-param">min_allowable_state_var=-1e-06</em>, <em class="sig-param">norm_order=inf</em>, <em class="sig-param">log_rate=100000</em>, <em class="sig-param">verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.steady_solve_newton" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Use Newton’s method to solve for the steady state of this flamelet.</dt><dd><p>Note that Newton’s method is unlikely to converge unless an accurate initial guess is given.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>initial_guess</strong><span class="classifier">np.ndarray</span></dt><dd><p>the initial guess - obtain this from a Flamelet</p>
+</dd>
+<dt><strong>tolerance</strong><span class="classifier">float</span></dt><dd><p>residual tolerance below which the solution has converged</p>
+</dd>
+<dt><strong>max_iterations</strong><span class="classifier">int</span></dt><dd><p>maximum number of iterations before failure is detected</p>
+</dd>
+<dt><strong>max_factor_line_search</strong><span class="classifier">float</span></dt><dd><p>the maximum factor by which the residual is allowed to increase in the line search algorithm</p>
+</dd>
+<dt><strong>max_allowed_residual</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable value of the residual</p>
+</dd>
+<dt><strong>min_allowable_state_var</strong><span class="classifier">float</span></dt><dd><p>the lowest value (negative or zero) that a state variable can take during the solution process</p>
+</dd>
+<dt><strong>norm_order</strong><span class="classifier">int or np.Inf</span></dt><dd><p>the order of the norm used in measuring the residual</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often a message about the solution status is written</p>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">bool</span></dt><dd><p>whether to write out the solver status (log messages) or write out failure descriptions</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.steady_solve_psitc">
+<code class="sig-name descname">steady_solve_psitc</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">initial_guess=None</em>, <em class="sig-param">tolerance=1e-06</em>, <em class="sig-param">max_iterations=400</em>, <em class="sig-param">min_allowable_state_var=-1e-06</em>, <em class="sig-param">ds_init=1.0</em>, <em class="sig-param">ds_init_decrease=4.0</em>, <em class="sig-param">adaptive_restart=True</em>, <em class="sig-param">diffusion_factor=4.0</em>, <em class="sig-param">global_ds=False</em>, <em class="sig-param">ds_safety=0.1</em>, <em class="sig-param">ds_ramp=1.1</em>, <em class="sig-param">ds_max=10000.0</em>, <em class="sig-param">max_factor_line_search=1.5</em>, <em class="sig-param">max_allowed_residual=1000000.0</em>, <em class="sig-param">log_rate=100000</em>, <em class="sig-param">norm_order=inf</em>, <em class="sig-param">_recursion_depth=0</em>, <em class="sig-param">max_recursion_depth=20</em>, <em class="sig-param">verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.steady_solve_psitc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use an adaptive pseudotransient continuation method to compute the steady state of this flamelet</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>initial_guess</strong><span class="classifier">np.ndarray</span></dt><dd><p>the initial guess - obtain this from a Flamelet</p>
+</dd>
+<dt><strong>tolerance</strong><span class="classifier">float</span></dt><dd><p>residual tolerance below which the solution has converged</p>
+</dd>
+<dt><strong>max_iterations</strong><span class="classifier">int</span></dt><dd><p>maximum number of iterations before failure is detected</p>
+</dd>
+<dt><strong>max_factor_line_search</strong><span class="classifier">float</span></dt><dd><p>the maximum factor by which the residual is allowed to increase in the line search algorithm</p>
+</dd>
+<dt><strong>max_allowed_residual</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable value of the residual</p>
+</dd>
+<dt><strong>min_allowable_state_var</strong><span class="classifier">float</span></dt><dd><p>the lowest value (negative or zero) that a state variable can take during the solution process</p>
+</dd>
+<dt><strong>ds_init</strong><span class="classifier">float</span></dt><dd><p>the initial pseudo time step (default: 1.), decrease to 1e-1 or 1e-2 for more robustness</p>
+</dd>
+<dt><strong>ds_init_decrease</strong><span class="classifier">float</span></dt><dd><p>how the initial dual time step is decreased upon failure if adaptive_restart is used (default: 4)</p>
+</dd>
+<dt><strong>adaptive_restart</strong><span class="classifier">bool</span></dt><dd><p>whether or not the solver restarts with decreased ds_init upon failure (default: True)</p>
+</dd>
+<dt><strong>diffusion_factor</strong><span class="classifier">float</span></dt><dd><p>how strongly diffusion is weighted in the pseudo time step adaptation (default: 4) (expert parameter)</p>
+</dd>
+<dt><strong>global_ds</strong><span class="classifier">bool</span></dt><dd><p>whether or not to use a global pseudo time step (default: False) (setting to True not recommended)</p>
+</dd>
+<dt><strong>ds_safety</strong><span class="classifier">float</span></dt><dd><p>the ‘safety factor’ in the pseudo time step adaptation (default: 0.1), increase for speed, decrease for robustness</p>
+</dd>
+<dt><strong>ds_ramp</strong><span class="classifier">float</span></dt><dd><p>how quickly the pseudo time step is allowed to increase (default: 1.1), increase for speed, decrease for robustness</p>
+</dd>
+<dt><strong>ds_max</strong><span class="classifier">flaot</span></dt><dd><p>maximum allowable value of the pseudo time step (default: 1.e4)</p>
+</dd>
+<dt><strong>max_recursion_depth</strong><span class="classifier">int</span></dt><dd><p>how many adaptive restarts may be attempted</p>
+</dd>
+<dt><strong>norm_order</strong><span class="classifier">int or np.Inf</span></dt><dd><p>the order of the norm used in measuring the residual</p>
+</dd>
+<dt><strong>log_rate</strong><span class="classifier">int</span></dt><dd><p>how often a message about the solution status is written</p>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">bool</span></dt><dd><p>whether to write out the solver status (log messages) or write out failure descriptions</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.temporary_alc_in_chi_max">
+<code class="sig-name descname">temporary_alc_in_chi_max</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.temporary_alc_in_chi_max" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.chemistry.flamelet.Flamelet.trajectory_data">
+<code class="sig-name descname">trajectory_data</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.chemistry.flamelet.Flamelet.trajectory_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the simulation data associated with a particular key/label (processed in situ)</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.chemistry.html">5.1.1.1. spitfire.chemistry package</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.chemistry.general_diff_rxn.html">5.1.1.1.1.2. spitfire.chemistry.general_diff_rxn module</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2019.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+Continuation
+============
+This section is under construction and its topic (continuation methods) is under construction!
+
+Theory
+------
+
+Natural continuation with Euler-Newton, Euler-[any-solver] approaches
+
+Pseudo arc-length continuation
+
+Pseudotransient continuation
+
+
+Application to Combustion Problems
+----------------------------------
+
+S-curve 0-D, flamelet
+
+ignition-extinction 0-D, flamelet

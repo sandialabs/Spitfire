@@ -1,0 +1,838 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>5.1.1.3.1.2. spitfire.time.methods module &#8212; Spitfire 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5.1.1.3.1.3. spitfire.time.nonlinear module" href="spitfire.time.nonlinear.html" />
+    <link rel="prev" title="5.1.1.3.1.1. spitfire.time.governor module" href="spitfire.time.governor.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="index.html">
+          <span>Spitfire 1.0 documentation</span></a></h1>
+        <h2 class="heading"><span>5.1.1.3.1.2. spitfire.time.methods module</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.time.governor.html">5.1.1.3.1.1. spitfire.time.governor module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.time.nonlinear.html">5.1.1.3.1.3. spitfire.time.nonlinear module</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-spitfire.time.methods">
+<span id="spitfire-time-methods-module"></span><h1>5.1.1.3.1.2. spitfire.time.methods module<a class="headerlink" href="#module-spitfire.time.methods" title="Permalink to this headline">¶</a></h1>
+<p>This module contains time stepping methods that represent distinct methods of taking a single step in the time integration loop.
+Some are explicit, some are implicit.
+Some allow adaptive time stepping via control of embedded temporal error estimates while most do not.</p>
+<p>Consider a general purpose explicit ODE,</p>
+<div class="math notranslate nohighlight" id="equation-spitfire-time-methods-0">
+<span class="eqno">(5.1)<a class="headerlink" href="#equation-spitfire-time-methods-0" title="Permalink to this equation">¶</a></span>\[\frac{\partial \boldsymbol{q}}{\partial t} = \boldsymbol{r}(t, \boldsymbol{q}),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{q}=[q_1,q_2,\ldots]\)</span> is the vector of state variables
+and <span class="math notranslate nohighlight">\(\boldsymbol{r}=[r_1,r_2,\ldots]\)</span> is the vector of right-hand side functions.
+The classes in this module have a <code class="docutils literal notranslate"><span class="pre">single_step(q,</span> <span class="pre">t,</span> <span class="pre">h,</span> <span class="pre">r,</span> <span class="pre">...)</span></code> method that steps from time level <span class="math notranslate nohighlight">\(t^n\)</span> to
+the next time,  <span class="math notranslate nohighlight">\(t^{n+1}=t^n + h\)</span>, given a state <span class="math notranslate nohighlight">\(q^n\)</span> and right-hand side function <span class="math notranslate nohighlight">\(r(t,q)\)</span>.
+For example, the forward Euler method with class <code class="docutils literal notranslate"><span class="pre">ForwardEuler</span></code> computes this as <span class="math notranslate nohighlight">\(q^{n+1}=q^n + hr(t^n,q^n)\)</span>.</p>
+<p>In Spitfire’s unit testing we verify the order of accuracy of most of these methods.
+If you add a new one be sure to add it to the unit tester.
+See the file: <code class="docutils literal notranslate"><span class="pre">spitfire_test/time/test_time_order_of_accuracy.py</span></code>.</p>
+<dl class="class">
+<dt id="spitfire.time.methods.AdaptiveERK21HeunEuler">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">AdaptiveERK21HeunEuler</code><span class="sig-paren">(</span><em class="sig-param">norm_weighting=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.AdaptiveERK21HeunEuler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta" title="spitfire.time.methods.AdaptiveExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.AdaptiveExplicitRungeKutta</span></code></a></p>
+<p>The second-order Trapezoidal (Heun) method with a first-order Euler method for embedded error estimation</p>
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveERK21HeunEuler.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.AdaptiveERK21HeunEuler.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.AdaptiveERK54CashKarp">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">AdaptiveERK54CashKarp</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveERK54CashKarp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta" title="spitfire.time.methods.AdaptiveExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.AdaptiveExplicitRungeKutta</span></code></a></p>
+<p>The fourth-order, five-stage adaptive ERK method of Cash and Karp</p>
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveERK54CashKarp.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.AdaptiveERK54CashKarp.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.AdaptiveExplicitRungeKutta">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">AdaptiveExplicitRungeKutta</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">order</em>, <em class="sig-param">error_order</em>, <em class="sig-param">stages</em>, <em class="sig-param">norm_weighting=1.0</em>, <em class="sig-param">norm_order=inf</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ExplicitRungeKutta" title="spitfire.time.methods.ExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ExplicitRungeKutta</span></code></a></p>
+<p>Base class for explicit Runge-Kutta methods</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>name of the TimeStepper, e.g. ‘Forward Euler’ or ‘Runge Kutta 4’</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the time stepping method</p>
+</dd>
+<dt><strong>error_order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the embedded error estimation</p>
+</dd>
+<dt><strong>stages</strong><span class="classifier">int</span></dt><dd><p>number of stages in the Runge-Kutta method</p>
+</dd>
+<dt><strong>norm_weighting</strong><span class="classifier">np.ndarray or float</span></dt><dd><p>how the temporal error estimate is weighted in its norm calculation (default: 1)</p>
+</dd>
+<dt><strong>norm_order</strong><span class="classifier">int or np.Inf</span></dt><dd><p>the order of the norm used in the temporal error estimate (default: Inf)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveExplicitRungeKutta.error_order">
+<em class="property">property </em><code class="sig-name descname">error_order</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta.error_order" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveExplicitRungeKutta.norm_order">
+<em class="property">property </em><code class="sig-name descname">norm_order</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta.norm_order" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveExplicitRungeKutta.norm_weighting">
+<em class="property">property </em><code class="sig-name descname">norm_weighting</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta.norm_weighting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.AdaptiveImplicitTimeStepper">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">AdaptiveImplicitTimeStepper</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">order</em>, <em class="sig-param">implicit_coefficient</em>, <em class="sig-param">nonlinear_solver</em>, <em class="sig-param">norm_weighting=1.0</em>, <em class="sig-param">norm_order=inf</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.AdaptiveImplicitTimeStepper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ImplicitTimeStepper" title="spitfire.time.methods.ImplicitTimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ImplicitTimeStepper</span></code></a></p>
+<p>Base class for adaptive implicit time stepper classes</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>name of the TimeStepper</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the time stepping method</p>
+</dd>
+<dt><strong>implicit_coefficient</strong><span class="classifier">float</span></dt><dd><p>the leading coefficient used in time-augmented Jacobian matrix assembly</p>
+</dd>
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+<dt><strong>norm_weighting</strong><span class="classifier">np.ndarray or float</span></dt><dd><p>how the temporal error estimate is weighted in its norm calculation (default: 1)</p>
+</dd>
+<dt><strong>norm_order</strong><span class="classifier">int or np.Inf</span></dt><dd><p>the order of the norm used in the temporal error estimate (default: Inf)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveImplicitTimeStepper.implicit_coefficient">
+<em class="property">property </em><code class="sig-name descname">implicit_coefficient</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveImplicitTimeStepper.implicit_coefficient" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveImplicitTimeStepper.nonlinear_solver">
+<em class="property">property </em><code class="sig-name descname">nonlinear_solver</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveImplicitTimeStepper.nonlinear_solver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveImplicitTimeStepper.norm_order">
+<em class="property">property </em><code class="sig-name descname">norm_order</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveImplicitTimeStepper.norm_order" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.methods.AdaptiveImplicitTimeStepper.norm_weighting">
+<em class="property">property </em><code class="sig-name descname">norm_weighting</code><a class="headerlink" href="#spitfire.time.methods.AdaptiveImplicitTimeStepper.norm_weighting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.BackwardEuler">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">BackwardEuler</code><span class="sig-paren">(</span><em class="sig-param">nonlinear_solver</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.BackwardEuler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ImplicitTimeStepper" title="spitfire.time.methods.ImplicitTimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ImplicitTimeStepper</span></code></a></p>
+<p>The Backward Euler, or implicit Euler, or BDF-1, method</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.BackwardEuler.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">lhs_setup</em>, <em class="sig-param">lhs_solve</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.BackwardEuler.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.BackwardEulerWithError">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">BackwardEulerWithError</code><span class="sig-paren">(</span><em class="sig-param">nonlinear_solver</em>, <em class="sig-param">norm_weighting=1.0</em>, <em class="sig-param">norm_order=inf</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.BackwardEulerWithError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.AdaptiveImplicitTimeStepper" title="spitfire.time.methods.AdaptiveImplicitTimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.AdaptiveImplicitTimeStepper</span></code></a></p>
+<dl class="simple">
+<dt>The Backward Euler, or implicit Euler, or BDF-1, method which uses the nonlinear solver to form an error estimate,</dt><dd><p>allowing adaptivity as in the CVODE code (although without order adaptation - this class is first-order only)</p>
+</dd>
+</dl>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+<dt><strong>norm_weighting</strong><span class="classifier">np.ndarray or float</span></dt><dd><p>how the temporal error estimate is weighted in its norm calculation (default: 1)</p>
+</dd>
+<dt><strong>norm_order</strong><span class="classifier">int or np.Inf</span></dt><dd><p>the order of the norm used in the temporal error estimate (default: Inf)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.BackwardEulerWithError.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">lhs_setup</em>, <em class="sig-param">lhs_solve</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.BackwardEulerWithError.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.CrankNicolson">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">CrankNicolson</code><span class="sig-paren">(</span><em class="sig-param">nonlinear_solver</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.CrankNicolson" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ImplicitTimeStepper" title="spitfire.time.methods.ImplicitTimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ImplicitTimeStepper</span></code></a></p>
+<p>The Crank-Nicolson, or implicit trapezoial, method</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.CrankNicolson.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">lhs_setup</em>, <em class="sig-param">lhs_solve</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.CrankNicolson.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ESDIRK64">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ESDIRK64</code><span class="sig-paren">(</span><em class="sig-param">nonlinear_solver</em>, <em class="sig-param">norm_weighting=1.0</em>, <em class="sig-param">norm_order=inf</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ESDIRK64" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.AdaptiveImplicitTimeStepper" title="spitfire.time.methods.AdaptiveImplicitTimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.AdaptiveImplicitTimeStepper</span></code></a></p>
+<p>The six-stage, fourth-order, second-stage-order, explicit singly diagonally implicit method of Kennedy and Carpenter</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+<dt><strong>norm_weighting</strong><span class="classifier">np.ndarray or float</span></dt><dd><p>how the temporal error estimate is weighted in its norm calculation (default: 1)</p>
+</dd>
+<dt><strong>norm_order</strong><span class="classifier">int or np.Inf</span></dt><dd><p>the order of the norm used in the temporal error estimate (default: Inf)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.ESDIRK64.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">lhs_setup</em>, <em class="sig-param">lhs_solve</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ESDIRK64.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ExplicitRungeKutta">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ExplicitRungeKutta</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">order</em>, <em class="sig-param">stages</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.TimeStepper" title="spitfire.time.methods.TimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.TimeStepper</span></code></a></p>
+<p>Base class for explicit Runge-Kutta methods</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>name of the TimeStepper, e.g. ‘Forward Euler’ or ‘Runge Kutta 4’</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the time stepping method</p>
+</dd>
+<dt><strong>stages</strong><span class="classifier">int</span></dt><dd><p>number of stages in the Runge-Kutta method</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.ExplicitRungeKutta.stages">
+<em class="property">property </em><code class="sig-name descname">stages</code><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta.stages" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ExplicitRungeKutta2Midpoint">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ExplicitRungeKutta2Midpoint</code><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta2Midpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ExplicitRungeKutta" title="spitfire.time.methods.ExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ExplicitRungeKutta</span></code></a></p>
+<p>The explicit Midpoint method</p>
+<dl class="method">
+<dt id="spitfire.time.methods.ExplicitRungeKutta2Midpoint.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta2Midpoint.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ExplicitRungeKutta2Ralston">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ExplicitRungeKutta2Ralston</code><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta2Ralston" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ExplicitRungeKutta" title="spitfire.time.methods.ExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ExplicitRungeKutta</span></code></a></p>
+<p>The explicit Ralston method, the two-stage, second-order ERK method with lowest principal error norm</p>
+<dl class="method">
+<dt id="spitfire.time.methods.ExplicitRungeKutta2Ralston.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta2Ralston.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ExplicitRungeKutta2Trapezoid">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ExplicitRungeKutta2Trapezoid</code><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta2Trapezoid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ExplicitRungeKutta" title="spitfire.time.methods.ExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ExplicitRungeKutta</span></code></a></p>
+<p>The explicit Trapezoidal method</p>
+<dl class="method">
+<dt id="spitfire.time.methods.ExplicitRungeKutta2Trapezoid.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta2Trapezoid.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ExplicitRungeKutta3Kutta">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ExplicitRungeKutta3Kutta</code><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta3Kutta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ExplicitRungeKutta" title="spitfire.time.methods.ExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ExplicitRungeKutta</span></code></a></p>
+<p>Kutta’s three-stage, third-order ERK method</p>
+<dl class="method">
+<dt id="spitfire.time.methods.ExplicitRungeKutta3Kutta.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta3Kutta.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ExplicitRungeKutta4Classical">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ExplicitRungeKutta4Classical</code><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta4Classical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ExplicitRungeKutta" title="spitfire.time.methods.ExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ExplicitRungeKutta</span></code></a></p>
+<p>The classical four-stage, fourth-order ERK method</p>
+<dl class="method">
+<dt id="spitfire.time.methods.ExplicitRungeKutta4Classical.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ExplicitRungeKutta4Classical.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ForwardEuler">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ForwardEuler</code><a class="headerlink" href="#spitfire.time.methods.ForwardEuler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.TimeStepper" title="spitfire.time.methods.TimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.TimeStepper</span></code></a></p>
+<p>The Forward Euler method</p>
+<dl class="method">
+<dt id="spitfire.time.methods.ForwardEuler.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ForwardEuler.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.GeneralAdaptiveExplicitRungeKutta">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">GeneralAdaptiveExplicitRungeKutta</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">order</em>, <em class="sig-param">A</em>, <em class="sig-param">b</em>, <em class="sig-param">bhat=None</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.GeneralAdaptiveExplicitRungeKutta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta" title="spitfire.time.methods.AdaptiveExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.AdaptiveExplicitRungeKutta</span></code></a></p>
+<p>A general-purpose explicit Runge-Kutta method with embedded error estimation for adaptive time stepping</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>name of the TimeStepper, e.g. ‘Forward Euler’ or ‘Runge Kutta 4’</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the time stepping method</p>
+</dd>
+<dt><strong>A</strong><span class="classifier">np.ndarray</span></dt><dd><p>Runge-Kutta stage coefficients for the method</p>
+</dd>
+<dt><strong>b</strong><span class="classifier">np.ndarray</span></dt><dd><p>quadrature coefficients for the method</p>
+</dd>
+<dt><strong>bhat</strong><span class="classifier">np.ndarray</span></dt><dd><p>embedded error estimation quadrature coefficients (default: None - not adaptive)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.GeneralAdaptiveExplicitRungeKutta.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.GeneralAdaptiveExplicitRungeKutta.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.GeneralAdaptiveExplicitRungeKuttaMultipleEmbedded">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">GeneralAdaptiveExplicitRungeKuttaMultipleEmbedded</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">order</em>, <em class="sig-param">A</em>, <em class="sig-param">b</em>, <em class="sig-param">bhats</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.GeneralAdaptiveExplicitRungeKuttaMultipleEmbedded" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.AdaptiveExplicitRungeKutta" title="spitfire.time.methods.AdaptiveExplicitRungeKutta"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.AdaptiveExplicitRungeKutta</span></code></a></p>
+<p>A general-purpose explicit Runge-Kutta method with embedded error estimation for adaptive time stepping</p>
+<p>This class is used for advanced adaptive methods that utilize multiple embedded error estimates.</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>name of the TimeStepper, e.g. ‘Forward Euler’ or ‘Runge Kutta 4’</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the time stepping method</p>
+</dd>
+<dt><strong>A</strong><span class="classifier">np.ndarray</span></dt><dd><p>Runge-Kutta stage coefficients for the method</p>
+</dd>
+<dt><strong>b</strong><span class="classifier">np.ndarray</span></dt><dd><p>quadrature coefficients for the method</p>
+</dd>
+<dt><strong>bhats</strong><span class="classifier">list[np.ndarray]</span></dt><dd><p>list of embedded error estimation quadrature coefficients</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.GeneralAdaptiveExplicitRungeKuttaMultipleEmbedded.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.GeneralAdaptiveExplicitRungeKuttaMultipleEmbedded.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ImplicitMidpoint">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ImplicitMidpoint</code><span class="sig-paren">(</span><em class="sig-param">nonlinear_solver</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ImplicitMidpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ImplicitTimeStepper" title="spitfire.time.methods.ImplicitTimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ImplicitTimeStepper</span></code></a></p>
+<p>The implicit midpoint, or second-order Gauss IRK, method</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.ImplicitMidpoint.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">lhs_setup</em>, <em class="sig-param">lhs_solve</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ImplicitMidpoint.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.ImplicitTimeStepper">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">ImplicitTimeStepper</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">order</em>, <em class="sig-param">implicit_coefficient</em>, <em class="sig-param">nonlinear_solver</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.ImplicitTimeStepper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.TimeStepper" title="spitfire.time.methods.TimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.TimeStepper</span></code></a></p>
+<p>Base class for implicit time stepper classes</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>name of the TimeStepper</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the time stepping method</p>
+</dd>
+<dt><strong>implicit_coefficient</strong><span class="classifier">float</span></dt><dd><p>the leading coefficient used in time-augmented Jacobian matrix assembly</p>
+</dd>
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.ImplicitTimeStepper.implicit_coefficient">
+<em class="property">property </em><code class="sig-name descname">implicit_coefficient</code><a class="headerlink" href="#spitfire.time.methods.ImplicitTimeStepper.implicit_coefficient" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.methods.ImplicitTimeStepper.nonlinear_solver">
+<em class="property">property </em><code class="sig-name descname">nonlinear_solver</code><a class="headerlink" href="#spitfire.time.methods.ImplicitTimeStepper.nonlinear_solver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.SDIRK22">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">SDIRK22</code><span class="sig-paren">(</span><em class="sig-param">nonlinear_solver</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.SDIRK22" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#spitfire.time.methods.ImplicitTimeStepper" title="spitfire.time.methods.ImplicitTimeStepper"><code class="xref py py-class docutils literal notranslate"><span class="pre">spitfire.time.methods.ImplicitTimeStepper</span></code></a></p>
+<p>A two-stage, second-order singly diagonally implicit method</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>nonlinear_solver</strong><span class="classifier">spitfire.time.nonlinear.NonlinearSolver</span></dt><dd><p>the solver used in each implicit stage</p>
+</dd>
+<dt><strong>norm_weighting</strong><span class="classifier">np.ndarray or float</span></dt><dd><p>how the temporal error estimate is weighted in its norm calculation (default: 1)</p>
+</dd>
+<dt><strong>norm_order</strong><span class="classifier">int or np.Inf</span></dt><dd><p>the order of the norm used in the temporal error estimate (default: Inf)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.SDIRK22.single_step">
+<code class="sig-name descname">single_step</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">state</em>, <em class="sig-param">t</em>, <em class="sig-param">dt</em>, <em class="sig-param">rhs</em>, <em class="sig-param">lhs_setup</em>, <em class="sig-param">lhs_solve</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.SDIRK22.single_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step with this stepper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state</strong> – the current state</p></li>
+<li><p><strong>t</strong> – the current time</p></li>
+<li><p><strong>dt</strong> – the size of the time step</p></li>
+<li><p><strong>rhs</strong> – the right-hand side of the ODE in the form f(t, y)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a StepOutput object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.StepOutput">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">StepOutput</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.StepOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Read-only class that holds information about the result of a single time step.</p>
+<p><strong>Constructor</strong>: build a StepOutput object, specifying all data here (the object will be read-only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>solution_update</strong><span class="classifier">np.ndarray</span></dt><dd><p>the update to the solution, the state at the next time level minus that at the current time level</p>
+</dd>
+<dt><strong>temporal_error</strong><span class="classifier">float</span></dt><dd><p>the temporal error estimate - for adaptive time stepping through classical error control</p>
+</dd>
+<dt><strong>nonlinear_iter</strong><span class="classifier">int</span></dt><dd><p>how many nonlinear iterations the step required - implicit methods only</p>
+</dd>
+<dt><strong>linear_iter</strong><span class="classifier">int</span></dt><dd><p>how many linear iterations the step required - implicit methods only</p>
+</dd>
+<dt><strong>nonlinear_converged</strong><span class="classifier">bool</span></dt><dd><p>whether or not the nonlinear solver converged - implicit methods only</p>
+</dd>
+<dt><strong>slow_nonlinear_convergence</strong><span class="classifier">bool</span></dt><dd><p>whether or not the nonlinear solver detected slow convergence - implicit methods only</p>
+</dd>
+<dt><strong>projector_setups</strong><span class="classifier">int</span></dt><dd><p>the number of times the linear projector was set up (e.g. Jacobian evaluation-factorization)</p>
+</dd>
+<dt><strong>extra_errors</strong><span class="classifier">list[float]</span></dt><dd><p>a list of additional embedded temporal error estimates - for adaptive time stepping through new ratio control</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.extra_errors">
+<code class="sig-name descname">extra_errors</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.extra_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.linear_iter">
+<code class="sig-name descname">linear_iter</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.linear_iter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.nonlinear_converged">
+<code class="sig-name descname">nonlinear_converged</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.nonlinear_converged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.nonlinear_iter">
+<code class="sig-name descname">nonlinear_iter</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.nonlinear_iter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.projector_setups">
+<code class="sig-name descname">projector_setups</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.projector_setups" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.slow_nonlinear_convergence">
+<code class="sig-name descname">slow_nonlinear_convergence</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.slow_nonlinear_convergence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.solution_update">
+<code class="sig-name descname">solution_update</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.solution_update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="spitfire.time.methods.StepOutput.temporal_error">
+<code class="sig-name descname">temporal_error</code><a class="headerlink" href="#spitfire.time.methods.StepOutput.temporal_error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.methods.TimeStepper">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.methods.</code><code class="sig-name descname">TimeStepper</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">order</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.methods.TimeStepper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for time stepper classes</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>name of the TimeStepper, e.g. ‘Forward Euler’ or ‘Runge Kutta 4’</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int</span></dt><dd><p>order of accuracy of the time stepping method</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.methods.TimeStepper.name">
+<em class="property">property </em><code class="sig-name descname">name</code><a class="headerlink" href="#spitfire.time.methods.TimeStepper.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.methods.TimeStepper.order">
+<em class="property">property </em><code class="sig-name descname">order</code><a class="headerlink" href="#spitfire.time.methods.TimeStepper.order" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.time.governor.html">5.1.1.3.1.1. spitfire.time.governor module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="spitfire.time.nonlinear.html">5.1.1.3.1.3. spitfire.time.nonlinear module</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2019.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

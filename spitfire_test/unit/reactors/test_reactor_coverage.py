@@ -1,0 +1,319 @@
+import unittest
+import numpy as np
+from os.path import join, abspath
+import cantera as ct
+from spitfire.chemistry.mechanism import ChemicalMechanismSpec as Mechanism
+from spitfire.chemistry.reactors import HomogeneousReactor
+
+xml = abspath(join('spitfire_test', 'test_mechanisms', 'hydrogen_one_step.xml'))
+sol = ct.Solution(thermo='IdealGas',
+                  kinetics='GasKinetics',
+                  species=ct.Species.listFromFile(xml),
+                  reactions=ct.Reaction.listFromFile(xml))
+mechanism = Mechanism.from_solution(sol)
+
+
+def construct_reactor(configuration, mass_transfer, heat_transfer, shape):
+    air = mechanism.stream(stp_air=True)
+    fuel = mechanism.stream('X', 'H2:1')
+
+    mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+    mix.TP = 1200., 101325.
+
+    feed = mechanism.copy_stream(mix)
+
+    tau = 1.e-3
+
+    extra_args = dict()
+    if mass_transfer == 'open':
+        if configuration == 'isobaric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['mixing_tau'] = tau
+        elif configuration == 'isochoric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['feed_density'] = feed.density
+            extra_args['mixing_tau'] = tau
+    if heat_transfer == 'diathermal':
+        extra_args['convection_coefficient'] = 1.
+        extra_args['convection_temperature'] = 300.
+        extra_args['radiative_emissivity'] = 1.
+        extra_args['radiation_temperature'] = 300.
+        extra_args['shape_dimension_dict'] = {'shape': shape, 'char. length': 1.e-3}
+
+    try:
+        HomogeneousReactor(mechanism, mix,
+                           configuration=configuration,
+                           heat_transfer=heat_transfer,
+                           mass_transfer=mass_transfer,
+                           **extra_args)
+        return True
+    except:
+        return False
+
+
+def integrate_a_few_steps(configuration, mass_transfer, heat_transfer, shape):
+    air = mechanism.stream(stp_air=True)
+    fuel = mechanism.stream('X', 'H2:1')
+
+    mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+    mix.TP = 1200., 101325.
+
+    feed = mechanism.copy_stream(mix)
+
+    tau = 1.e-3
+
+    extra_args = dict()
+    if mass_transfer == 'open':
+        if configuration == 'isobaric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['mixing_tau'] = tau
+        elif configuration == 'isochoric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['feed_density'] = feed.density
+            extra_args['mixing_tau'] = tau
+    if heat_transfer == 'diathermal':
+        extra_args['convection_coefficient'] = 1.
+        extra_args['convection_temperature'] = 300.
+        extra_args['radiative_emissivity'] = 1.
+        extra_args['radiation_temperature'] = 300.
+        extra_args['shape_dimension_dict'] = {'shape': shape, 'char. length': 1.e-3}
+
+    try:
+        reactor = HomogeneousReactor(mechanism, mix,
+                                     configuration=configuration,
+                                     heat_transfer=heat_transfer,
+                                     mass_transfer=mass_transfer,
+                                     **extra_args)
+        reactor.integrate_to_time(final_time=1.e-6,
+                                  first_time_step=1.e-7,
+                                  minimum_time_step_count=1)
+        return True
+    except:
+        return False
+
+
+def integrate_steady(configuration, mass_transfer, heat_transfer, shape):
+    air = mechanism.stream(stp_air=True)
+    fuel = mechanism.stream('X', 'H2:1')
+
+    mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+    mix.TP = 1200., 101325.
+
+    feed = mechanism.copy_stream(mix)
+
+    tau = 1.e-3
+
+    extra_args = dict()
+    if mass_transfer == 'open':
+        if configuration == 'isobaric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['mixing_tau'] = tau
+        elif configuration == 'isochoric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['feed_density'] = feed.density
+            extra_args['mixing_tau'] = tau
+    if heat_transfer == 'diathermal':
+        extra_args['convection_coefficient'] = 1.
+        extra_args['convection_temperature'] = 300.
+        extra_args['radiative_emissivity'] = 1.
+        extra_args['radiation_temperature'] = 300.
+        extra_args['shape_dimension_dict'] = {'shape': shape, 'char. length': 1.e-3}
+
+    try:
+        reactor = HomogeneousReactor(mechanism, mix,
+                                     configuration=configuration,
+                                     heat_transfer=heat_transfer,
+                                     mass_transfer=mass_transfer,
+                                     **extra_args)
+        reactor.integrate_to_steady(steady_tolerance=1.e-4,
+                                    transient_tolerance=1.e-8)
+        num_time_steps = reactor.solution_times.size
+        return 20 < num_time_steps < 300
+    except:
+        return False
+
+
+def adiabatic_closed_ignition_delay(configuration):
+    air = mechanism.stream(stp_air=True)
+    fuel = mechanism.stream('X', 'H2:1')
+
+    mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+    mix.TP = 1200., 101325.
+
+    try:
+        reactor = HomogeneousReactor(mechanism, mix,
+                                     configuration=configuration,
+                                     heat_transfer='adiabatic',
+                                     mass_transfer='closed')
+        t_ignition_1 = reactor.compute_ignition_delay(transient_tolerance=1.e-8)
+        t_ignition_2 = reactor.compute_ignition_delay(transient_tolerance=1.e-10)
+        err_pct = (t_ignition_1 - t_ignition_2) / t_ignition_2
+        return err_pct < 0.05
+    except:
+        return False
+
+
+def adiabatic_closed_steady_after_ignition(configuration):
+    air = mechanism.stream(stp_air=True)
+    fuel = mechanism.stream('X', 'H2:1')
+
+    mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+    mix.TP = 1200., 101325.
+
+    try:
+        reactor = HomogeneousReactor(mechanism, mix,
+                                     configuration=configuration,
+                                     heat_transfer='adiabatic',
+                                     mass_transfer='closed')
+        reactor.integrate_to_steady_after_ignition()
+        return True
+    except:
+        return False
+
+
+def insitu_processing(configuration, mass_transfer, heat_transfer):
+    air = mechanism.stream(stp_air=True)
+    fuel = mechanism.stream('X', 'H2:1')
+
+    mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+    mix.TP = 1200., 101325.
+
+    feed = mechanism.copy_stream(mix)
+
+    tau = 1.e-3
+
+    extra_args = dict()
+    if mass_transfer == 'open':
+        if configuration == 'isobaric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['mixing_tau'] = tau
+        elif configuration == 'isochoric':
+            extra_args['feed_temperature'] = feed.T
+            extra_args['feed_mass_fractions'] = feed.Y
+            extra_args['feed_density'] = feed.density
+            extra_args['mixing_tau'] = tau
+    if heat_transfer == 'diathermal':
+        extra_args['convection_coefficient'] = 1.
+        extra_args['convection_temperature'] = 300.
+        extra_args['radiative_emissivity'] = 1.
+        extra_args['radiation_temperature'] = 300.
+        extra_args['shape_dimension_dict'] = {'shape': 'sphere', 'char. length': 1.e-3}
+
+    try:
+        reactor = HomogeneousReactor(mechanism, mix,
+                                     configuration=configuration,
+                                     heat_transfer=heat_transfer,
+                                     mass_transfer=mass_transfer,
+                                     **extra_args)
+        reactor.insitu_process_cantera_method('enthalpy_mass')
+        reactor.insitu_process_quantity(
+            ['temperature', 'density', 'pressure', 'energy', 'enthalpy', 'heat capacity cv', 'heat capacity cp',
+             'mass fractions', 'mole fractions', 'production rates', 'heat release rate', 'eigenvalues'])
+        reactor.insitu_process_cema(True, True, True)
+
+        tol = np.sqrt(np.finfo(float).eps)
+        test_success = True
+
+        # specify a state vector
+        data_dict = reactor.process_quantities_on_state(reactor.initial_state)
+        test_success = test_success and np.abs(mix.T - data_dict['temperature'][0]) / mix.T < tol
+        test_success = test_success and np.abs(mix.P - data_dict['pressure'][0]) / mix.P < tol
+        test_success = test_success and np.abs(mix.density - data_dict['density'][0]) / mix.density < tol
+        test_success = test_success and np.abs(mix.enthalpy - data_dict['enthalpy'][0]) / mix.enthalpy_mass < tol
+        test_success = test_success and np.abs(mix.int_energy - data_dict['energy'][0]) / mix.int_energy_mass < tol
+        test_success = test_success and np.abs(mix.cv_mass - data_dict['heat capacity cv'][0]) / mix.cv_mass < tol
+        test_success = test_success and np.abs(mix.cp_mass - data_dict['heat capacity cp'][0]) / mix.cp_mass < tol
+
+        # specify a stream
+        data_dict = reactor.process_quantities_on_state(mix)
+        test_success = test_success and np.abs(mix.T - data_dict['temperature'][0]) / mix.T < tol
+        test_success = test_success and np.abs(mix.P - data_dict['pressure'][0]) / mix.P < tol
+        test_success = test_success and np.abs(mix.density - data_dict['density'][0]) / mix.density < tol
+        test_success = test_success and np.abs(mix.enthalpy - data_dict['enthalpy'][0]) / mix.enthalpy_mass < tol
+        test_success = test_success and np.abs(mix.int_energy - data_dict['energy'][0]) / mix.int_energy_mass < tol
+        test_success = test_success and np.abs(mix.cv_mass - data_dict['heat capacity cv'][0]) / mix.cv_mass < tol
+        test_success = test_success and np.abs(mix.cp_mass - data_dict['heat capacity cp'][0]) / mix.cp_mass < tol
+
+        return test_success
+    except:
+        return False
+
+
+def create_test(test_method, c, m=None, h=None, s=None):
+    if test_method == 'construct':
+        def test(self):
+            self.assertTrue(construct_reactor(c, m, h, s))
+    elif test_method == 'integrate_a_few_steps':
+        def test(self):
+            self.assertTrue(integrate_a_few_steps(c, m, h, s))
+    elif test_method == 'integrate_steady':
+        def test(self):
+            self.assertTrue(integrate_steady(c, m, h, s))
+    elif test_method == 'ignition_delay':
+        def test(self):
+            self.assertTrue(adiabatic_closed_ignition_delay(c))
+    elif test_method == 'steady_after_ignition':
+        def test(self):
+            self.assertTrue(adiabatic_closed_steady_after_ignition(c))
+    elif test_method == 'insitu_processing_coverage':
+        def test(self):
+            self.assertTrue(insitu_processing(c, m, h))
+
+    return test
+
+
+class Construction(unittest.TestCase):
+    pass
+
+
+shape = list(HomogeneousReactor.get_supported_reactor_shapes())[0]
+for configuration in ['isobaric', 'isochoric']:
+    for mass_transfer in ['closed', 'open']:
+        for heat_transfer in ['adiabatic', 'isothermal', 'diathermal']:
+            testname = 'test_construct_reactor_' + configuration + \
+                       '_' + mass_transfer + \
+                       '_' + heat_transfer + \
+                       '_' + shape
+            setattr(Construction, testname, create_test('construct',
+                                                        configuration,
+                                                        mass_transfer,
+                                                        heat_transfer,
+                                                        shape))
+            testname = 'test_integrate_a_few_steps_' + configuration + \
+                       '_' + mass_transfer + \
+                       '_' + heat_transfer + \
+                       '_' + shape
+            setattr(Construction, testname, create_test('integrate_a_few_steps',
+                                                        configuration,
+                                                        mass_transfer,
+                                                        heat_transfer,
+                                                        shape))
+            testname = 'test_integrate_steady_' + configuration + \
+                       '_' + mass_transfer + \
+                       '_' + heat_transfer + \
+                       '_' + shape
+            setattr(Construction, testname, create_test('integrate_steady',
+                                                        configuration,
+                                                        mass_transfer,
+                                                        heat_transfer,
+                                                        'cube'))
+
+            testname = 'test_insitu_processing_coverage_' + configuration + '_' + mass_transfer + '_' + heat_transfer
+            setattr(Construction, testname,
+                    create_test('insitu_processing_coverage', configuration, mass_transfer, heat_transfer))
+
+    testname = 'test_compute_ignition_delay_adiabatic_closed_' + configuration
+    setattr(Construction, testname, create_test('ignition_delay', configuration))
+
+    testname = 'test_compute_steady_after_ignition_adiabatic_closed_' + configuration
+    setattr(Construction, testname, create_test('steady_after_ignition', configuration))
+
+if __name__ == '__main__':
+    unittest.main()

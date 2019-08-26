@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>5.1.1.3.1.4. spitfire.time.stepcontrol module &#8212; Spitfire 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="5.1.1.3.1.3. spitfire.time.nonlinear module" href="spitfire.time.nonlinear.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="index.html">
+          <span>Spitfire 1.0 documentation</span></a></h1>
+        <h2 class="heading"><span>5.1.1.3.1.4. spitfire.time.stepcontrol module</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.time.nonlinear.html">5.1.1.3.1.3. spitfire.time.nonlinear module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-spitfire.time.stepcontrol">
+<span id="spitfire-time-stepcontrol-module"></span><h1>5.1.1.3.1.4. spitfire.time.stepcontrol module<a class="headerlink" href="#module-spitfire.time.stepcontrol" title="Permalink to this headline">¶</a></h1>
+<p>This module contains controllers for adaptive time stepping based on embedded temporal error estimation.</p>
+<dl class="class">
+<dt id="spitfire.time.stepcontrol.CascadeController">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.stepcontrol.</code><code class="sig-name descname">CascadeController</code><span class="sig-paren">(</span><em class="sig-param">kp=0.06666666667</em>, <em class="sig-param">ki=0.1333333333</em>, <em class="sig-param">ratio_kp=0.1</em>, <em class="sig-param">ratio_ki=0.3</em>, <em class="sig-param">initial_target_error=1e-10</em>, <em class="sig-param">target_ratio=0.01</em>, <em class="sig-param">max_step=0.001</em>, <em class="sig-param">max_ramp=1.1</em>, <em class="sig-param">first_step=1e-06</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.CascadeController" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A two-level cascade control system on the embedded temporal error estimate and the ratio of two estimates.</p>
+<blockquote>
+<div><p>The stepper method must support multiple embedded error estimates.</p>
+</div></blockquote>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kp</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the proportional control mode for the error controller (default: 0.06666666667)</p>
+</dd>
+<dt><strong>ki</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the integral control mode for the error controller (default: 0.1333333333)</p>
+</dd>
+<dt><strong>ratio_kp</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the proportional control mode for the ratio controller (default: 0.1)</p>
+</dd>
+<dt><strong>ratio_ki</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the integral control mode for the ratio controller (default: 0.3)</p>
+</dd>
+<dt><strong>target_ratio</strong><span class="classifier">float</span></dt><dd><p>the value of the target ratio for the controller (default: 1.e-2)</p>
+</dd>
+<dt><strong>initial_target_error</strong><span class="classifier">float</span></dt><dd><p>the initial value of the target error for the controller (default: 1.e-10)</p>
+</dd>
+<dt><strong>max_step</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable time step (default: 1.e-3)</p>
+</dd>
+<dt><strong>max_ramp</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable rate of increase of the time step (default: 1.1)</p>
+</dd>
+<dt><strong>first_step</strong><span class="classifier">float</span></dt><dd><p>the initial step size (default: 1.e-6)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.CascadeController.first_step_size">
+<code class="sig-name descname">first_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.CascadeController.first_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the initial step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.CascadeController.last_step_size">
+<code class="sig-name descname">last_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.CascadeController.last_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most recent step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.CascadeController.step_size_is_constant">
+<code class="sig-name descname">step_size_is_constant</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.CascadeController.step_size_is_constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether or not this controller has a constant or variable step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.CascadeController.target_error">
+<code class="sig-name descname">target_error</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.CascadeController.target_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most target error, needed here just to avoid a base class</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.stepcontrol.ConstantTimeStep">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.stepcontrol.</code><code class="sig-name descname">ConstantTimeStep</code><span class="sig-paren">(</span><em class="sig-param">step_size</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.ConstantTimeStep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A simple wrapper class for a constant time step.</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>step_size</strong><span class="classifier">float</span></dt><dd><p>the size of the time step</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.ConstantTimeStep.first_step_size">
+<code class="sig-name descname">first_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.ConstantTimeStep.first_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the initial step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.ConstantTimeStep.last_step_size">
+<code class="sig-name descname">last_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.ConstantTimeStep.last_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most recent step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.ConstantTimeStep.step_size_is_constant">
+<code class="sig-name descname">step_size_is_constant</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.ConstantTimeStep.step_size_is_constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether or not this controller has a constant or variable step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.ConstantTimeStep.target_error">
+<code class="sig-name descname">target_error</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.ConstantTimeStep.target_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most target error, needed here just to avoid a base class</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.stepcontrol.PIController">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.stepcontrol.</code><code class="sig-name descname">PIController</code><span class="sig-paren">(</span><em class="sig-param">kp=0.06666666667</em>, <em class="sig-param">ki=0.1333333333</em>, <em class="sig-param">target_error=1e-10</em>, <em class="sig-param">max_step=0.001</em>, <em class="sig-param">max_ramp=1.1</em>, <em class="sig-param">first_step=1e-06</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.PIController" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A PI controller on the embedded temporal error estimate</p>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kp</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the proportional control mode (default: 0.06666666667)</p>
+</dd>
+<dt><strong>ki</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the integral control mode (default: 0.1333333333)</p>
+</dd>
+<dt><strong>target_error</strong><span class="classifier">float</span></dt><dd><p>the target error for the controller (default: 1.e-10)</p>
+</dd>
+<dt><strong>max_step</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable time step (default: 1.e-3)</p>
+</dd>
+<dt><strong>max_ramp</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable rate of increase of the time step (default: 1.1)</p>
+</dd>
+<dt><strong>first_step</strong><span class="classifier">float</span></dt><dd><p>the initial step size (default: 1.e-6)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.PIController.first_step_size">
+<code class="sig-name descname">first_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.PIController.first_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the initial step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.PIController.last_step_size">
+<code class="sig-name descname">last_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.PIController.last_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most recent step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.PIController.step_size_is_constant">
+<code class="sig-name descname">step_size_is_constant</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.PIController.step_size_is_constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether or not this controller has a constant or variable step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.PIController.target_error">
+<code class="sig-name descname">target_error</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.PIController.target_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most target error, needed here just to avoid a base class</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="spitfire.time.stepcontrol.RatioController">
+<em class="property">class </em><code class="sig-prename descclassname">spitfire.time.stepcontrol.</code><code class="sig-name descname">RatioController</code><span class="sig-paren">(</span><em class="sig-param">kp=0.1</em>, <em class="sig-param">ki=0.3</em>, <em class="sig-param">target_ratio=0.01</em>, <em class="sig-param">max_step=0.001</em>, <em class="sig-param">max_ramp=1.1</em>, <em class="sig-param">first_step=1e-06</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.RatioController" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A PI controller on the ratio of two embedded temporal error estimates</p>
+<blockquote>
+<div><p>The stepper method must support multiple embedded error estimates.</p>
+</div></blockquote>
+<p><strong>Constructor</strong>:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kp</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the proportional control mode (default: 0.1)</p>
+</dd>
+<dt><strong>ki</strong><span class="classifier">float</span></dt><dd><p>the modal gain of the integral control mode (default: 0.3)</p>
+</dd>
+<dt><strong>target_ratio</strong><span class="classifier">float</span></dt><dd><p>the target error ratio for the controller (default: 1.e-2)</p>
+</dd>
+<dt><strong>max_step</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable time step (default: 1.e-3)</p>
+</dd>
+<dt><strong>max_ramp</strong><span class="classifier">float</span></dt><dd><p>the maximum allowable rate of increase of the time step (default: 1.1)</p>
+</dd>
+<dt><strong>first_step</strong><span class="classifier">float</span></dt><dd><p>the initial step size (default: 1.e-6)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.RatioController.first_step_size">
+<code class="sig-name descname">first_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.RatioController.first_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the initial step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.RatioController.last_step_size">
+<code class="sig-name descname">last_step_size</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.RatioController.last_step_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most recent step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.RatioController.step_size_is_constant">
+<code class="sig-name descname">step_size_is_constant</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.RatioController.step_size_is_constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether or not this controller has a constant or variable step size</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="spitfire.time.stepcontrol.RatioController.target_error">
+<code class="sig-name descname">target_error</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#spitfire.time.stepcontrol.RatioController.target_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the most target error, needed here just to avoid a base class</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="spitfire.time.nonlinear.html">5.1.1.3.1.3. spitfire.time.nonlinear module</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2019.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

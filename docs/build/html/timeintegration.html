@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>2. Time Integration &#8212; Spitfire 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3. Solving Combustion Problems in Spitfire" href="combustion.html" />
+    <link rel="prev" title="1. Introduction" href="introduction.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="index.html">
+          <span>Spitfire 1.0 documentation</span></a></h1>
+        <h2 class="heading"><span>2. Time Integration</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="introduction.html">1. Introduction</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="combustion.html">3. Solving Combustion Problems in Spitfire</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="time-integration">
+<h1>2. Time Integration<a class="headerlink" href="#time-integration" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="methods-for-first-order-ordinary-differential-equations">
+<h2>2.1. Methods for First-Order Ordinary Differential Equations<a class="headerlink" href="#methods-for-first-order-ordinary-differential-equations" title="Permalink to this headline">¶</a></h2>
+<p>Spitfire can solve general differential equations (DEs) that can be written in explicit ordinary differential equation (ODE) form,</p>
+<div class="math notranslate nohighlight" id="equation-general-explicit-ode">
+<span class="eqno">(2.1)<a class="headerlink" href="#equation-general-explicit-ode" title="Permalink to this equation">¶</a></span>\[\frac{\partial \boldsymbol{q}}{\partial t} = \boldsymbol{r}(t, \boldsymbol{q}),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{q}=[q_1,q_2,\ldots]\)</span> is the vector of state variables
+and <span class="math notranslate nohighlight">\(\boldsymbol{r}=[r_1,r_2,\ldots]\)</span> is the vector of right-hand side functions.
+Many systems of scientific and engineering interest fit into this form,
+either as ODEs derived naturally as <a class="reference internal" href="#equation-general-explicit-ode">(2.1)</a> or as
+partial differential equations (PDEs) in semi-discrete form (after spatial, but not temporal, discretization).
+Spitfire does not currently support implicit differential equations or differential algebraic equation (DAE) systems
+represented generally as <span class="math notranslate nohighlight">\(\mathrm{M}\dot{\boldsymbol{q}}=\boldsymbol{r}(t,\boldsymbol{q})\)</span> for a possibly singular matrix <span class="math notranslate nohighlight">\(\mathrm{M}\)</span>.</p>
+<p>Spitfire provides a number of explicit and implicit numerical methods of solving DE systems in the form of <a class="reference internal" href="#equation-general-explicit-ode">(2.1)</a>.
+All of these methods may be classified as one-step Runge-Kutta methods.
+Spitfire does not yet support multi-step methods such as BDF or Adams methods, or general linear methods.
+Additionally Spitfire’s abstraction does not support fully-implicit Runge-Kutta methods (singly-diagonally implicit <cite>is</cite> supported).
+Finally Spitfire does not (yet!) support implicit-explicit methods such as additive Runge-Kutta or operator splitting techniques.</p>
+<p>The explicit methods provided are:</p>
+<ul class="simple">
+<li><p>Forward Euler: <code class="docutils literal notranslate"><span class="pre">ForwardEuler</span></code></p></li>
+<li><p>Midpoint method: <code class="docutils literal notranslate"><span class="pre">ExplicitRungeKutta2Midpoint</span></code></p></li>
+<li><p>Trapezoidal method: <code class="docutils literal notranslate"><span class="pre">ExplicitRungeKutta2Trapezoid</span></code></p></li>
+<li><p>Ralston’s two-stage method: <code class="docutils literal notranslate"><span class="pre">ExplicitRungeKutta2Ralston</span></code></p></li>
+<li><p>Heun’s three-stage method: <code class="docutils literal notranslate"><span class="pre">ExplicitRungeKutta3Kutta</span></code></p></li>
+<li><p>The ‘classical’ RK4 method: <code class="docutils literal notranslate"><span class="pre">ExplicitRungeKutta4Classical</span></code></p></li>
+<li><p>The Cash-Karp order 4 method: <code class="docutils literal notranslate"><span class="pre">AdaptiveERK54CashKarp</span></code></p></li>
+<li><p>A general-purpose explicit RK method that can use any explicit Butcher table provided by the user: <code class="docutils literal notranslate"><span class="pre">GeneralAdaptiveExplicitRungeKutta</span></code></p></li>
+</ul>
+<p>Implicit methods that come with Spitfire are:</p>
+<ul class="simple">
+<li><p>Backward Euler (BDF1): <code class="docutils literal notranslate"><span class="pre">BackwardEuler</span></code></p></li>
+<li><p>Crank-Nicolson (implicit Trapezoidal): <code class="docutils literal notranslate"><span class="pre">CrankNicolson</span></code></p></li>
+<li><p>Midpoint method: <code class="docutils literal notranslate"><span class="pre">ImplicitMidpoint</span></code></p></li>
+<li><p>Two-stage, L-stable, order 2 method: <code class="docutils literal notranslate"><span class="pre">SDIRK22</span></code></p></li>
+<li><p>Six-stage, L-stable, order 4 method with stage order two: <code class="docutils literal notranslate"><span class="pre">ESDIRK64</span></code></p></li>
+</ul>
+<p>Spitfire provides the above ODE methods ‘out of the box’ and also facilitates the use of additional methods defined by the user.
+In addition to the above general-purpose methods,
+Spitfire can do error-based adaptive time-stepping with the following methods:</p>
+<ul class="simple">
+<li><p>explicit: Euler-Trapezoidal order 2 method: <code class="docutils literal notranslate"><span class="pre">AdaptiveERK21HeunEuler</span></code></p></li>
+<li><p>explicit: Cash-Karp order 4 method: <code class="docutils literal notranslate"><span class="pre">AdaptiveERK54CashKarp</span></code></p></li>
+<li><p>implicit: backward Euler: <code class="docutils literal notranslate"><span class="pre">BackwardEulerWithError</span></code></p></li>
+<li><p>implicit: six-stage, L-stable, order 4 method: <code class="docutils literal notranslate"><span class="pre">ESDIRK64</span></code></p></li>
+</ul>
+<p>With the time-steppers listed above, Spitfire provides several means of driving a simulation in time.
+All simulations, whether with explicit or implicit methods, with a constant or adaptive time step, are driven by Spitfire’s <code class="docutils literal notranslate"><span class="pre">Governor</span></code> class.
+The governor manages the logging of information and in-situ post-processing of user data as the simulation proceeds.
+It also manages the evaluation of the Jacobian/preconditioning matrix used in implicit methods, depending upon performance
+of nonlinear and linear solvers in each implicit time step.</p>
+</div>
+<div class="section" id="spitfire-s-abstraction-of-the-solver-stack">
+<h2>2.2. Spitfire’s Abstraction of the Solver Stack<a class="headerlink" href="#spitfire-s-abstraction-of-the-solver-stack" title="Permalink to this headline">¶</a></h2>
+<p>When ODEs such as <a class="reference internal" href="#equation-general-explicit-ode">(2.1)</a> are solved with implicit time integration methods, a nonlinear system of equations must be solved at each time step.
+The nonlinear system can be written in terms of a nonlinear operator <span class="math notranslate nohighlight">\(\boldsymbol{\mathcal{N}}\)</span>,</p>
+<div class="math notranslate nohighlight" id="equation-eqn-simple-nlin">
+<span class="eqno">(2.2)<a class="headerlink" href="#equation-eqn-simple-nlin" title="Permalink to this equation">¶</a></span>\[\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}.\]</div>
+<p>A corresponding approximate linear operator <span class="math notranslate nohighlight">\(\widetilde{\mathrm{A}}\)</span> is required in solving an exact linear problem required by the nonlinear problem,</p>
+<div class="math notranslate nohighlight" id="equation-eqn-simple-lin">
+<span class="eqno">(2.3)<a class="headerlink" href="#equation-eqn-simple-lin" title="Permalink to this equation">¶</a></span>\[\widetilde{\mathrm{A}} = \bar{p}\widetilde{\boldsymbol{\mathcal{N}}_{\boldsymbol{q}}} - \mathcal{I} \quad \rightarrow \quad \mathrm{solving}\, \left[\bar{p}\boldsymbol{\mathcal{N}}_{\boldsymbol{q}} - \mathrm{I}\right]\boldsymbol{x}=\boldsymbol{b},\]</div>
+<p>where the prefactor <span class="math notranslate nohighlight">\(\bar{p}=ph\)</span> consists of the temporal discretization coefficient <span class="math notranslate nohighlight">\(p\)</span> and time step size <span class="math notranslate nohighlight">\(h\)</span>, the identity operator <span class="math notranslate nohighlight">\(\mathcal{I}\)</span>, and identity matrix <span class="math notranslate nohighlight">\(\mathrm{I}\)</span>, and the <span class="math notranslate nohighlight">\(\widetilde{\boldsymbol{\mathcal{N}}_{\boldsymbol{q}}}\)</span> operator, an approximation of the Jacobian matrix <span class="math notranslate nohighlight">\(\boldsymbol{\mathcal{N}}_{\boldsymbol{q}}\)</span>.
+Nonlinear solution procedures typically require the repeated action of the inverse of the <span class="math notranslate nohighlight">\(\mathrm{A}\)</span> operator, which can often be optimized by breaking it up into a costly setup phase (<em>e.g.</em>, factorization, preconditioner computation) and cheaper solve phase (<em>e.g.</em>, back-solution after factorization) so that the setup is called once per solve while setup is called many times.
+The linear problem is a subset of the nonlinear problem, which itself is a subset of each single time step (<span class="math notranslate nohighlight">\(t^n\to t^{n+1}\)</span>), which is a subset of a time integration loop with possibly adaptive time stepping (varying <span class="math notranslate nohighlight">\(h\)</span> in time).
+These five pieces form the backbone of time integration with implicit methods.
+In Spitfire these are viewed as the <code class="docutils literal notranslate"><span class="pre">Governor</span></code> (time loop), <code class="docutils literal notranslate"><span class="pre">StepController</span></code> (<span class="math notranslate nohighlight">\(h\)</span> adaptation), <code class="docutils literal notranslate"><span class="pre">TimeStepper</span></code> (single step method), <code class="docutils literal notranslate"><span class="pre">NonlinearSolver</span></code> (solve <span class="math notranslate nohighlight">\(\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}\)</span>), and finally the <code class="docutils literal notranslate"><span class="pre">setup</span></code> and <code class="docutils literal notranslate"><span class="pre">solve</span></code> procedures for the linear solve (build the approximate linear operator’s inverse and repeatedly apply it, respectively).</p>
+<div class="section" id="using-explicit-methods">
+<h3>2.2.1. Using Explicit Methods<a class="headerlink" href="#using-explicit-methods" title="Permalink to this headline">¶</a></h3>
+<p>Note that when explicit methods are used to solve <a class="reference internal" href="#equation-general-explicit-ode">(2.1)</a>, things are simplified dramatically because only the <code class="docutils literal notranslate"><span class="pre">Governor</span></code>, <code class="docutils literal notranslate"><span class="pre">StepController</span></code>, and <code class="docutils literal notranslate"><span class="pre">TimeStepper</span></code> behavior is needed.
+The use of explicit methods is demonstrated by several scripts in the <cite>demo/time_integration</cite> folder.
+For example, the <cite>ballistics.py</cite> (and jupyter notebook version <cite>ballistics-demo.ipynb</cite>), <cite>chemistry-abc.py</cite>, <cite>ecology.py</cite>, and <cite>exponential_decay.py</cite> scripts use explicit methods to solve various specific cases of <a class="reference internal" href="#equation-general-explicit-ode">(2.1)</a>.
+Using Spitfire is quite simple here, as the use of the governor simply requires the specification of a termination criterion:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">governor</span> <span class="o">=</span> <span class="n">Governor</span><span class="p">()</span>
+<span class="n">governor</span><span class="o">.</span><span class="n">termination_criteria</span> <span class="o">=</span> <span class="n">FinalTime</span><span class="p">(</span><span class="n">final_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>and then the call to the integration method, which is given a right-hand side function as in <a class="reference internal" href="#equation-general-explicit-ode">(2.1)</a>,
+an initial condition, a step controller (or if the <span class="math notranslate nohighlight">\(h\)</span> is constant, the value of <span class="math notranslate nohighlight">\(h\)</span>),
+and an instance of the <code class="docutils literal notranslate"><span class="pre">TimeStepper</span></code> method to use (this example is from <cite>chemistry-abc.py</cite>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">governor</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">right_hand_side</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">right_hand_side</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">k_ab</span><span class="p">,</span> <span class="n">k_bc</span><span class="p">),</span>
+                   <span class="n">initial_condition</span><span class="o">=</span><span class="n">c0</span><span class="p">,</span>
+                   <span class="n">controller</span><span class="o">=</span><span class="n">time_step_size</span><span class="p">,</span>
+                   <span class="n">method</span><span class="o">=</span><span class="n">ExplicitRungeKutta4Classical</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>In order to save data from the simulation, we make a container and provide its <code class="docutils literal notranslate"><span class="pre">save_data</span></code> method to the governor before calling <code class="docutils literal notranslate"><span class="pre">integrate</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">SaveAllDataToList</span><span class="p">(</span><span class="n">initial_solution</span><span class="o">=</span><span class="n">c0</span><span class="p">)</span>
+<span class="n">governor</span><span class="o">.</span><span class="n">custom_post_process_step</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">save_data</span>
+</pre></div>
+</div>
+<p>This lets us obtain the solution times and values as follows, for instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">t</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">t_list</span>
+<span class="n">q0</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">solution_list</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>To use an adaptive time stepping approach based on temporal error control, one can build a <code class="docutils literal notranslate"><span class="pre">PIController</span></code> instance and
+use a method such as <code class="docutils literal notranslate"><span class="pre">AdaptiveERK54CashKarp</span></code>.
+The corresponding integration call would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">governor</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">right_hand_side</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">right_hand_side</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">k_ab</span><span class="p">,</span> <span class="n">k_bc</span><span class="p">),</span>
+                   <span class="n">initial_condition</span><span class="o">=</span><span class="n">c0</span><span class="p">,</span>
+                   <span class="n">controller</span><span class="o">=</span><span class="n">PIController</span><span class="p">(),</span>
+                   <span class="n">method</span><span class="o">=</span><span class="n">AdaptiveERK54CashKarp</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>As a final note, many of the instances we’ve built for the step controller and time steppers can be built with
+optional parameters (<em>e.g.</em> the desired target error for the step controller, or the first time step).
+In many cases default values are mostly acceptable.
+See the module documentation to learn about available parameters.</p>
+</div>
+<div class="section" id="using-implicit-methods">
+<h3>2.2.2. Using Implicit Methods<a class="headerlink" href="#using-implicit-methods" title="Permalink to this headline">¶</a></h3>
+<p>Implicit methods may actually be used nearly as easily as explicit methods in simple cases.
+In the <cite>exponential_decay.py</cite> script, the Backward Euler method is used and its integrate call is quite simple:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">governor</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">right_hand_side</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">right_hand_side</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">k</span><span class="p">),</span>
+                   <span class="n">initial_condition</span><span class="o">=</span><span class="n">c0</span><span class="p">,</span>
+                   <span class="n">controller</span><span class="o">=</span><span class="n">time_step_size</span><span class="p">,</span>
+                   <span class="n">method</span><span class="o">=</span><span class="n">BackwardEuler</span><span class="p">(</span><span class="n">SimpleNewtonSolver</span><span class="p">()))</span>
+</pre></div>
+</div>
+<p>The only distinction between this and the explicit methods is that the <code class="docutils literal notranslate"><span class="pre">BackwardEuler</span></code> instance is built with a
+<code class="docutils literal notranslate"><span class="pre">SimpleNewtonSolver</span></code> object for solving the nonlinear system.
+This simplicity is present in this case because we are letting Spitfire use a default dense linear solver (LU factorization and back-solution with LAPACK)
+and a finite difference approximation to the Jacobian matrix.
+In cases where a dense solver is appropriate this is a convenient option that will work very generally.</p>
+<p>However, the challenge in efficiently using implicit methods for large problems is that the dense linear solver and
+finite differenced Jacobian will not scale well.
+For problems like nonpremixed flamelets described in the combustion section, this strategy is completely impractical.
+Even in cases like the homogeneous reactors (also in the combustion section), where LAPACK is used, the finite
+difference approximation to the Jacobian is too expensive and scales poorly with problem size.
+For these reasons Spitfire provides the option of customizing the linear solver details.</p>
+<p>As discussed above, solution of the linear system can often be broken down into a <code class="docutils literal notranslate"><span class="pre">setup</span></code> phase and a <code class="docutils literal notranslate"><span class="pre">solve</span></code> phase.
+The setup phase might involve evaluation and factorization of the Jacobian matrix or assembly of a precoditioning matrix (for a Krylov solver).
+The solve phase might involve back-solution with a direct solver such as LU, sparse LU, or a specialized direct algorithm,
+or it might use a Krylov method like GMRES, CG, BiCGStab, <em>etc.</em>, possibly in a matrix-free manner.
+Spitfire builds the separation of the <code class="docutils literal notranslate"><span class="pre">setup</span></code> and <code class="docutils literal notranslate"><span class="pre">solve</span></code> phases into the abstraction.</p>
+<p>For a simple example of an implicit method with a customized linear solver, see the <cite>demo/time_integration/chemistry_abc_implicit.py</cite> script.
+In this script a <code class="docutils literal notranslate"><span class="pre">ChemistryProblem</span></code> class we use LAPACK LU factorization of the Jacobian matrix, computed from a closed analytical result.
+A <code class="docutils literal notranslate"><span class="pre">lhs_inverse_op</span></code> is stored in the <code class="docutils literal notranslate"><span class="pre">setup</span></code> phase when we build the augmented Jacobian matrix, <span class="math notranslate nohighlight">\(\bar{p}\boldsymbol{\mathcal{N}}_{\boldsymbol{q}} - \mathrm{I}\)</span>,
+and it is then used when we compute the solution of the linear system given a residual argument.
+Note that the <code class="docutils literal notranslate"><span class="pre">setup</span></code> method takes two arguments: the prefactor <span class="math notranslate nohighlight">\(\bar{p}\)</span> and the state vector.
+The prefactor, <span class="math notranslate nohighlight">\(\bar{p}=ph\)</span>, is provided to this function when called by the <code class="docutils literal notranslate"><span class="pre">Governor</span></code> and/or <code class="docutils literal notranslate"><span class="pre">NonlinearSolver</span></code> and incorporates
+the temporal discretization coefficient <span class="math notranslate nohighlight">\(p\)</span> from the <code class="docutils literal notranslate"><span class="pre">TimeStepper</span></code> and time step <span class="math notranslate nohighlight">\(h\)</span> from the <code class="docutils literal notranslate"><span class="pre">Governor</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">solve</span></code> method then takes only the residual vector and produces the solution to the linear problem.
+These methods are fed to the <code class="docutils literal notranslate"><span class="pre">Governor</span></code>’s integrate method as the <code class="docutils literal notranslate"><span class="pre">projector_setup</span></code> and <code class="docutils literal notranslate"><span class="pre">projector_solve</span></code> arguments.
+This demonstration shows how to use the LAPACK method as well as a simple (silly in this case) diagonal approximation of the Jacobian,
+which is a common simple preconditioner for Krylov methods.
+Careful inspection of Spitfire’s output for those cases shows that using the diagonal approximation increases the required
+nonlinear iteration count from 170 (LU of the full Jacobian) to 276, over a 60% increase (the linear solve does not provide a good direction for the Newton update).
+The version that uses LAPACK is shown below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ChemistryProblem</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class defines the right-hand side, setup, and solve methods for implicit methods with custom linear solvers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k_ab</span><span class="p">,</span> <span class="n">k_bc</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_k_ab</span> <span class="o">=</span> <span class="n">k_ab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_k_bc</span> <span class="o">=</span> <span class="n">k_bc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lhs_inverse_op</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_identity_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">rhs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="n">c_a</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">c_b</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">q_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_k_ab</span> <span class="o">*</span> <span class="n">c_a</span>
+        <span class="n">q_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_k_bc</span> <span class="o">*</span> <span class="n">c_a</span> <span class="o">*</span> <span class="n">c_b</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">q_1</span> <span class="o">-</span> <span class="n">q_2</span><span class="p">,</span>
+                         <span class="n">q_1</span> <span class="o">-</span> <span class="n">q_2</span><span class="p">,</span>
+                         <span class="mf">2.</span> <span class="o">*</span> <span class="n">q_2</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">setup_lapack_lu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">prefactor</span><span class="p">):</span>
+        <span class="n">c_a</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">c_b</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">dq1_da</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_k_ab</span>
+        <span class="n">dq1_db</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">dq1_dc</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">dq2_da</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_k_bc</span> <span class="o">*</span> <span class="n">c_b</span>
+        <span class="n">dq2_db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_k_bc</span> <span class="o">*</span> <span class="n">c_a</span>
+        <span class="n">dq2_dc</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="n">dq1_da</span> <span class="o">-</span> <span class="n">dq2_da</span><span class="p">,</span> <span class="o">-</span><span class="n">dq1_db</span> <span class="o">-</span> <span class="n">dq2_db</span><span class="p">,</span> <span class="o">-</span><span class="n">dq1_dc</span> <span class="o">-</span> <span class="n">dq2_dc</span><span class="p">],</span>
+                      <span class="p">[</span><span class="n">dq1_da</span> <span class="o">-</span> <span class="n">dq2_da</span><span class="p">,</span> <span class="n">dq1_db</span> <span class="o">-</span> <span class="n">dq2_db</span><span class="p">,</span> <span class="n">dq1_dc</span> <span class="o">-</span> <span class="n">dq2_dc</span><span class="p">],</span>
+                      <span class="p">[</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">dq2_da</span><span class="p">,</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">dq2_db</span><span class="p">,</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">dq2_dc</span><span class="p">]])</span>
+
+        <span class="n">linear_op</span> <span class="o">=</span> <span class="n">prefactor</span> <span class="o">*</span> <span class="n">J</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_identity_matrix</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lhs_inverse_op</span> <span class="o">=</span> <span class="n">lapack_lu_factor</span><span class="p">(</span><span class="n">linear_op</span><span class="p">)[:</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># the [:2] part here is just an implementation detail of scipy&#39;s lapack wrapper</span>
+
+    <span class="k">def</span> <span class="nf">solve_lapack_lu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">residual</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">lapack_lu_solve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lhs_inverse_op</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">_lhs_inverse_op</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                               <span class="n">residual</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">True</span>      <span class="c1"># the , 1, True parts here are how many iterations were needed and success/failure of the solver</span>
+
+    <span class="o">...</span>
+
+    <span class="n">governor</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">right_hand_side</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">rhs</span><span class="p">,</span>
+               <span class="n">initial_condition</span><span class="o">=</span><span class="n">c0</span><span class="p">,</span>
+               <span class="n">controller</span><span class="o">=</span><span class="n">time_step_size</span><span class="p">,</span>
+               <span class="n">method</span><span class="o">=</span><span class="n">ESDIRK64</span><span class="p">(</span><span class="n">SimpleNewtonSolver</span><span class="p">()),</span>
+               <span class="n">projector_setup</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">setup_lapack_lu</span><span class="p">,</span>
+               <span class="n">projector_solve</span><span class="o">=</span><span class="n">problem</span><span class="o">.</span><span class="n">solve_lapack_lu</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="introduction.html">1. Introduction</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="combustion.html">3. Solving Combustion Problems in Spitfire</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2019.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>
