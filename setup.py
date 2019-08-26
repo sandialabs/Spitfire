@@ -1,11 +1,3 @@
-"""
-Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-You may use, distribute and modify this code under the terms of the MIT license.
-
-You should have received a copy of the MIT license with this file.
-If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-"""
-
 import os
 from distutils.core import setup
 from distutils.extension import Extension
