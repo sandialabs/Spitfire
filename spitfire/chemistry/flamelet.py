@@ -693,6 +693,8 @@ class Flamelet(object):
             if 'density' in self._enabled_insitu_processors:
                 rho = np.zeros(nzi)
                 self._griffon.flamelet_process_density(state, p, nzi, rho)
+                if np.min(rho) < 1.e-14:
+                    raise ValueError('density < 1.e-14 detected!')
                 data_dict['density'].append(np.copy(rho))
 
             if 'heat release rate' in self._enabled_insitu_processors or self._insitu_process_rates:

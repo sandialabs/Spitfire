@@ -2,14 +2,6 @@
 This module contains the HomogeneousReactor class that provides a high-level interface for 0-D reactors
 """
 
-"""
-Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-You may use, distribute and modify this code under the terms of the MIT license.
-
-You should have received a copy of the MIT license with this file.
-If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-"""
-
 from spitfire.time.governor import Governor, CustomTermination, Steady, FinalTime
 from spitfire.time.methods import ESDIRK64
 from spitfire.time.nonlinear import SimpleNewtonSolver
@@ -90,7 +82,7 @@ class HomogeneousReactor(object):
                                   'v->sov': lambda v: 3. * sqrt(6.) / np.power(3. * v / np.sqrt(2.), 1. / 3.)},
                    'icosahedron': {'l->sov': lambda a: 12. * sqrt(3.) / ((3. + sqrt(5.)) * a),
                                    'v->sov': lambda v: 12. * sqrt(3.) / (
-                                       (3. + sqrt(5.)) * np.power(12. * v / 5. / (3. + sqrt(5.)), 1. / 3.))}}
+                                           (3. + sqrt(5.)) * np.power(12. * v / 5. / (3. + sqrt(5.)), 1. / 3.))}}
     _shapes = list(_shape_dict.keys())
 
     @classmethod

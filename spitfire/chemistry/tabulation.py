@@ -2,14 +2,6 @@
 This module contains classes and methods for building tabulated chemistry libraries
 """
 
-"""
-Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-You may use, distribute and modify this code under the terms of the MIT license.
-
-You should have received a copy of the MIT license with this file.
-If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-"""
-
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -484,6 +476,8 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                                   verbose, solver_verbose,
                                                                   return_intermediates=True)
 
+    if verbose:
+        print('integrating enthalpy defect dimension ...', flush=True)
     if num_procs > 1:
         pool = Pool(num_procs)
         manager = Manager()
@@ -510,12 +504,17 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
 
         if verbose:
             print('----------------------------------------------------------------------------------')
-            print('enthalpy defect dimension added in {:6.2f} s'.format(perf_counter() - cput000))
-            print('----------------------------------------------------------------------------------', flush=True)
+            print('enthalpy defect dimension integrated in {:6.2f} s'.format(perf_counter() - cput000), flush=True)
+            print('collecting parallel data ... '.format(perf_counter() - cput000), end='', flush=True)
 
+        cput0000 = perf_counter()
         serial_dict = dict()
         for cg in nonad_table_dict.keys():
             serial_dict[cg] = nonad_table_dict[cg]
+
+        if verbose:
+            print('done in {:6.2f} s'.format(perf_counter() - cput0000))
+            print('----------------------------------------------------------------------------------', flush=True)
         return serial_dict
     else:
         serial_dict = dict()
@@ -542,7 +541,7 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
 
         if verbose:
             print('----------------------------------------------------------------------------------')
-            print('enthalpy defect dimension added in {:6.2f} s'.format(perf_counter() - cput000))
+            print('enthalpy defect dimension integrated in {:6.2f} s'.format(perf_counter() - cput000))
             print('----------------------------------------------------------------------------------', flush=True)
         return serial_dict
 
@@ -555,6 +554,11 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
     chi_st_space = set()
     chi_to_g_list_dict = dict()
 
+    progress_note = 10.
+    progress = 10.
+    if verbose:
+        print('Structuring enthalpy defect dimension ... \nInitializing ...', end='', flush=True)
+
     for (chi_st, g_stoich) in unstructured_table.keys():
         min_g_st = np.min([min_g_st, g_stoich])
         max_g_st = np.max([max_g_st, g_stoich])
@@ -564,6 +568,8 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
         else:
             chi_to_g_list_dict[chi_st].add(g_stoich)
 
+    if verbose:
+        print(' Done.\nInterpolating onto structured grid ... \nProgress: 0%', end='', flush=True)
     defect_st_space = np.linspace(min_g_st, max_g_st, n_defect_stoich)
     if extend:
         defect_spacing = np.abs(defect_st_space[1] - defect_st_space[0])
@@ -575,8 +581,7 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
     chi_st_space = list(chi_st_space)
 
     structured_table = dict()
-    for chi_st in chi_st_space:
-        cput0 = perf_counter()
+    for chi_idx, chi_st in enumerate(chi_st_space):
         unstruc_g_st_space = chi_to_g_list_dict[chi_st]
         unstruc_g_st_space_sorted = np.sort(unstruc_g_st_space)
 
@@ -595,19 +600,22 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
                 if extend and (q == 'enthalpy' or q == 'enthalpy_defect'):
                     yginterp = interp1d(unstruc_g_st_space_sorted, unstruc_y, kind='linear', fill_value='extrapolate')
                 else:
-                    yginterp = InterpolatedUnivariateSpline(unstruc_g_st_space_sorted, unstruc_y, ext='const')
+                    yginterp = InterpolatedUnivariateSpline(unstruc_g_st_space_sorted, unstruc_y, k=1, ext='const')
                 for g_st_struc in defect_st_space:
                     structured_table[(chi_st, g_st_struc)][q][iz] = yginterp(g_st_struc)
+                    if q == 'density' and structured_table[(chi_st, g_st_struc)][q][iz] < 1.e-14:
+                        raise ValueError('density < 1.e-14 detected!')
+                    if q == 'temperature' and structured_table[(chi_st, g_st_struc)][q][iz] < 1.e-14:
+                        raise ValueError('temperature < 1.e-14 detected!')
 
-        if verbose:
-            print(' chi_st {:8.1e} 1/s structured enthalpy defect '
-                  'dimension built in {:6.2f} s'.format(chi_st,
-                                                        perf_counter() - cput0), flush=True)
-
+        if float((chi_idx + 1) / len(chi_st_space)) * 100. > progress:
+            if verbose:
+                print('--{:.0f}%'.format(progress), end='', flush=True)
+                progress += progress_note
     if verbose:
-        print('----------------------------------------------------------------------------------')
-        print('structured library built in {:6.2f} s'.format(perf_counter() - cput00))
-        print('----------------------------------------------------------------------------------', flush=True)
+        print('--{:.0f}%'.format(100))
+    if verbose:
+        print('Structured enthalpy defect dimension built in {:6.2f} s'.format(perf_counter() - cput00), flush=True)
 
     return structured_table, np.array(sorted(chi_st_space)), defect_st_space[::-1]
 
@@ -632,6 +640,7 @@ def build_nonadiabatic_defect_slfm_library(flamelet_specs,
                     dependency_only_quantities.append(dep)
                     tabulated_quantities.append(dep)
     tabulated_quantities = list(set(tabulated_quantities))
+    cput00 = perf_counter()
     ugt = _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                                tabulated_quantities,
                                                                diss_rate_values,
@@ -670,5 +679,10 @@ def build_nonadiabatic_defect_slfm_library(flamelet_specs,
             library = p.evaluate(library)
         for dep in dependency_only_quantities:
             library.remove_from_dataset(dep)
+
+    if verbose:
+        print('----------------------------------------------------------------------------------')
+        print(f'library built in {perf_counter() - cput00:6.2f} s')
+        print('----------------------------------------------------------------------------------', flush=True)
 
     return library

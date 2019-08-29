@@ -2,14 +2,6 @@
 This module contains controllers for adaptive time stepping based on embedded temporal error estimation.
 """
 
-"""
-Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-You may use, distribute and modify this code under the terms of the MIT license.
-
-You should have received a copy of the MIT license with this file.
-If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-"""
-
 from numpy import zeros, min, copy
 
 
@@ -188,7 +180,7 @@ class CascadeController(object):
             mod = min([self._max_ramp,
                        (self._target_error / error) ** self._ki * (self._err_history[-1] / error) ** self._kp])
             err_mod = min([self._max_ramp, (self._target_ratio / ratio) ** self._ratio_ki * (
-                self._ratio_history[-1] / ratio) ** self._ratio_kp])
+                    self._ratio_history[-1] / ratio) ** self._ratio_kp])
         self._target_error *= err_mod
         return min([step * mod, self._max_step])
 

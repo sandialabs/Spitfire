@@ -1,12 +1,6 @@
 # distutils: language = c++
 # cython: language_level=3
 
-#  Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-#  You may use, distribute and modify this code under the terms of the MIT license.
-#
-#  You should have received a copy of the MIT license with this file.
-#  If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-
 import numpy as np
 cimport numpy as np
 

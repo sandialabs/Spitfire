@@ -1,11 +1,3 @@
-"""
-Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-You may use, distribute and modify this code under the terms of the MIT license.
-
-You should have received a copy of the MIT license with this file.
-If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-"""
-
 from spitfire.time.governor import Governor, Steady, FinalTime
 from spitfire.time.methods import ESDIRK64, AdaptiveERK54CashKarp, ForwardEuler
 from spitfire.time.nonlinear import SimpleNewtonSolver
@@ -75,7 +67,7 @@ class DiffusionReaction1D_FiniteDifference(object):
         z = np.linspace(0., 1., grid_points)
         zo = 1.0 / (2.0 * grid_cluster_intensity) * np.log(
             (1. + (np.exp(grid_cluster_intensity) - 1.) * grid_cluster_point) / (
-                1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
+                    1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
         a = np.sinh(grid_cluster_intensity * zo)
         for i in range(grid_points):
             z[i] = grid_cluster_point / a * (np.sinh(grid_cluster_intensity * (z[i] - zo)) + a)

@@ -8,14 +8,6 @@ In many cases the Jacobian/preconditioner can be lagged for several time steps t
 
 """
 
-"""
-Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-You may use, distribute and modify this code under the terms of the MIT license.
-
-You should have received a copy of the MIT license with this file.
-If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-"""
-
 from numpy import copy as numpy_copy
 from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices
 from scipy.linalg import norm
@@ -294,7 +286,7 @@ class Governor(object):
             self._print_debug_mode('check_state_update(): NaN or Inf detected')
             return False
         elif nonlinear_solve_converged is not None and (
-                    not nonlinear_solve_converged and self.nonlinear_solve_must_converge):
+                not nonlinear_solve_converged and self.nonlinear_solve_must_converge):
             self._print_debug_mode('check_state_update(): required nonlinear solve failed to converge')
             return False
         elif self.custom_update_checking_rule is not None:
