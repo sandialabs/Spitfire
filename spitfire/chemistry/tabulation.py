@@ -157,6 +157,59 @@ class PostProcessor(object):
         raise TypeError('Base class PostProcessor evaluate() method was called, must be overridden in derived classes')
 
 
+def build_unreacted_library(flamelet_specs,
+                            tabulated_quantities,
+                            verbose=True,
+                            post_processors=None):
+    m = flamelet_specs['mech_spec']
+    fuel = flamelet_specs['fuel_stream']
+    oxy = flamelet_specs['oxy_stream']
+    fs0 = dict(flamelet_specs)
+    fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'unreacted'})
+    flamelet = Flamelet(**fs0)
+
+    cput00 = perf_counter()
+    if verbose:
+        print('----------------------------------------------------------------------------------')
+        print('building unreacted library (linear mass fractions and enthalpy)')
+        print('----------------------------------------------------------------------------------')
+        print(f'- mechanism: {m.mech_xml_path}')
+        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
+        print('- tabulated quantities: ' + str(tabulated_quantities))
+        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
+        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
+        print('----------------------------------------------------------------------------------')
+
+    if post_processors is not None:
+        dependency_only_quantities = []
+        for p in post_processors:
+            for dep in p.dependencies:
+                if dep not in tabulated_quantities:
+                    dependency_only_quantities.append(dep)
+                    tabulated_quantities.append(dep)
+    tabulated_quantities = list(set(tabulated_quantities))
+    flamelet.insitu_process_quantity(tabulated_quantities)
+    data_dict = flamelet.process_quantities_on_state(flamelet.initial_state)
+
+    if verbose:
+        print('----------------------------------------------------------------------------------')
+        print(f'library built in {perf_counter() - cput00:6.2f} s')
+        print('----------------------------------------------------------------------------------', flush=True)
+
+    z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
+    library = Library(z_dim)
+    for quantity in tabulated_quantities:
+        library[quantity] = data_dict[quantity].ravel()
+
+    if post_processors is not None:
+        for p in post_processors:
+            library = p.evaluate(library)
+        for dep in dependency_only_quantities:
+            library.remove_from_dataset(dep)
+
+    return library
+
+
 def build_adiabatic_eq_library(flamelet_specs,
                                tabulated_quantities,
                                verbose=True,
@@ -198,7 +251,7 @@ def build_adiabatic_eq_library(flamelet_specs,
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     library = Library(z_dim)
-    for quantity in data_dict:
+    for quantity in tabulated_quantities:
         library[quantity] = data_dict[quantity].ravel()
 
     if post_processors is not None:
@@ -252,7 +305,7 @@ def build_adiabatic_bs_library(flamelet_specs,
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     library = Library(z_dim)
-    for quantity in data_dict:
+    for quantity in tabulated_quantities:
         library[quantity] = data_dict[quantity].ravel()
 
     if post_processors is not None:
