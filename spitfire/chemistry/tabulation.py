@@ -398,6 +398,7 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
     library['enthalpy_defect'] = library.get_empty_dataset()
     library['enthalpy_cons'] = library.get_empty_dataset()
     library['enthalpy'] = library.get_empty_dataset()
+    library[_mixture_fraction_name] = library.get_empty_dataset()
 
     new_state = flamelet.initial_state.copy()
     for ig in range(n_defect_st):
@@ -417,6 +418,7 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
         library['enthalpy_defect'][:, ig] = np.copy(new_enthalpy - enthalpy_ad)
         library['enthalpy_cons'][:, ig] = np.copy(enthalpy_ad)
         library['enthalpy'][:, ig] = np.copy(new_enthalpy)
+        library[_mixture_fraction_name][:, ig] = np.copy(flamelet.mixfrac_grid.ravel())
 
     if verbose:
         print('----------------------------------------------------------------------------------')
@@ -489,6 +491,7 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
     library['enthalpy_defect'] = library.get_empty_dataset()
     library['enthalpy_cons'] = library.get_empty_dataset()
     library['enthalpy'] = library.get_empty_dataset()
+    library[_mixture_fraction_name] = library.get_empty_dataset()
 
     new_state = flamelet.initial_state.copy()
     for ig in range(n_defect_st):
@@ -507,6 +510,7 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
             library['enthalpy_defect'][:, ig] = np.copy(new_enthalpy - enthalpy_ad)
             library['enthalpy_cons'][:, ig] = np.copy(enthalpy_ad)
             library['enthalpy'][:, ig] = np.copy(new_enthalpy)
+        library[_mixture_fraction_name][:, ig] = np.copy(flamelet.mixfrac_grid.ravel())
 
     if verbose:
         print('----------------------------------------------------------------------------------')
