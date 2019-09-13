@@ -317,6 +317,30 @@ def build_adiabatic_bs_library(flamelet_specs,
     return library
 
 
+def _enthalpy_defect_fz(z, z_st):
+    f = z.copy()
+    f[z <= z_st] = z[z <= z_st] / z_st
+    f[z > z_st] = (1 - z[z > z_st]) / (1 - z_st)
+    return f
+
+
+def _get_enthalpy(h_ad, z, z_st, d_st):
+    return h_ad + d_st * _enthalpy_defect_fz(z, z_st)
+
+
+def _get_defect_extremum(state_ad, h_ad, z_st, flamelet):
+    ns = flamelet.mechanism.n_species
+    z = flamelet.mixfrac_grid
+    T_ad = state_ad[::ns]
+    T_ur = z_st * T_ad[-1] + (1 - z_st) * T_ad[0]
+    state_cooled_eq = state_ad.copy()
+    state_cooled_eq[::ns] = T_ur
+    enthalpy_cooled_eq = flamelet.process_quantities_on_state(state_cooled_eq)['enthalpy'].ravel()
+    h_ad_st = interp1d(z, h_ad)(z_st)
+    h_ce_st = interp1d(z, enthalpy_cooled_eq)(z_st)
+    return h_ad_st - h_ce_st
+
+
 def build_nonadiabatic_defect_eq_library(flamelet_specs,
                                          tabulated_quantities,
                                          n_defect_st=16,
@@ -332,7 +356,7 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
 
     if verbose:
         print('----------------------------------------------------------------------------------')
-        print('building adiabatic equilibrium library')
+        print('building nonadiabatic equilibrium library')
         print('----------------------------------------------------------------------------------')
         print(f'- mechanism: {m.mech_xml_path}')
         print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
@@ -362,38 +386,22 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
 
     z_st = flamelet.mechanism.stoich_mixture_fraction(fuel, oxy)
 
-    def enthalpy_defect_fz(z, z_st):
-        f = z.copy()
-        f[z <= z_st] = z[z <= z_st] / z_st
-        f[z > z_st] = (1 - z[z > z_st]) / (1 - z_st)
-        return f
-
-    def get_enthalpy(h_ad, z, z_st, d_st):
-        return h_ad + d_st * enthalpy_defect_fz(z, z_st)
-
-    def get_defect_extremum(state_ad, h_ad, z_st):
-        T_ad = state_ad[::ns]
-        T_ur = z_st * T_ad[-1] + (1 - z_st) * T_ad[0]
-        state_cooled_eq = state_ad.copy()
-        state_cooled_eq[::ns] = T_ur
-        enthalpy_cooled_eq = flamelet.process_quantities_on_state(state_cooled_eq)['enthalpy'].ravel()
-        h_ad_st = interp1d(z, h_ad)(z_st)
-        h_ce_st = interp1d(z, enthalpy_cooled_eq)(z_st)
-        return h_ad_st - h_ce_st
-
-    defect_ext = get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st)
+    defect_ext = _get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st, flamelet2)
     defect_range = np.linspace(-defect_ext, 0, n_defect_st)[::-1]
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
-    g_dim = Dimension(_enthalpy_defect_name, defect_range)
+    g_dim = Dimension(_enthalpy_defect_name + _stoich_suffix, defect_range)
     library = Library(z_dim, g_dim)
 
     for quantity in tabulated_quantities:
         library[quantity] = library.get_empty_dataset()
+    library['enthalpy_defect'] = library.get_empty_dataset()
+    library['enthalpy_cons'] = library.get_empty_dataset()
+    library['enthalpy'] = library.get_empty_dataset()
 
     new_state = flamelet.initial_state.copy()
     for ig in range(n_defect_st):
-        new_enthalpy = get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
+        new_enthalpy = _get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
         for i in range(z.size):
             ym1 = new_state[i * ns + 1:(i + 1) * ns]
             yn = 1. - np.sum(ym1)
@@ -406,6 +414,9 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
 
         for quantity in tabulated_quantities:
             library[quantity][:, ig] = data_dict[quantity].ravel()
+        library['enthalpy_defect'][:, ig] = np.copy(new_enthalpy - enthalpy_ad)
+        library['enthalpy_cons'][:, ig] = np.copy(enthalpy_ad)
+        library['enthalpy'][:, ig] = np.copy(new_enthalpy)
 
     if verbose:
         print('----------------------------------------------------------------------------------')
@@ -436,7 +447,7 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
 
     if verbose:
         print('----------------------------------------------------------------------------------')
-        print('building adiabatic equilibrium library')
+        print('building nonadiabatic equilibrium library')
         print('----------------------------------------------------------------------------------')
         print(f'- mechanism: {m.mech_xml_path}')
         print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
@@ -466,34 +477,18 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
 
     z_st = flamelet.mechanism.stoich_mixture_fraction(fuel, oxy)
 
-    def enthalpy_defect_fz(z, z_st):
-        f = z.copy()
-        f[z <= z_st] = z[z <= z_st] / z_st
-        f[z > z_st] = (1 - z[z > z_st]) / (1 - z_st)
-        return f
-
-    def get_enthalpy(h_ad, z, z_st, d_st):
-        return h_ad + d_st * enthalpy_defect_fz(z, z_st)
-
-    def get_defect_extremum(state_ad, h_ad, z_st):
-        T_ad = state_ad[::ns]
-        T_ur = z_st * T_ad[-1] + (1 - z_st) * T_ad[0]
-        state_cooled_eq = state_ad.copy()
-        state_cooled_eq[::ns] = T_ur
-        enthalpy_cooled_eq = flamelet.process_quantities_on_state(state_cooled_eq)['enthalpy'].ravel()
-        h_ad_st = interp1d(z, h_ad)(z_st)
-        h_ce_st = interp1d(z, enthalpy_cooled_eq)(z_st)
-        return h_ad_st - h_ce_st
-
-    defect_ext = get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st)
+    defect_ext = _get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st, flamelet2)
     defect_range = np.linspace(-defect_ext, 0, n_defect_st)[::-1]
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
-    g_dim = Dimension(_enthalpy_defect_name, defect_range)
+    g_dim = Dimension(_enthalpy_defect_name + _stoich_suffix, defect_range)
     library = Library(z_dim, g_dim)
 
     for quantity in tabulated_quantities:
         library[quantity] = library.get_empty_dataset()
+    library['enthalpy_defect'] = library.get_empty_dataset()
+    library['enthalpy_cons'] = library.get_empty_dataset()
+    library['enthalpy'] = library.get_empty_dataset()
 
     new_state = flamelet.initial_state.copy()
     for ig in range(n_defect_st):
@@ -509,6 +504,9 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
 
         for quantity in tabulated_quantities:
             library[quantity][:, ig] = data_dict[quantity].ravel()
+            library['enthalpy_defect'][:, ig] = np.copy(new_enthalpy - enthalpy_ad)
+            library['enthalpy_cons'][:, ig] = np.copy(enthalpy_ad)
+            library['enthalpy'][:, ig] = np.copy(new_enthalpy)
 
     if verbose:
         print('----------------------------------------------------------------------------------')
