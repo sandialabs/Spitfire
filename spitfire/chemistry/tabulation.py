@@ -317,11 +317,11 @@ def build_adiabatic_bs_library(flamelet_specs,
     return library
 
 
-def build_nonadiabatic_eq_library(flamelet_specs,
-                                  tabulated_quantities,
-                                  n_defect_stoich=16,
-                                  verbose=True,
-                                  post_processors=None):
+def build_nonadiabatic_defect_eq_library(flamelet_specs,
+                                         tabulated_quantities,
+                                         n_defect_st=16,
+                                         verbose=True,
+                                         post_processors=None):
     m = flamelet_specs['mech_spec']
     fuel = flamelet_specs['fuel_stream']
     oxy = flamelet_specs['oxy_stream']
@@ -382,7 +382,7 @@ def build_nonadiabatic_eq_library(flamelet_specs,
         return h_ad_st - h_ce_st
 
     defect_ext = get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st)
-    defect_range = np.linspace(-defect_ext, 0, n_defect_stoich)[::-1]
+    defect_range = np.linspace(-defect_ext, 0, n_defect_st)[::-1]
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     g_dim = Dimension(_enthalpy_defect_name, defect_range)
@@ -392,7 +392,7 @@ def build_nonadiabatic_eq_library(flamelet_specs,
         library[quantity] = library.get_empty_dataset()
 
     new_state = flamelet.initial_state.copy()
-    for ig in range(n_defect_stoich):
+    for ig in range(n_defect_st):
         new_enthalpy = get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
         for i in range(z.size):
             ym1 = new_state[i * ns + 1:(i + 1) * ns]
@@ -421,11 +421,11 @@ def build_nonadiabatic_eq_library(flamelet_specs,
     return library
 
 
-def build_nonadiabatic_bs_library(flamelet_specs,
-                                  tabulated_quantities,
-                                  n_defect_stoich=16,
-                                  verbose=True,
-                                  post_processors=None):
+def build_nonadiabatic_defect_bs_library(flamelet_specs,
+                                         tabulated_quantities,
+                                         n_defect_st=16,
+                                         verbose=True,
+                                         post_processors=None):
     m = flamelet_specs['mech_spec']
     fuel = flamelet_specs['fuel_stream']
     oxy = flamelet_specs['oxy_stream']
@@ -486,7 +486,7 @@ def build_nonadiabatic_bs_library(flamelet_specs,
         return h_ad_st - h_ce_st
 
     defect_ext = get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st)
-    defect_range = np.linspace(-defect_ext, 0, n_defect_stoich)[::-1]
+    defect_range = np.linspace(-defect_ext, 0, n_defect_st)[::-1]
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     g_dim = Dimension(_enthalpy_defect_name, defect_range)
@@ -496,7 +496,7 @@ def build_nonadiabatic_bs_library(flamelet_specs,
         library[quantity] = library.get_empty_dataset()
 
     new_state = flamelet.initial_state.copy()
-    for ig in range(n_defect_stoich):
+    for ig in range(n_defect_st):
         new_enthalpy = get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
         for i in range(z.size):
             ym1 = new_state[i * ns + 1:(i + 1) * ns]
