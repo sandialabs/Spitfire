@@ -166,9 +166,9 @@ def build_unreacted_library(flamelet_specs,
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'unreacted'})
+    cput00 = perf_counter()
     flamelet = Flamelet(**fs0)
 
-    cput00 = perf_counter()
     if verbose:
         print('----------------------------------------------------------------------------------')
         print('building unreacted library (linear mass fractions and enthalpy)')
@@ -219,9 +219,9 @@ def build_adiabatic_eq_library(flamelet_specs,
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'equilibrium'})
+    cput00 = perf_counter()
     flamelet = Flamelet(**fs0)
 
-    cput00 = perf_counter()
     if verbose:
         print('----------------------------------------------------------------------------------')
         print('building adiabatic equilibrium library')
@@ -272,18 +272,9 @@ def build_adiabatic_bs_library(flamelet_specs,
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'Burke-Schumann'})
+    cput00 = perf_counter()
     flamelet = Flamelet(**fs0)
 
-    if post_processors is not None:
-        dependency_only_quantities = []
-        for p in post_processors:
-            for dep in p.dependencies:
-                if dep not in tabulated_quantities:
-                    dependency_only_quantities.append(dep)
-                    tabulated_quantities.append(dep)
-    tabulated_quantities = list(set(tabulated_quantities))
-
-    cput00 = perf_counter()
     if verbose:
         print('----------------------------------------------------------------------------------')
         print('building adiabatic Burke-Schumann library')
@@ -294,6 +285,15 @@ def build_adiabatic_bs_library(flamelet_specs,
         print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
         print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
         print('----------------------------------------------------------------------------------')
+
+    if post_processors is not None:
+        dependency_only_quantities = []
+        for p in post_processors:
+            for dep in p.dependencies:
+                if dep not in tabulated_quantities:
+                    dependency_only_quantities.append(dep)
+                    tabulated_quantities.append(dep)
+    tabulated_quantities = list(set(tabulated_quantities))
 
     flamelet.insitu_process_quantity(tabulated_quantities)
     data_dict = flamelet.process_quantities_on_state(flamelet.initial_state)
@@ -307,6 +307,213 @@ def build_adiabatic_bs_library(flamelet_specs,
     library = Library(z_dim)
     for quantity in tabulated_quantities:
         library[quantity] = data_dict[quantity].ravel()
+
+    if post_processors is not None:
+        for p in post_processors:
+            library = p.evaluate(library)
+        for dep in dependency_only_quantities:
+            library.remove_from_dataset(dep)
+
+    return library
+
+
+def build_nonadiabatic_eq_library(flamelet_specs,
+                                  tabulated_quantities,
+                                  n_defect_stoich=16,
+                                  verbose=True,
+                                  post_processors=None):
+    m = flamelet_specs['mech_spec']
+    fuel = flamelet_specs['fuel_stream']
+    oxy = flamelet_specs['oxy_stream']
+    fs0 = dict(flamelet_specs)
+    fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'equilibrium'})
+    cput00 = perf_counter()
+    flamelet = Flamelet(**fs0)
+
+    if verbose:
+        print('----------------------------------------------------------------------------------')
+        print('building adiabatic equilibrium library')
+        print('----------------------------------------------------------------------------------')
+        print(f'- mechanism: {m.mech_xml_path}')
+        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
+        print('- tabulated quantities: ' + str(tabulated_quantities))
+        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
+        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
+        print('----------------------------------------------------------------------------------')
+
+    if post_processors is not None:
+        dependency_only_quantities = []
+        for p in post_processors:
+            for dep in p.dependencies:
+                if dep not in tabulated_quantities:
+                    dependency_only_quantities.append(dep)
+                    tabulated_quantities.append(dep)
+    tabulated_quantities = list(set(tabulated_quantities))
+    flamelet.insitu_process_quantity(tabulated_quantities)
+
+    z = flamelet.mixfrac_grid
+    ns = flamelet.mechanism.n_species
+
+    nonad_eq_fs = dict(flamelet_specs)
+    nonad_eq_fs['initial_condition'] = 'equilibrium'
+    flamelet2 = Flamelet(**nonad_eq_fs)
+    flamelet2.insitu_process_quantity('enthalpy')
+    enthalpy_ad = flamelet2.process_quantities_on_state(flamelet2.initial_state)['enthalpy'].ravel()
+
+    z_st = flamelet.mechanism.stoich_mixture_fraction(fuel, oxy)
+
+    def enthalpy_defect_fz(z, z_st):
+        f = z.copy()
+        f[z <= z_st] = z[z <= z_st] / z_st
+        f[z > z_st] = (1 - z[z > z_st]) / (1 - z_st)
+        return f
+
+    def get_enthalpy(h_ad, z, z_st, d_st):
+        return h_ad + d_st * enthalpy_defect_fz(z, z_st)
+
+    def get_defect_extremum(state_ad, h_ad, z_st):
+        T_ad = state_ad[::ns]
+        T_ur = z_st * T_ad[-1] + (1 - z_st) * T_ad[0]
+        state_cooled_eq = state_ad.copy()
+        state_cooled_eq[::ns] = T_ur
+        enthalpy_cooled_eq = flamelet.process_quantities_on_state(state_cooled_eq)['enthalpy'].ravel()
+        h_ad_st = interp1d(z, h_ad)(z_st)
+        h_ce_st = interp1d(z, enthalpy_cooled_eq)(z_st)
+        return h_ad_st - h_ce_st
+
+    defect_ext = get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st)
+    defect_range = np.linspace(-defect_ext, 0, n_defect_stoich)[::-1]
+
+    z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
+    g_dim = Dimension(_enthalpy_defect_name, defect_range)
+    library = Library(z_dim, g_dim)
+
+    for quantity in tabulated_quantities:
+        library[quantity] = library.get_empty_dataset()
+
+    new_state = flamelet.initial_state.copy()
+    for ig in range(n_defect_stoich):
+        new_enthalpy = get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
+        for i in range(z.size):
+            ym1 = new_state[i * ns + 1:(i + 1) * ns]
+            yn = 1. - np.sum(ym1)
+            this_y = np.hstack((ym1, yn))
+            flamelet.mechanism.gas.HPY = new_enthalpy[i], flamelet.pressure, this_y
+            flamelet.mechanism.gas.equilibrate('HP')
+            new_state[i * ns] = flamelet.mechanism.gas.T
+            new_state[i * ns + 1:(i + 1) * ns] = flamelet.mechanism.gas.Y[:-1]
+        data_dict = flamelet.process_quantities_on_state(new_state)
+
+        for quantity in tabulated_quantities:
+            library[quantity][:, ig] = data_dict[quantity].ravel()
+
+    if verbose:
+        print('----------------------------------------------------------------------------------')
+        print(f'library built in {perf_counter() - cput00:6.2f} s')
+        print('----------------------------------------------------------------------------------', flush=True)
+
+    if post_processors is not None:
+        for p in post_processors:
+            library = p.evaluate(library)
+        for dep in dependency_only_quantities:
+            library.remove_from_dataset(dep)
+
+    return library
+
+
+def build_nonadiabatic_bs_library(flamelet_specs,
+                                  tabulated_quantities,
+                                  n_defect_stoich=16,
+                                  verbose=True,
+                                  post_processors=None):
+    m = flamelet_specs['mech_spec']
+    fuel = flamelet_specs['fuel_stream']
+    oxy = flamelet_specs['oxy_stream']
+    fs0 = dict(flamelet_specs)
+    fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'Burke-Schumann'})
+    cput00 = perf_counter()
+    flamelet = Flamelet(**fs0)
+
+    if verbose:
+        print('----------------------------------------------------------------------------------')
+        print('building adiabatic equilibrium library')
+        print('----------------------------------------------------------------------------------')
+        print(f'- mechanism: {m.mech_xml_path}')
+        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
+        print('- tabulated quantities: ' + str(tabulated_quantities))
+        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
+        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
+        print('----------------------------------------------------------------------------------')
+
+    if post_processors is not None:
+        dependency_only_quantities = []
+        for p in post_processors:
+            for dep in p.dependencies:
+                if dep not in tabulated_quantities:
+                    dependency_only_quantities.append(dep)
+                    tabulated_quantities.append(dep)
+    tabulated_quantities = list(set(tabulated_quantities))
+    flamelet.insitu_process_quantity(tabulated_quantities)
+
+    z = flamelet.mixfrac_grid
+    ns = flamelet.mechanism.n_species
+
+    nonad_eq_fs = dict(flamelet_specs)
+    nonad_eq_fs['initial_condition'] = 'Burke-Schumann'
+    flamelet2 = Flamelet(**nonad_eq_fs)
+    flamelet2.insitu_process_quantity('enthalpy')
+    enthalpy_ad = flamelet2.process_quantities_on_state(flamelet2.initial_state)['enthalpy'].ravel()
+
+    z_st = flamelet.mechanism.stoich_mixture_fraction(fuel, oxy)
+
+    def enthalpy_defect_fz(z, z_st):
+        f = z.copy()
+        f[z <= z_st] = z[z <= z_st] / z_st
+        f[z > z_st] = (1 - z[z > z_st]) / (1 - z_st)
+        return f
+
+    def get_enthalpy(h_ad, z, z_st, d_st):
+        return h_ad + d_st * enthalpy_defect_fz(z, z_st)
+
+    def get_defect_extremum(state_ad, h_ad, z_st):
+        T_ad = state_ad[::ns]
+        T_ur = z_st * T_ad[-1] + (1 - z_st) * T_ad[0]
+        state_cooled_eq = state_ad.copy()
+        state_cooled_eq[::ns] = T_ur
+        enthalpy_cooled_eq = flamelet.process_quantities_on_state(state_cooled_eq)['enthalpy'].ravel()
+        h_ad_st = interp1d(z, h_ad)(z_st)
+        h_ce_st = interp1d(z, enthalpy_cooled_eq)(z_st)
+        return h_ad_st - h_ce_st
+
+    defect_ext = get_defect_extremum(flamelet.initial_state, enthalpy_ad, z_st)
+    defect_range = np.linspace(-defect_ext, 0, n_defect_stoich)[::-1]
+
+    z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
+    g_dim = Dimension(_enthalpy_defect_name, defect_range)
+    library = Library(z_dim, g_dim)
+
+    for quantity in tabulated_quantities:
+        library[quantity] = library.get_empty_dataset()
+
+    new_state = flamelet.initial_state.copy()
+    for ig in range(n_defect_stoich):
+        new_enthalpy = get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
+        for i in range(z.size):
+            ym1 = new_state[i * ns + 1:(i + 1) * ns]
+            yn = 1. - np.sum(ym1)
+            this_y = np.hstack((ym1, yn))
+            flamelet.mechanism.gas.HPY = new_enthalpy[i], flamelet.pressure, this_y
+            new_state[i * ns] = flamelet.mechanism.gas.T
+            new_state[i * ns + 1:(i + 1) * ns] = flamelet.mechanism.gas.Y[:-1]
+        data_dict = flamelet.process_quantities_on_state(new_state)
+
+        for quantity in tabulated_quantities:
+            library[quantity][:, ig] = data_dict[quantity].ravel()
+
+    if verbose:
+        print('----------------------------------------------------------------------------------')
+        print(f'library built in {perf_counter() - cput00:6.2f} s')
+        print('----------------------------------------------------------------------------------', flush=True)
 
     if post_processors is not None:
         for p in post_processors:
