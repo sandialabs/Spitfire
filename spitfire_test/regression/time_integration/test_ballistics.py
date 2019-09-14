@@ -5,8 +5,7 @@ class Test(unittest.TestCase):
     def test(self):
         from spitfire.time.governor import Governor, CustomTermination, SaveAllDataToList
         from spitfire.time.stepcontrol import PIController
-        from spitfire.time.methods import AdaptiveERK54CashKarp, ESDIRK64
-        from spitfire.time.nonlinear import SimpleNewtonSolver
+        from spitfire.time.methods import AdaptiveERK54CashKarp
         import numpy as np
 
         def right_hand_side(q, fluid_density, drag_coeff, gravity, surface_area, mass):

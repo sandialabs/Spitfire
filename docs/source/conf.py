@@ -30,6 +30,7 @@
 
 import os
 import sys
+import sphinx_rtd_theme
 
 sys.path.insert(0, os.path.abspath('../..'))
 
@@ -38,7 +39,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # ones.
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.coverage',
-              'numpydoc']
+              'numpydoc',
+              'sphinx_rtd_theme']
 
 import platform
 
@@ -98,8 +100,9 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 # html_theme = 'pyramid'
-html_theme = 'haiku'
+# html_theme = 'haiku'
 # html_theme = 'scrolls'
+html_theme = 'sphinx_rtd_theme'
 
 # to get rid of silly autosummary warnings
 numpydoc_show_class_members = False
@@ -112,7 +115,7 @@ math_eqref_format = '({number})'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {'style_nav_header_background': '#5e3aa6'}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -182,6 +185,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'Spitfire', 'Spitfire Documentation',
-     author, 'Spitfire', 'One line description of project.',
+     author, 'Spitfire', 'A Python-C++ library for tabulated chemistry models and time integration',
      'Miscellaneous'),
 ]

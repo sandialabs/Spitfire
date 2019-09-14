@@ -7,23 +7,93 @@ and the following section discusses relevant combustion theory.
 Chemical Mechanisms
 +++++++++++++++++++
 The first step to solving any combustion problem in Spitfire is setting up the chemical mechanism,
-which contains all of the necessary information regarding thermodynamics and chemical kinetics.
-Spitfire uses the Python interface of `cantera`_ as well as the cantera XML description of chemical mechanisms.
+which contains all of the necessary information regarding thermodynamics, chemical kinetics, and (not necessarily) transport properties.
+To manage mechanism data, Spitfire uses the Python interface of `Cantera`_.
+It is highly recommended for advanced users to become familiar with Cantera's Python interface,
+not only for using Spitfire but also for the wealth of useful capabilities of Cantera.
 
 .. _cantera: https://cantera.org/
 
-Having obtained a cantera XML file for your chemical mechanism,
-next import the ``ChemicalMechanismSpec`` class and construct an instance of it
-with the file path to the XML and the species group.
-For example, as seen in the demonstration script, ``spitfire/demo/reactors/docs-simple-example-1.py``::
+Mechanism data can be provided to Spitfire in any way that it can be provided to Cantera.
+Three useful routes are:
 
-    from spitfire import ChemicalMechanismSpec
-    sm = ChemicalMechanismSpec(cantera_xml='mechanisms/h2-burke.xml', group_name='h2-burke')
+- Build or find a Cantera XML file (often by converting a Cantera CTI or Chemkin database)
+- Build a Cantera CTI file manually
+- Build a mechanism programmatically with Cantera's Python interface
+
+Mechanisms can be passed to Spitfire with either a Cantera ``Solution`` object or an XML file and phase group.
+Behind the scenes both leverage a ``Solution`` object.
+
+
+Simulating Ignition with a One-Step Mechanism
++++++++++++++++++++++++++++++++++++++++++++++
+First, we'll show a simple demonstration of programmatically building a one-step mechanism for n-heptane combustion
+and solving the equations governing an perfectly stirred reactor to simulate autoignition.
+This description follows the ``spitfire_demo/reactors/one_step_ignition.py`` script.
+The first lines in this script past module imports build a custom mechanism for the idealized combustion of heptane.
+To obtain the thermodynamic properties of the five species in the model, we leverage an existing XML file.
+The reaction is written out in CTI format in a string, following standard Cantera syntax.
+Using this data we build a Cantera ``Solution`` object and then a Spitfire ``Mechanism`` instance::
+
+    species_in_model = ['NXC7H16', 'O2', 'H2O', 'CO2', 'N2']
+    reaction_cti = '''
+    reaction('2 NXC7H16 + 22 O2 => 14 CO2 + 16 H2O', [2e7, 0, (30.0, 'kcal/mol')], order='NXC7H16:0.25 O2:1.5')
+    '''
+    xml_file_for_species = 'heptane-liu-hewson-chen-pitsch-highT.xml'
+
+    species_data = ct.Species.listFromFile(xml_file_for_species)
+
+    species_list = list()
+    for sp in species_data:
+        if sp.name in species_in_model:
+            species_list.append(sp)
+
+    s = ct.Solution(thermo='IdealGas',
+                    kinetics='GasKinetics',
+                    species=species_list,
+                    reactions=[ct.Reaction.fromCti(reaction_cti)])
+    mech = Mechanism.from_solution(s)
+
+Given the mechanism object, we now build 'streams' of reactants and and mix them by equivalence ratio::
+
+    fuel = mech.stream('X', 'NXC7H16:1')
+    air = mech.stream(stp_air=True)
+
+    mix = mech.mix_for_equivalence_ratio(phi=1., fuel=fuel, oxy=air)
+    mix.TP = 1000, 101325
+
+Finally, we build an adiabatic, isobaric, closed reactor model, tell it to save off the temperature and species mass fractions,
+and integrate the reactor to a final time of 100 ms::
+
+    r = HomogeneousReactor(mech_spec=mech,
+                           initial_mixture=mix,
+                           configuration='isobaric',
+                           heat_transfer='adiabatic',
+                           mass_transfer='closed')
+    r.insitu_process_quantity(['temperature', 'mass fractions'])
+    r.integrate_to_time(0.1)
+
+Some Matplotlib code gives the following temperature and mass fraction profiles over the course of the autoignition event.
+
+.. _figure_one_step_ignition:
+.. figure:: images/reactors/one_step_ignition.png
+    :width: 640px
+    :align: center
+    :height: 480px
+    :figclass: align-center
+
+    Autoignition profiles of the one-step heptane mechanism.
+
+This first example shows a simple end-to-end ignition calculation with a custom-made one-step chemical mechanism.
+In the following sections we provide a bit more detail on constructing material streams and reactors
+in addition to advanced integration and analysis capabilities.
+
 
 Streams & Mixing
 ++++++++++++++++
-Having constructed a ``ChemicalMechanismSpec`` instance, we need to specify thermochemical properties of mixtures.
-In Spitfire this is accomplished with *streams* created with a ``ChemicalMechanismSpec`` instance.
+Having constructed a ``ChemicalMechanismSpec`` instance, either through a Cantera ``Solution`` or XML and phase group,
+we need to specify thermochemical properties of mixtures.
+In Spitfire this is accomplished with *streams* created by a ``ChemicalMechanismSpec`` instance.
 For example, a mixture of pure Hydrogen is created and its temperature and pressure set with::
 
     h2 = sm.stream('X', 'H2:1')
@@ -54,7 +124,7 @@ To mix by mole at constant energy and volume (thus pressurizing the mixture)::
 
     mix2 = sm.mix_streams([(h2, 1.), (air, 2.)], 'mole', 'UV')
 
-Streams can be mixed in additional ways which are discussed in the following sections.
+Some additional mixing options are discussed in the following sections.
 
 Homogeneous Reactors
 ++++++++++++++++++++
@@ -71,15 +141,18 @@ meaning there is just the right amount of oxygen to burn all of the fuel in an i
 .. _equivalence ratio: https://en.wikipedia.org/wiki/Air%E2%80%93fuel_ratio#Fuel%E2%80%93air_equivalence_ratio_(%CF%95)
 
 The equivalence ratio varies from zero to infinity, with lean (too much oxygen) and rich (too much fuel) mixtures below and above one, respectively.
-The *normalized* equivalence ratio, :math:`\Phi=\phi/(\phi+1)`, however, varies more nicely from zero to one, and stoichiometric mixtures correspond to :math:`\phi=1` and :math:`\Phi=0.5`.
+The *normalized* equivalence ratio, :math:`\Phi=\phi/(\phi+1)`, however, varies more nicely from zero to one.
+Stoichiometric mixtures correspond to :math:`\phi=1` and :math:`\Phi=0.5`.
 As it may be more convenient in some cases, the normalized equivalence ratio can also be used for mixing fuel and air::
 
     mix = sm.mix_for_normalized_equivalence_ratio(0.5, h2, air)
 
 The temperature and pressure of the fuel-air blend can then be set with ``mix.TP = 1200, 101325``.
+Recall that streams are simply instances of the ``Quantity`` class in Cantera's Python interface.
+See `Cantera documentation for options`_ regarding the construction of ``Quantity`` instances and setting/getting thermochemical properties.
 
 Now we are ready to fill a reactor with this mixture and simulate its evolution.
-First, build a homogeneous reactor that holds a constant pressure (isobaric), has impermeable (no mass flow - closed) and adiabatic (no heat flow) walls::
+First, build a homogeneous reactor that holds a constant pressure (isobaric) and has impermeable (no mass flow - closed) and adiabatic (no heat flow) walls::
 
     from spitfire import HomogeneousReactor
     r = HomogeneousReactor(sm, mix,
@@ -96,7 +169,7 @@ The occurence of ignition at around 0.05 milliseconds can be seen in the sudden 
 Observe that the hydrogen radical, H, a major chain carrying species, is produced prior to ignition and consumed afterwards, with its mass fraction peaking just at the onset of the temperature spike.
 The ignition delay may be printed with the following command, ``print('Ignition delay: {:.1f} us'.format(r.ignition_delay() * 1.e6))``.
 The precise number is 51.7 microseconds, matching our estimate of 0.05 milliseconds from the plot.
-This simple tutorial can be run in total with the demonstration script, ``spitfire/demo/reactors/docs-simple-example-1.py``.
+This simple tutorial can be run in total with the demonstration script, ``spitfire_demo/reactors/simple_ignition_plot.py``.
 This script is reproduced here as a summary::
 
     from spitfire import ChemicalMechanismSpec, HomogeneousReactor
@@ -232,18 +305,15 @@ To trigger CEMA, call ``r.insitu_process_cema()``.
 There are several additional arguments that enable advanced analysis but we do not cover them here.
 Calling ``r.insitu_process_cema()`` without any arguments triggers only the most basic technique of CEMA, which is to compute the 'explosive eigenvalue'.
 The explosive eigenvalue may be retrieved with ''r.trajectory_data('cema-lexp1')''.
-See the demonstration script, ``spitfire/demo/reactors/docs-example-2.py``, for more details and several plots.
+See the demonstration script, ``spitfire_demo/reactors/detailed_ignition_plot.py``, for more.
 
 
 Ignition delay calculations
 ___________________________
 A common task of combustion codes is to compute the ignition delay - how long it takes a mixture to ignite.
 Spitfire's reactor class makes this straightforward with the ``compute_ignition_delay()`` method.
-See the following demonstration scripts in the ``spitfire/demo/reactors/`` directory for examples of computing ignition delays across ranges of temperature, pressure, mechanism, etc.
-
-- ``spitfire/demo/reactors/ignition-delay-profiles-methane-mechanism-comparison.py``: compares the dependence of ignition delay on temperature for four mechanisms of methane combustion
-- ``ignition-delay-profiles-DME-negative-temp-coeff.py``: demonstrates negative temperature coefficient (NTC) behavior of dimethyl ether (DME) mixtures and the dependency of NTC strength on pressure, as in Figure :numref:`figure_dme_ntc_curves`
-- ``ignition-delay-profiles-biodiesel-negative-temp-coeff.py``: performs a similar analysis to the DME case for biodiesel mixtures
+See the demonstration script, ``ignition_delay_profiles_DME_NTC.py,`` in the ``spitfire_demo/reactors/`` directory.
+This demonstrates negative temperature coefficient (NTC) behavior of dimethyl ether (DME) mixtures and the dependency of NTC strength on pressure, as in Figure :numref:`figure_dme_ntc_curves`
 
 .. _figure_dme_ntc_curves:
 .. figure:: images/dme_ntc_curves.png
@@ -257,21 +327,16 @@ See the following demonstration scripts in the ``spitfire/demo/reactors/`` direc
 Computing ignition-extinction curves
 ____________________________________
 Another common task is to assess the presence of multiple steady states along ignition-extinction curves.
-In the following demonstration scripts we build adiabatic reactors with mass flow at varying mixing (residence) times.
-By increasing the mixing time from zero to infinity and computing the steady state temperature along the way, we compute the ignition branch.
+The ignition branch is computed by increasing the mixing time of an open reactor increases from zero to infinity.
 Reversing the direction gives the extinction branch.
-The scripts below show how one can compute ignition-extinction curves with Spitfire.
-
-- ``spitfire/demo/reactors/ignext-hydrogen-mechanism-comparison.py``: compares ignition-extinction curves of three hydrogen mechanisms
-- ``spitfire/demo/reactors/ignext-ethylene-mechanism-comparison.py``: compares ignition-extinction curves of three ethylene mechanisms
-
+The ``spitfire_demo/reactors/ignext_ethylene_mechanism_comparison.py`` script shows how one can compute ignition-extinction curves with Spitfire.
 
 Time-dependent parameters
 _________________________
 In the ignition-extinction demonstration scripts we build reactors with constant parameters (e.g. mixing time, feed temperature).
 It is simple to specify the reactor parameters as functions of time.
 Instead of providing a value for a parameter, provide a callable object such as a function, lambda, or class with the ``__call__`` method defined (note that the first argument in the function must be time, and only one argument is given).
-For example, the ``spitfire/demo/reactors/open-reactor-oscillatory-feed-temperature.py`` script specifies the feed temperature as a sine wave of time with a lambda.
+For example, the ``spitfire_demo/reactors/open_reactor_oscillatory_feed_temperature.py`` script specifies the feed temperature as a sine wave of time with a lambda.
 This slow oscillation of the feed temperature causes the reactor to periodically ignite and extinguish as shown in Figure :numref:`figure_oscillating_feed_temperature`.
 Also note that in this script we do not compute a steady solution, instead using the ``integrate_to_time`` method of the reactor to integrate only until reaching a specified simulation time.
 
@@ -286,7 +351,7 @@ Also note that in this script we do not compute a steady solution, instead using
 
 Reactor types
 _____________
-The demonstration scripts in ``spitfire/demo/reactors/`` that haven't been covered in previous sections exist to showcase some of the reactor types available in Spitfire.
+A few other demonstration scripts in ``spitfire_demo/reactors/`` that haven't been covered in previous sections showcase some of the reactor types available in Spitfire.
 Spitfire provides three types of specifications and twelve types of reactors in total:
 
 - **configuration**: whether the reactor is isobaric (constant pressure) or isochoric (constant volume)
@@ -295,12 +360,13 @@ Spitfire provides three types of specifications and twelve types of reactors in 
 
 Spitfire requires diathermal reactors to have a geometry.
 The shape is relevant because it determines ratio of surface area to volume, which plays a role in balancing volumetric heat release due to chemistry against heat transfer across a surface.
-The ``spitfire/demo/reactors/open-reactors-isobaric-diathermal-shapes.py`` example shows the impact of reactor geometry, with high surface areas corresponding to stronger heat loss.
+The ``spitfire_demo/reactors/open-reactors-isobaric-diathermal-shapes.py`` example shows the impact of reactor geometry, with high surface areas corresponding to stronger heat loss.
+The different reactors each have the same volume, but distinct surface areas lead to more or less heat loss.
 
-Among the other undiscussed demonstrations, two perform noteworthy analyses.
-``spitfire/demo/reactors/open-reactors-isobaric-isothermal-with-insitu-processing.py`` gives an example of detailed chemical explosive mode analysis on an isothermal reactor.
-``spitfire/demo/reactors/open-reactor-oscillatory-convection.py`` involves kinetics, mass transfer (a hot feed stream), and heat transfer (convective losses to a cool fluid) simultaneously.
-Furthermore the convection coefficient oscillates in time to cause periodic ignition and extinction.
+Two other interesting demonstration scripts are included:
+``spitfire/demo/reactors/open_reactors_isobaric_isothermal_with_analysis.py`` gives an example of detailed chemical explosive mode analysis on an isothermal reactor.
+``spitfire/demo/reactors/open_reactor_oscillatory_convection.py`` involves kinetics, mass transfer (a hot feed stream), and heat transfer (convective losses to a cool fluid) simultaneously.
+The convection coefficient oscillates in time to force periodic ignition and extinction.
 
 
 Non-premixed Flamelets
@@ -373,6 +439,10 @@ This documentation is in progress... TODO:
 - unsteady, adiabatic with cema demo
 - steady coal flamelet demo
 - jupyter demos - clean up necessary
+
+
+Flamelet Models for Tabulated Chemistry
++++++++++++++++++++++++++++++++++++++++
 
 
 
@@ -588,7 +658,7 @@ The forward rate constant is found with a modified Arrhenius expression,
     k_{f,j} = A_j T^{b_j} \exp\left(-\frac{E_{a,j}}{R_u T}\right) = A_j T^{b_j} \exp\left(-\frac{T_{a,j}}{T}\right),
 
 where :math:`A_j`, :math:`b_j`, and :math:`E_{a,j}` are the pre-exponential factor, temperature exponent, and activation energy of reaction :math:`j`, respectively.
-We define :math:`T_{a,j}=E_{a,j}/R_u` as the `activation temperature.'
+We define :math:`T_{a,j}=E_{a,j}/R_u` as the activation temperature.
 
 The reverse rate constant of an irreversible reaction is zero.
 :math:`k_{r,j}` for a reversible reaction is found with the equilibrium constant :math:`K_{c,j}`, via :math:`k_{r,j} = k_{f,j}/K_{c,j}`.
@@ -622,7 +692,7 @@ The falloff reduced pressure is
 .. math::
     p_{fr,j} = \frac{k_{0,j}}{k_{f,j}}\mathcal{T}_{F,j},
 
-where :math:`k_{0,j}` is the low-pressure limit rate constant evaluated with low-pressure Arrhenius parameters :math:`A_{0,j}`, :math:`b_{0,j}`, :math:`E_{a,0,j}`, and :math:`\mathcal{T}_{F,j}` is the `concentration' of the mixture
+where :math:`k_{0,j}` is the low-pressure limit rate constant evaluated with low-pressure Arrhenius parameters :math:`A_{0,j}`, :math:`b_{0,j}`, :math:`E_{a,0,j}`, and :math:`\mathcal{T}_{F,j}` is the concentration of the mixture
 which is either that of a single species if specified or the third-body-enhanced concentration if not.
 
 The falloff blending factor :math:`\mathcal{F}_j` depends upon the specified falloff form.
