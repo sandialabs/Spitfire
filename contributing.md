@@ -10,11 +10,11 @@ A good MWE should require us to learn as little as possible about your specific 
 In writing your MWE you should focus on the basic skeleton of your script and simplify _as much as possible_.
 The more you-specific knowledge we have to learn, the harder it will be for us to fix the problem.
 
-Once you have a good minimum working example ready, go to [our issue list](https://gitlab.multiscale.utah.edu/common/spitfire/issues)
+Once you have a good minimum working example ready, go to [our issue list](TBD)
 and make a new issue with the `spitfire-bug-report` template.
 
 ## Have an idea?
-If you have an idea for spitfire development - a feature, not a bug fix (see above) - go to [our issue list](https://gitlab.multiscale.utah.edu/common/spitfire/issues)
+If you have an idea for spitfire development - a feature, not a bug fix (see above) - go to [our issue list](TBD)
 and make a new issue with the `spitfire-feature-request` template.
 
 ## Have code ready to push?!

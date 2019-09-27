@@ -2,6 +2,14 @@
 This module contains controllers for adaptive time stepping based on embedded temporal error estimation.
 """
 
+# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
+# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS). 
+#                       
+# You should have received a copy of the 3-clause BSD License                                        
+# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.   
+#                    
+# Questions? Contact Mike Hansen (mahanse@sandia.gov)    
+
 from numpy import zeros, min, copy
 
 

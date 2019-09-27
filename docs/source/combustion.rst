@@ -1,5 +1,5 @@
-Solving Combustion Problems in Spitfire
-=======================================
+Solving Combustion Problems
+===========================
 
 This section describes setting up homogeneous reactors and non-premixed flamelets and computing steady and unsteady solutions,
 and the following section discusses relevant combustion theory.
@@ -360,7 +360,7 @@ Spitfire provides three types of specifications and twelve types of reactors in 
 
 Spitfire requires diathermal reactors to have a geometry.
 The shape is relevant because it determines ratio of surface area to volume, which plays a role in balancing volumetric heat release due to chemistry against heat transfer across a surface.
-The ``spitfire_demo/reactors/open-reactors-isobaric-diathermal-shapes.py`` example shows the impact of reactor geometry, with high surface areas corresponding to stronger heat loss.
+The ``spitfire_demo/reactors/open_reactors_isobaric_diathermal_shapes.py`` example shows the impact of reactor geometry, with high surface areas corresponding to stronger heat loss.
 The different reactors each have the same volume, but distinct surface areas lead to more or less heat loss.
 
 Two other interesting demonstration scripts are included:
@@ -371,7 +371,18 @@ The convection coefficient oscillates in time to force periodic ignition and ext
 
 Non-premixed Flamelets
 ++++++++++++++++++++++
+Spitfire provides a convenient Python API for solving the nonpremixed flamelet equations,
+a critical piece of building tabulated chemistry models for simulation of reactive flow systems.
+An API is provided for directly building a range of tabulated chemistry models; it is discussed in sec_tab_chemistry_.
+Here we show several examples of solving the steady and unsteady nonpremixed flamelet equations, including both ignition and extinction phenomena.
+
+
+
+
+
 Spitfire provides a number of convenient methods of solving steady and unsteady nonpremixed flamelets, both adiabatic and nonadiabatic.
+
+
 A special method is provided for building adiabatic steady flamelet libraries, a common task required for large eddy simulation and flow-resolved direct numerical simulation of combustion systems.
 The first demonstration discussed here, in ``spitfire/demo/flamelet/adiabatic-table-generation.py``, uses this method to build an adiabiatic flamelet library for a hydrogen-air system.
 With the ``build_adiabatic_slfm_table`` method, we first build a dictionary with a mechanism wrapper, oxidizer and fuel streams (as discussed in prior demonstrations), and specify a pressure and number of grid points to discretize mixture fraction space.::
@@ -441,6 +452,8 @@ This documentation is in progress... TODO:
 - jupyter demos - clean up necessary
 
 
+.. _sec_tab_chemistry
+
 Flamelet Models for Tabulated Chemistry
 +++++++++++++++++++++++++++++++++++++++
 
@@ -450,8 +463,9 @@ Combustion Theory
 =================
 
 This section details the theory behind Spitfire's combustion modeling capabilities.
-We present the governing equations for homogeneous reactors and non-premixed flamelets
-along with the underlying reaction rate laws and thermodynamic property models.
+We present the governing equations for homogeneous reactors and non-premixed flamelets,
+techniques for building tabulated chemistry models,
+and supported reaction rate laws and thermodynamic property models.
 
 
 Governing Equations for Homogeneous Reactors
@@ -472,9 +486,7 @@ Three types of *heat transfer* are available:
 
 - adiabatic: a reactor with insulated walls that allow no heat transfer with the surroundings
 - isothermal: a reactor whose temperature is held exactly constant for all time
-- diathermal: a reactor whose walls allow a finite rate of heat transfer by two modes
-   + radiative heat transfer to a nearby surface
-   + convective heat transfer to a fluid flowing around the reactor
+- diathermal: a reactor whose walls allow a finite rate of heat transfer by radiative heat transfer to a nearby surface and convective heat transfer to a fluid flowing around the reactor
 
 Below we detail the equations governing isochoric and isobaric reactors with any pair of models for mass and transfer.
 In all cases the ideal gas law applies,
@@ -588,6 +600,10 @@ This term models enthalpy diffusion and is optional in Spitfire (specify ``inclu
 Steady flamelets are derived from these equations by simply removing the time term, which leaves the steady flamelet equations
 that define the diffusive-reactive balance presumed in the ensemble of thin laminar flames in a turbulent flame (in the flamelet modeling approach).
 
+todo: update for the variable cp term
+
+todo: update the diffusive flux definition
+
 .. math::
     \frac{\partial Y_i}{\partial t} = \frac{\chi}{2}\frac{\partial^2 Y_i}{\partial \mathcal{Z}^2} + \frac{\omega_i}{\rho},
     :label: adiabatic_flamelet_Yi_eqn
@@ -627,6 +643,11 @@ A special option for building transient heat loss flamelet libraries involves th
 
 where :math:`\mathcal{Z}_{\mathrm{st}}` is the stoichiometric mixture fraction and
 :math:`h'` is an arbitrary parameter of order :math:`10^7` to drive a flamelet to extinction due to heat loss.
+
+
+Flamelet Tabulation Techniques
+++++++++++++++++++++++++++++++
+
 
 
 Chemical Kinetic Models
@@ -709,6 +730,8 @@ In the Troe form,
 where :math:`a_{\text{Troe}}`, :math:`T^{*}`, :math:`T^{**}`, and :math:`T^{***}` are specified parameters of the Troe form.
 If :math:`T^{***}` is unspecified in the mechanism file then its term is ignored.
 
+
+todo: add description of new non-elementary reaction rates
 
 
 Species Thermodynamics

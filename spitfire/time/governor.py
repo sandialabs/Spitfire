@@ -8,6 +8,14 @@ In many cases the Jacobian/preconditioner can be lagged for several time steps t
 
 """
 
+# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
+# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS). 
+#                       
+# You should have received a copy of the 3-clause BSD License                                        
+# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.   
+#                    
+# Questions? Contact Mike Hansen (mahanse@sandia.gov)    
+
 from numpy import copy as numpy_copy
 from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices
 from scipy.linalg import norm

@@ -2,6 +2,14 @@
 This module contains the HomogeneousReactor class that provides a high-level interface for 0-D reactors
 """
 
+# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
+# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS). 
+#                       
+# You should have received a copy of the 3-clause BSD License                                        
+# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.   
+#                    
+# Questions? Contact Mike Hansen (mahanse@sandia.gov)    
+
 from spitfire.time.governor import Governor, CustomTermination, Steady, FinalTime
 from spitfire.time.methods import ESDIRK64
 from spitfire.time.nonlinear import SimpleNewtonSolver

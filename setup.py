@@ -1,3 +1,11 @@
+# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
+# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS). 
+#                       
+# You should have received a copy of the 3-clause BSD License                                        
+# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.   
+#                    
+# Questions? Contact Mike Hansen (mahanse@sandia.gov)    
+
 import os
 from distutils.core import setup
 from distutils.extension import Extension
@@ -55,7 +63,7 @@ setup(name='Spitfire',
       license=readfile('license'),
       description=readfile('description_short'),
       long_description=readfile('readme.md'),
-      requires=['numpy', 'scipy', 'matplotlib', 'cantera', 'Cython', 'sphinx', 'numpydoc', 'sphinx-rtd-theme'],
+      install_requires=['numpy', 'scipy', 'matplotlib', 'cantera', 'Cython', 'sphinx', 'numpydoc', 'sphinx-rtd-theme'],
       packages=['spitfire.chemistry', 'spitfire.time', 'spitfire.griffon'],
       ext_modules=griffon_cython,
       package_data={'spitfire.griffon': ['*.so']})

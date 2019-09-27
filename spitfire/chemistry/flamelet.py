@@ -2,13 +2,13 @@
 This module contains the Flamelet class that provides a high-level interface for nonpremixed flamelets
 """
 
-"""
-Copyright (c) 2018-2019 Michael Alan Hansen - All Rights Reserved
-You may use, distribute and modify this code under the terms of the MIT license.
-
-You should have received a copy of the MIT license with this file.
-If not, please write to mahanse@sandia.gov or mike.hansen@chemeng.utah.edu
-"""
+# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
+# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS). 
+#                       
+# You should have received a copy of the 3-clause BSD License                                        
+# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.   
+#                    
+# Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 from spitfire.time.governor import Governor, Steady, FinalTime, CustomTermination
 from spitfire.time.methods import ESDIRK64

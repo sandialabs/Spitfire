@@ -9,7 +9,8 @@ Spitfire requires Python3 (developed and tested with version 3.6) and the follow
 - `matplotlib`
 - `Cython`
 - `cantera`
-- `Sphinx`
+- `sphinx`
+- `sphinx-rtd-theme`
 - `numpydoc`
 
 ## C++ Dependencies
@@ -37,6 +38,7 @@ pip3.6 install --upgrade scipy
 pip3.6 install --upgrade matplotlib
 pip3.6 install --upgrade Cython
 pip3.6 install --upgrade sphinx
+pip3.6 install --upgrade sphinx-rtd-theme
 pip3.6 install --upgrade numpydoc
 ```
 
