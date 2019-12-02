@@ -26,6 +26,7 @@ After activating it, run the following commands.
 conda install numpy scipy matplotlib Cython sphinx numpydoc
 conda install -c anaconda cmake
 conda install -c cantera cantera
+conda install -c anaconda sphinx_rtd_theme
 ```
 
 ## Prerequisite installation using pip
@@ -80,10 +81,12 @@ python3 setup.py build_ext --inplace install --griffon-build-dir=griffon_build
 ```
 
 # Testing
-To run the tests, enter `python3 -m unittest discover` from the base repo directory.
+To run the unit tests, enter `python3 -m unittest discover -s spitfire_test/unit` from the base repo directory.
+To run the regression tests, enter `python3 -m unittest discover -s spitfire_test/regression -v` from the base repo directory.
 
 # Examples
 Some demonstrations can be found in the `demo` directory.
+The regression tests also serve as demonstrations (just ignore the unittest code within).
 
 # Documentation
 To build HTML documentation, navigate to the `docs` directory and run `make html`.
