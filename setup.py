@@ -17,7 +17,11 @@ import platform
 
 
 def readfile(filename):
+  try:
     with open(filename) as f:
+        return f.read()
+  except:
+    with open(filename, encoding='utf-8') as f:
         return f.read()
 
 

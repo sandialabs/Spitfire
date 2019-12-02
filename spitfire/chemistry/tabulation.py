@@ -73,6 +73,9 @@ class Dimension(object):
     @grid.setter
     def grid(self, grid):
         self._grid = grid
+    
+    def get_dict(self):
+        return {'name': self._name, 'values': self._values, 'structured': self._structured}
 
 
 class Library(object):
@@ -114,7 +117,8 @@ class Library(object):
             ordered_dims = list([None] * len(instance_dict['dimensions'].keys()))
             for index in instance_dict['dim_ordering']:
                 name = instance_dict['dim_ordering'][index]
-                ordered_dims[index] = instance_dict['dimensions'][name]
+                d = instance_dict['dimensions'][name]
+                ordered_dims[index] = Dimension(d['name'], d['values'], d['structured'])
             l = Library(*ordered_dims)
             for prop in instance_dict['properties']:
                 l[prop] = instance_dict['properties'][prop]
@@ -148,7 +152,7 @@ class Library(object):
             self._props.pop(quantity)
 
     def save_to_file(self, file_name):
-        instance_dict = dict({'dimensions': self._dims, 'dim_ordering': self._dims_ordering, 'properties': self._props})
+        instance_dict = dict({'dimensions': {d: self._dims[d].get_dict() for d in self._dims}, 'dim_ordering': self._dims_ordering, 'properties': self._props})
         with open(file_name, 'wb') as file_output:
             pickle.dump(instance_dict, file_output)
 
