@@ -463,6 +463,10 @@ void CombustionKernels::prod_rates_sens_dense(const double &temperature, const d
           Kc = std::exp(-(sumStoich * std::log(standardStatePressure * invT * invRu) - invT * invRu * (GRIFFON_SUM5(GIBBS))));
           dKcdToverKc = -GRIFFON_SUM5(DBDT);
           break;
+        case 6:
+          Kc = std::exp(-(sumStoich * std::log(standardStatePressure * invT * invRu) - invT * invRu * (GRIFFON_SUM6(GIBBS))));
+          dKcdToverKc = -GRIFFON_SUM6(DBDT);
+          break;
         }
         kr = kf / Kc;
 

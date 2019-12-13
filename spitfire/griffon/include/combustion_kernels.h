@@ -212,7 +212,7 @@ struct MechanismData {
  */
 class CombustionKernels {
 
-  MechanismData<5, 12, 15> mechanismData; // note: moving the template integers to CombustionKernels causes Cython problems...
+  MechanismData<6, 52, 15> mechanismData; // note: moving the template integers to CombustionKernels causes Cython problems...
 
   inline void ideal_gas_density(const double &pressure, const double &temperature, const double &mmw, double *out_density) const {
     *out_density = pressure * mmw / (temperature * mechanismData.phaseData.Ru);
