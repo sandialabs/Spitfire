@@ -683,6 +683,7 @@ def _expand_enthalpy_defect_dimension(args):
     h_stoich_spacing = args[8]
     verbose = args[9]
     input_integration_args = args[10]
+    solver_verbose= args[11]
     fsnad = dict(flamelet_specs)
     fsnad['mech_spec'] = ChemicalMechanismSpec(*mech_args)
     fsnad['oxy_stream'] = fsnad['mech_spec'].stream('TPY', oxy_tpy)
@@ -694,7 +695,7 @@ def _expand_enthalpy_defect_dimension(args):
     fsnad['convection_coefficient'] = 1.e7
     fsnad['radiative_emissivity'] = 0.
 
-    integration_args = dict({'first_time_step': 1.e-9, 'max_time_step': 1.e-1, 'write_log': False, 'log_rate': 100})
+    integration_args = dict({'first_time_step': 1.e-9, 'max_time_step': 1.e-1, 'write_log': solver_verbose, 'log_rate': 100})
 
     if input_integration_args is not None:
         integration_args.update(input_integration_args)
@@ -774,7 +775,8 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                       tabulated_quantities,
                                                       h_stoich_spacing,
                                                       verbose,
-                                                      integration_args) for chi_st in table_dict.keys()))
+                                                      integration_args,
+                                                      solver_verbose) for chi_st in table_dict.keys()))
 
         if verbose:
             print('----------------------------------------------------------------------------------')
@@ -811,7 +813,8 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                tabulated_quantities,
                                                h_stoich_spacing,
                                                verbose,
-                                               integration_args))
+                                               integration_args,
+                                               solver_verbose))
 
         if verbose:
             print('----------------------------------------------------------------------------------')

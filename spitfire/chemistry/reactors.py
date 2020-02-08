@@ -480,7 +480,7 @@ class HomogeneousReactor(object):
             ep_list1 = np.abs(np.real(exp_lvec1) * np.real(exp_rvec1))
             ei1 = ep_list1 / np.sum(np.abs(ep_list1))
             ep_list2 = np.abs(np.real(exp_lvec2) * np.real(exp_rvec2))
-            ei2 = ep_list2 / np.sum(np.abs(ep_list2))
+            ei2 = ep_list2 / (1. if np.sum(np.abs(ep_list2)) < 1.e-16 else np.sum(np.abs(ep_list2)))
 
         if self._cema_participation_indices:
             if self._configuration == 'isobaric':

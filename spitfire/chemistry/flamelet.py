@@ -1684,7 +1684,7 @@ class Flamelet(object):
         neq = self._n_equations
 
         evaluate_jacobian = True
-        while res > tolerance and iteration_count <= max_iterations:
+        while res > tolerance and iteration_count < max_iterations:
             iteration_count += 1
             out_count += 1
 
@@ -1695,7 +1695,7 @@ class Flamelet(object):
                                          self._block_thomas_l_values,
                                          self._block_thomas_d_pivots,
                                          self._block_thomas_d_factors)
-                evaluate_jacobian = True
+                evaluate_jacobian = False
 
             dstate = np.zeros(self._n_dof)
             py_btddod_full_solve(J,
@@ -1716,10 +1716,12 @@ class Flamelet(object):
                 verbose_print('nan/inf detected in state update!')
                 return False
 
-            while norm(rhs * inv_dofscales, ord=norm_order) > max_factor_line_search * norm_rhs_old:
+            while norm(rhs * inv_dofscales, ord=norm_order) > max_factor_line_search * norm_rhs_old and alpha > 0.001:
                 alpha *= 0.5
                 dstate *= alpha
                 rhs = rhs_method(0., state + dstate)
+                verbose_print(f'  line search reducing step size to {alpha:.3f}')
+                evaluate_jacobian = True
             state += dstate
 
             res = norm(rhs * inv_dofscales, ord=norm_order)
@@ -1743,7 +1745,7 @@ class Flamelet(object):
                 print('   - iter {:4}, |residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, res, maxT))
 
         self._final_state = np.copy(state)
-        if iteration_count >= max_iterations:
+        if iteration_count > max_iterations or res > tolerance:
             message = 'Convergence failure! ' \
                       'Too many iterations required, more than allowable {:}.'.format(max_iterations)
             verbose_print(message)
@@ -1840,6 +1842,8 @@ class Flamelet(object):
 
         iteration_count = 0
         out_count = 0
+        jac_age = 0
+        jac_refresh_age = 8
 
         res = tolerance + 1.
         rhs = rhs_method(0., state)
@@ -1867,7 +1871,12 @@ class Flamelet(object):
                                          self._block_thomas_l_values,
                                          self._block_thomas_d_pivots,
                                          self._block_thomas_d_factors)
-                evaluate_jacobian = True
+                jac_age = 0
+                evaluate_jacobian = False
+            else:
+                jac_age += 1
+            
+            evaluate_jacobian = (jac_age == jac_refresh_age) or res > 1.e-2
 
             dstate = np.zeros(self._n_dof)
             py_btddod_full_solve(J,
@@ -1904,10 +1913,12 @@ class Flamelet(object):
                         original_args['ds_init'] /= ds_init_decrease
                         original_args['_recursion_depth'] += 1
                         return self.steady_solve_psitc(**original_args)
-            while norm(rhs * inv_dofscales, ord=norm_order) > max_factor_line_search * norm_rhs_old:
+            while norm(rhs * inv_dofscales, ord=norm_order) > max_factor_line_search * norm_rhs_old and alpha > 0.001:
                 alpha *= 0.5
                 dstate *= alpha
                 rhs = rhs_method(0., state + dstate)
+                verbose_print(f'  line search reducing step size to {alpha:.3f}')
+                evaluate_jacobian = True
             state += dstate
 
             res = norm(rhs * inv_dofscales, ord=norm_order)
@@ -1946,7 +1957,7 @@ class Flamelet(object):
                 print('   - iter {:4}, max L_exp = {:7.2e}, min(ds) = {:7.2e}, '
                       '|residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, np.max(expeig), np.min(ds),
                                                                       res, np.max(state)))
-        if iteration_count >= max_iterations:
+        if iteration_count > max_iterations or res > tolerance:
             return False, np.min(ds)
         else:
             self._iteration_count = iteration_count
@@ -1971,13 +1982,9 @@ class Flamelet(object):
             whether or not to write out status and failure messages
         """
 
-        if not self.steady_solve_newton(tolerance=tolerance, log_rate=1, verbose=verbose):
-            conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=40, max_iterations=200,
+        if not self.steady_solve_newton(tolerance=tolerance, log_rate=1, verbose=verbose, max_iterations=16):
+            conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=1, max_iterations=200,
                                                 verbose=verbose)
-            # if not conv:
-            #     conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=20, max_iterations=400,
-            #                                         verbose=verbose, ds_init=1.e-2, ds_max=1.e1, ds_safety=0.1,
-            #                                         diffusion_factor=0.1, ds_ramp=1.05)
             if not conv:
                 self.integrate_to_steady(steady_tolerance=tolerance, transient_tolerance=1.e-8, max_time_step=1.e4,
-                                         write_log=verbose, log_rate=20, first_time_step=1.e-2 * mds)
+                                         write_log=verbose, log_rate=1, first_time_step=1.e-2 * mds)
