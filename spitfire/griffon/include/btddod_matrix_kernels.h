@@ -13,10 +13,9 @@
 
 namespace griffon {
 namespace btddod {
-void btddod_full_factorize(const double *matrix_values, const int num_blocks, const int block_size, double *out_l_values, int *out_d_pivots,
-    double *out_d_factors);
+void btddod_full_factorize(double *out_d_factors, const int num_blocks, const int block_size, double *out_l_values, int *out_d_pivots);
 
-void btddod_full_solve(const double *matrix_values, const double *l_values, const int *d_pivots, const double *d_factors, const double *rhs,
+void btddod_full_solve(const double *d_factors, const double *l_values, const int *d_pivots, const double *rhs,
     const int num_blocks, const int block_size, double *out_solution);
 
 void btddod_full_matvec(const double *matrix_values, const double *vec, const int num_blocks, const int block_size, double *out_matvec);

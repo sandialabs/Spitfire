@@ -847,8 +847,8 @@ cdef extern from "btddod_matrix_kernels.h" namespace "griffon::btddod":
   void btddod_blockdiag_solve(const int *pivots, const double *factors, const double *rhs, const int num_blocks, const int block_size, double *out_solution)
   void btddod_lowerfulltriangle_solve(const int *pivots, const double *factors, const double *matrix_values, const double *rhs, const int num_blocks, const int block_size, double *out_solution)
   void btddod_upperfulltriangle_solve(const int *pivots, const double *factors, const double *matrix_values, const double *rhs, const int num_blocks, const int block_size, double *out_solution)
-  void btddod_full_factorize( const double *matrix_values, const int num_blocks, const int block_size, double *out_l_values, int *out_d_pivots, double *out_d_factors )
-  void btddod_full_solve( const double *matrix_values, const double *l_values, const int *d_pivots, const double *d_factors, const double *rhs, const int num_blocks, const int block_size, double *out_solution )
+  void btddod_full_factorize( double *out_dfactors, const int num_blocks, const int block_size, double *out_l_values, int *out_d_pivots )
+  void btddod_full_solve( const double *d_factors, const double *l_values, const int *d_pivots, const double *rhs, const int num_blocks, const int block_size, double *out_solution )
   void btddod_scale_and_add_scaled_block_diagonal( double *in_out_matrix_values, const double matrix_scale, const double *block_diag, const double diag_scale, const int num_blocks, const int block_size )
   void btddod_scale_and_add_diagonal( double *in_out_matrix_values, const double matrix_scale, const double *diagonal, const double diag_scale, const int num_blocks, const int block_size );
 
@@ -921,26 +921,24 @@ def py_btddod_upperfulltriangle_solve(np.ndarray[int, ndim=1] pivots,
 @cython.nonecheck(False)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def py_btddod_full_factorize(np.ndarray[np.double_t, ndim=1] matrix_values,
+def py_btddod_full_factorize(np.ndarray[np.double_t, ndim=1] out_d_factors,
     int num_blocks,
     int block_size,
     np.ndarray[np.double_t, ndim=1] out_l_values,
-    np.ndarray[int, ndim=1] out_d_pivots,
-    np.ndarray[np.double_t, ndim=1] out_d_factors):
-  btddod_full_factorize(&matrix_values[0], num_blocks, block_size, &out_l_values[0], &out_d_pivots[0], &out_d_factors[0])
+    np.ndarray[int, ndim=1] out_d_pivots):
+  btddod_full_factorize(&out_d_factors[0], num_blocks, block_size, &out_l_values[0], &out_d_pivots[0])
 
 @cython.nonecheck(False)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def py_btddod_full_solve(np.ndarray[np.double_t, ndim=1] matrix_values,
+def py_btddod_full_solve(np.ndarray[np.double_t, ndim=1] d_factors,
     np.ndarray[np.double_t, ndim=1] l_values,
     np.ndarray[int, ndim=1] d_pivots,
-    np.ndarray[np.double_t, ndim=1] d_factors,
     np.ndarray[np.double_t, ndim=1] rhs,
     int num_blocks,
     int block_size,
     np.ndarray[np.double_t, ndim=1] out_solution):
-  btddod_full_solve(&matrix_values[0], &l_values[0], &d_pivots[0], &d_factors[0], &rhs[0], num_blocks, block_size, &out_solution[0])
+  btddod_full_solve(&d_factors[0], &l_values[0], &d_pivots[0], &rhs[0], num_blocks, block_size, &out_solution[0])
 
 @cython.nonecheck(False)
 @cython.boundscheck(False)

@@ -492,7 +492,6 @@ class Flamelet(object):
         self._jac_indices_griffon = (row_indices, col_indices)
 
         self._block_thomas_l_values = np.zeros(self._n_equations * self._n_equations * self._nz_interior)
-        self._block_thomas_d_factors = np.zeros(self._n_equations * self._n_equations * self._nz_interior)
         self._block_thomas_d_pivots = np.zeros(self._jac_nelements_griffon, dtype=np.int32)
 
         # cema and in situ processing setup
@@ -970,8 +969,7 @@ class Flamelet(object):
                                  self._nz_interior,
                                  self._n_equations,
                                  self._block_thomas_l_values,
-                                 self._block_thomas_d_pivots,
-                                 self._block_thomas_d_factors)
+                                 self._block_thomas_d_pivots)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1096,8 +1094,7 @@ class Flamelet(object):
                                  self._nz_interior,
                                  self._n_equations,
                                  self._block_thomas_l_values,
-                                 self._block_thomas_d_pivots,
-                                 self._block_thomas_d_factors)
+                                 self._block_thomas_d_pivots)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1110,7 +1107,7 @@ class Flamelet(object):
     def _solve_block_thomas(self, residual):
         solution = np.zeros(self._n_dof)
         py_btddod_full_solve(self._jacobian_values, self._block_thomas_l_values, self._block_thomas_d_pivots,
-                             self._block_thomas_d_factors, residual, self._nz_interior, self._n_equations, solution)
+                             residual, self._nz_interior, self._n_equations, solution)
         return solution, 1, True
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1539,7 +1536,6 @@ class Flamelet(object):
             J = np.zeros(self._jac_nelements_griffon)
             btl = self._block_thomas_l_values
             btp = self._block_thomas_d_pivots
-            btf = self._block_thomas_d_factors
 
             q0 = np.copy(q)
             p0 = np.copy(p)
@@ -1696,15 +1692,13 @@ class Flamelet(object):
 
                 py_btddod_full_factorize(J, nzi, neq,
                                          self._block_thomas_l_values,
-                                         self._block_thomas_d_pivots,
-                                         self._block_thomas_d_factors)
+                                         self._block_thomas_d_pivots)
                 evaluate_jacobian = False
 
             dstate = np.zeros(self._n_dof)
             py_btddod_full_solve(J,
                                  self._block_thomas_l_values,
                                  self._block_thomas_d_pivots,
-                                 self._block_thomas_d_factors,
                                  rhs, nzi, neq, dstate)
 
             if any(logical_or(isinf(dstate), isnan(dstate))):
@@ -1872,8 +1866,7 @@ class Flamelet(object):
                 py_btddod_scale_and_add_diagonal(J, -1., one_over_ds, 1., nzi, neq)
                 py_btddod_full_factorize(J, nzi, neq,
                                          self._block_thomas_l_values,
-                                         self._block_thomas_d_pivots,
-                                         self._block_thomas_d_factors)
+                                         self._block_thomas_d_pivots)
                 jac_age = 0
                 evaluate_jacobian = False
             else:
@@ -1885,7 +1878,6 @@ class Flamelet(object):
             py_btddod_full_solve(J,
                                  self._block_thomas_l_values,
                                  self._block_thomas_d_pivots,
-                                 self._block_thomas_d_factors,
                                  rhs, nzi, neq, dstate)
 
             if any(logical_or(isinf(dstate), isnan(dstate))):

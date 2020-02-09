@@ -14,12 +14,11 @@
 namespace griffon {
   namespace btddod {
 
-    void btddod_full_factorize( const double *matrix_values,
+    void btddod_full_factorize( double *out_d_factors,
                                 const int num_blocks,
                                 const int block_size,
                                 double *out_l_values,
-                                int *out_d_pivots,
-                                double *out_d_factors ) {
+                                int *out_d_pivots ) {
       const int nelem_block = block_size * block_size;
       const int nelem_offdiagonal = (num_blocks - 1) * block_size;
       const int nelem_blockdiagonals = num_blocks * nelem_block;
@@ -27,48 +26,74 @@ namespace griffon {
       double d_local_tmp[nelem_block];
 
       double identity_matrix[nelem_block];
-      for ( int i = 0; i < block_size * block_size; ++i ) {
+      for ( int i = 0; i < nelem_block; ++i ) {
         identity_matrix[i] = 0.;
       }
       for ( int i = 0; i < block_size; ++i ) {
         identity_matrix[i * (block_size + 1)] = 1.;
       }
 
-      const double *sub = &matrix_values[nelem_blockdiagonals];
-      const double *sup = &matrix_values[nelem_blockdiagonals + nelem_offdiagonal];
+      const double *sub = &out_d_factors[nelem_blockdiagonals];
+      const double *sup = &out_d_factors[nelem_blockdiagonals + nelem_offdiagonal];
 
-      griffon::lapack::lu_factorize( block_size, matrix_values, out_d_pivots, out_d_factors );
+      int info;
+      const int one = 1;
+      char trans = 'N';
+      griffon::lapack::dgetrf_(&block_size,
+                               &block_size,
+                               out_d_factors,
+                               &block_size,
+                               out_d_pivots,
+                               &info);
 
       for ( int i = 1; i < num_blocks; ++i ) {
-        griffon::lapack::lu_solve_on_matrix( block_size,
-                                             &out_d_factors[(i - 1) * nelem_block],
-                                             &out_d_pivots[(i - 1) * block_size],
-                                             identity_matrix,
-                                             &out_l_values[i * nelem_block] );
+        const int o1 = i * nelem_block;
+        const int om = o1 - nelem_block;
+
+        for(int l=0;l<nelem_block;++l){
+          out_l_values[o1 + l] = identity_matrix[l];
+        }
+        griffon::lapack::dgetrs_(&trans,
+                                 &block_size,
+                                 &block_size,
+                                 &out_d_factors[om],
+                                 &block_size,
+                                 &out_d_pivots[(i - 1) * block_size],
+                                 &out_l_values[o1],
+                                 &block_size,
+                                 &info);
+
         const int i_base = i * block_size;
         const int im1_base = (i - 1) * block_size;
         for ( int j = 0; j < block_size; ++j ) {
+          const int o2 = o1 + j * block_size;
           for ( int k = 0; k < block_size; ++k ) {
-            out_l_values[i * nelem_block + j * block_size + k] *= sub[im1_base + k];
+            out_l_values[o2 + k] *= sub[im1_base + k];
           }
         }
 
-        griffon::blas::copy_vector( nelem_block, d_local_tmp, &matrix_values[i * nelem_block] );
         for ( int j = 0; j < block_size; ++j ) {
-          griffon::blas::vector_plus_scaled_vector( block_size, &d_local_tmp[j * block_size], -sup[im1_base + j], &out_l_values[i * nelem_block + j * block_size] );
+          const int o2 = j * block_size;
+          const int o3 = o1 + o2;
+          const double fac = -sup[im1_base + j];
+
+          for( int k = 0; k < block_size; ++k ){
+            out_d_factors[o3 + k] += fac * out_l_values[o3 + k];
+          }
         }
 
-        griffon::lapack::lu_factorize( block_size,
-                                       d_local_tmp,
-                                       &out_d_pivots[i * block_size],
-                                       &out_d_factors[i * nelem_block] );
+      griffon::lapack::dgetrf_(&block_size,
+                               &block_size,
+                               &out_d_factors[o1],
+                               &block_size,
+                               &out_d_pivots[i * block_size],
+                               &info);
       }
     }
 
-    void btddod_full_solve( const double *matrix_values,
+    void btddod_full_solve( const double *d_factors,
                             const double *l_values,
                             const int *d_pivots,
-                            const double *d_factors,
                             const double *rhs,
                             const int num_blocks,
                             const int block_size,
@@ -78,7 +103,7 @@ namespace griffon {
       const int nelem_blockdiagonals = num_blocks * nelem_block;
       const int nelem_vector = num_blocks * block_size;
 
-      const double *sup = &matrix_values[nelem_blockdiagonals + nelem_offdiagonal];
+      const double *sup = &d_factors[nelem_blockdiagonals + nelem_offdiagonal];
 
       double y[nelem_vector];
       double local_tmp[block_size];
