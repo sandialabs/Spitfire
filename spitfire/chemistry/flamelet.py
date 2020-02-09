@@ -1984,7 +1984,7 @@ class Flamelet(object):
             whether or not to use the psitc method when Newton's method fails (if False, tries ESDIRK time stepping next)
         """
 
-        if not self.steady_solve_newton(tolerance=tolerance, log_rate=1, verbose=verbose, max_iterations=16):
+        if not self.steady_solve_newton(tolerance=tolerance, log_rate=1, verbose=verbose, max_iterations=32):
             conv = False
             mds = 1.e-6
             if use_psitc:
