@@ -386,7 +386,7 @@ class ChemicalMechanismSpec(object):
             fuel_atoms['C'] = 0
             oxy_atoms['C'] = 0
         return -(oxy_atoms['O'] - 0.5 * oxy_atoms['H'] - 2.0 * oxy_atoms['C']) / (
-                fuel_atoms['O'] - 0.5 * fuel_atoms['H'] - 2.0 * fuel_atoms['C'])
+            fuel_atoms['O'] - 0.5 * fuel_atoms['H'] - 2.0 * fuel_atoms['C'])
 
     def stoich_mass_fuel_to_oxy_ratio(self, fuel_stream, oxy_stream):
         """Get the mass ratio of fuel to oxidizer at stoichiometric conditions.

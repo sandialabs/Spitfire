@@ -63,7 +63,10 @@ class HomogeneousReactor(object):
     feed_density : float or callable
         the density of the feed stream of an open reactor, either a constant or a function of time, f(t)
     rates_sensitivity_type : str
-        how the chemical source term Jacobian is formed, either 'exact' or 'no-TBAF' which ignores third-body and falloff sensitivities
+        how the chemical source term Jacobian is formed, either 'dense' or 'sparse' for exact formulations
+        or 'no-TBAF' which ignores third-body and falloff sensitivities. The default is 'dense'.
+        For large mechanisms (over 100 species) the 'sparse' formulation is far faster than 'dense',
+        especially for mechanisms of more than 300 species.
     sensitivity_transform_type : str
         how the Jacobian is transformed for isobaric systems, currently only 'exact' is supported
     """
@@ -143,7 +146,7 @@ class HomogeneousReactor(object):
                  feed_temperature=None,
                  feed_mass_fractions=None,
                  feed_density=None,
-                 rates_sensitivity_type='exact',
+                 rates_sensitivity_type='dense',
                  sensitivity_transform_type='exact'):
 
         # check configuration (isobaric/isochoric), heat transfer, and mass transfer
@@ -276,7 +279,7 @@ class HomogeneousReactor(object):
         self._yf_value = self._feed_mass_fractions(0.) if self._yf_is_timevar else self._feed_mass_fractions
         self._rf_value = self._feed_density(0.) if self._rf_is_timevar else self._feed_density
 
-        self._rates_sensitivity_option = {'exact': 0, 'no-TBAF': 1}[rates_sensitivity_type]
+        self._rates_sensitivity_option = {'dense': 0, 'no-TBAF': 1, 'sparse': 2}[rates_sensitivity_type]
         self._sensitivity_transform_option = {'exact': 0}[sensitivity_transform_type]
         self._is_open = self._mass_transfer == 'open'
         self._heat_transfer_option = {'adiabatic': 0, 'isothermal': 1, 'diathermal': 2}[self._heat_transfer]
