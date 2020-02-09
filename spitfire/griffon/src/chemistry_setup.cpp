@@ -105,7 +105,7 @@ void CombustionKernels::mechanism_add_nasa7_cp(const std::string& spec_name, con
 void CombustionKernels::mechanism_add_reaction_simple(const std::map<std::string, int>& reactants_stoich,
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::SIMPLE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -123,7 +123,7 @@ void CombustionKernels::mechanism_add_reaction_three_body(const std::map<std::st
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::THIRD_BODY;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -142,7 +142,7 @@ void CombustionKernels::mechanism_add_reaction_Lindemann(const std::map<std::str
     const std::map<std::string, int>& products_stoich, const bool reversible, const double fwd_pre_exp_value,
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::LINDEMANN;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -165,7 +165,7 @@ void CombustionKernels::mechanism_add_reaction_Troe(const std::map<std::string, 
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy,
     const std::vector<double>& troe_parameters) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::TROE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -187,7 +187,7 @@ void CombustionKernels::mechanism_add_reaction_Troe(const std::map<std::string, 
 void CombustionKernels::mechanism_add_reaction_simple_with_special_orders(const std::map<std::string, int>& reactants_stoich,
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy, const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::SIMPLE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -206,7 +206,7 @@ void CombustionKernels::mechanism_add_reaction_three_body_with_special_orders(co
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::THIRD_BODY;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -227,7 +227,7 @@ void CombustionKernels::mechanism_add_reaction_Lindemann_with_special_orders(con
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy,
     const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::LINDEMANN;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -251,7 +251,7 @@ void CombustionKernels::mechanism_add_reaction_Troe_with_special_orders(const st
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy,
     const std::vector<double>& troe_parameters, const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::TROE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -271,28 +271,28 @@ void CombustionKernels::mechanism_add_reaction_Troe_with_special_orders(const st
   ++mechanismData.reactionData.nReactions;
 }
 
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_fwd_pre_exponential(const double& v) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_fwd_pre_exponential(const double& v) {
   kFwdCoefs[0] = v;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_fwd_temp_exponent(const double& v) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_fwd_temp_exponent(const double& v) {
   kFwdCoefs[1] = v;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_fwd_activation_energy(const double& v) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_fwd_activation_energy(const double& v) {
   kFwdCoefs[2] = v;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_reactants(const std::map<std::string, int>& reactants_stoich, const PhaseData& pd) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_reactants(const std::map<std::string, int>& reactants_stoich, const PhaseData& pd) {
   set_reactants_or_products(reactants_stoich, pd, true);
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_products(const std::map<std::string, int>& products_stoich, const PhaseData& pd) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_products(const std::map<std::string, int>& products_stoich, const PhaseData& pd) {
   set_reactants_or_products(products_stoich, pd, false);
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_reactants_or_products(const std::map<std::string, int>& ss_map, const PhaseData& pd,
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_reactants_or_products(const std::map<std::string, int>& ss_map, const PhaseData& pd,
     const bool is_reactants) {
   int i = 0;
   for (const auto& species_stoich : ss_map) {
@@ -314,22 +314,21 @@ void ReactionData<NSR, NTB>::ReactionRateData::set_reactants_or_products(const s
     n_products = i;
   }
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_three_body_efficiencies(const std::map<std::string, double>& eff_map,
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_three_body_efficiencies(const std::map<std::string, double>& eff_map,
     const double& default_efficiency, const PhaseData& pd) {
   thdBdyDefault = default_efficiency;
-  int i = 0;
+  n_tb = 0;
   for (const auto& rs : eff_map) {
     const int speciesIndex = pd.speciesIndices.at(rs.first);
-    tb_indices[i] = speciesIndex;
-    tb_invmw[i] = pd.inverseMolecularWeights[speciesIndex];
-    tb_efficiencies[i] = tb_invmw[i] * (rs.second - thdBdyDefault);
-    ++i;
+    tb_indices.push_back(speciesIndex);
+    tb_invmw.push_back(pd.inverseMolecularWeights[speciesIndex]);
+    tb_efficiencies.push_back(tb_invmw[n_tb] * (rs.second - thdBdyDefault));
+    ++n_tb;
   }
-  n_tb = i;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_special_orders(const std::map<std::string, double>& special_orders_inp,
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_special_orders(const std::map<std::string, double>& special_orders_inp,
     const PhaseData& pd) {
   int i = 0;
   for (const auto& rs : special_orders_inp) {
@@ -342,27 +341,27 @@ void ReactionData<NSR, NTB>::ReactionRateData::set_special_orders(const std::map
   }
   n_special = i;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_falloff_pre_exponential(const double& v) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_falloff_pre_exponential(const double& v) {
   kPressureCoefs[0] = v;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_falloff_temp_exponent(const double& v) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_falloff_temp_exponent(const double& v) {
   kPressureCoefs[1] = v;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_falloff_activation_energy(const double& v) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_falloff_activation_energy(const double& v) {
   kPressureCoefs[2] = v;
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::set_troe_parameters(const std::vector<double>& troe_params) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::set_troe_parameters(const std::vector<double>& troe_params) {
   troeParams[0] = troe_params[0];
   troeParams[1] = troe_params[1];
   troeParams[2] = troe_params[2];
   troeParams[3] = troe_params[3];
 }
-template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::finalize(const PhaseData& pd) {
+template<int NSR>
+void ReactionData<NSR>::ReactionRateData::finalize(const PhaseData& pd) {
   {
     sumStoich = 0;
     std::map<int, std::tuple<int, double>> net_indices_stoichs; // spec idx to stoich, mw, invmw
@@ -444,15 +443,12 @@ void ReactionData<NSR, NTB>::ReactionRateData::finalize(const PhaseData& pd) {
     }
     n_sens = 0;
     if(not is_dense){
-      for(int i=0; i<NJR; ++i){
-        sens_indices[i] = -1;
-      }
       for(int i=0; i<n_reactants; ++i){
         const int idx = reactant_indices[i];
         if(std::find(sens_indices.end(),
                      sens_indices.end(),
                      idx) == sens_indices.end()){
-          sens_indices[n_sens] = idx;
+          sens_indices.push_back(idx);
           n_sens++;
         }
       }
@@ -461,7 +457,7 @@ void ReactionData<NSR, NTB>::ReactionRateData::finalize(const PhaseData& pd) {
         if(std::find(sens_indices.end(),
                      sens_indices.end(),
                      idx) == sens_indices.end()){
-          sens_indices[n_sens] = idx;
+          sens_indices.push_back(idx);
           n_sens++;
         }
       }
@@ -470,7 +466,7 @@ void ReactionData<NSR, NTB>::ReactionRateData::finalize(const PhaseData& pd) {
         if(std::find(sens_indices.end(),
                      sens_indices.end(),
                      idx) == sens_indices.end()){
-          sens_indices[n_sens] = idx;
+          sens_indices.push_back(idx);
           n_sens++;
         }
       }

@@ -117,10 +117,8 @@ struct HeatCapacityData {
  *  NSR: maximum allowed number of reactants, products, net species in a reaction, or of species in a nonelementary rate expression
  *  NTB: maximum allowed number of species third body species in a reaction
  */
-template<int NSR, int NTB>
+template<int NSR>
 struct ReactionData {
-    static constexpr int NJR = 2*NSR+NTB;
-
   /*
    * @class ReactionRateData
    * @brief data and setters for single chemical reactions
@@ -149,9 +147,9 @@ struct ReactionData {
     std::array<double, NSR> net_mw;
     int n_net = 0;
 
-    std::array<int, NTB> tb_indices;
-    std::array<double, NTB> tb_invmw;
-    std::array<double, NTB> tb_efficiencies;
+    std::vector<int> tb_indices;
+    std::vector<double> tb_invmw;
+    std::vector<double> tb_efficiencies;
     int n_tb = 0;
 
     bool hasOrders = false;
@@ -163,7 +161,7 @@ struct ReactionData {
 
     bool is_dense = false;
     int n_sens = 0;
-    std::array<int, NJR> sens_indices;
+    std::vector<int> sens_indices;
 
     double thdBdyDefault;
     std::array<double, 3> kFwdCoefs;
@@ -204,14 +202,13 @@ struct ReactionData {
  * @class MechanismData
  * @brief collection of phase, heat capacity, and reaction data
  */
-template<int NSRn, int NTBn, int NCPn>
+template<int NSRn, int NCPn>
 struct MechanismData {
   PhaseData phaseData;
   HeatCapacityData<NCPn> heatCapacityData;
-  ReactionData<NSRn, NTBn> reactionData;
+  ReactionData<NSRn> reactionData;
 
   static constexpr int NSR = NSRn;
-  static constexpr int NTB = NTBn;
   static constexpr int NCP = NCPn;
 };
 
@@ -221,11 +218,10 @@ struct MechanismData {
  */
 class CombustionKernels {
 
-  using MechData = MechanismData<8, 52, 15>;
+  using MechData = MechanismData<8, 15>;
   MechData mechanismData; // note: moving the template integers to CombustionKernels causes Cython problems...
 
   static constexpr int NSR = MechData::NSR;
-  static constexpr int NTB = MechData::NTB;
   static constexpr int NCP = MechData::NCP;
 
   inline void ideal_gas_density(const double &pressure, const double &temperature, const double &mmw, double *out_density) const {
