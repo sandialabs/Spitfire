@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <tuple>
+#include <string>
 
 namespace griffon {
 
@@ -104,7 +105,7 @@ void CombustionKernels::mechanism_add_nasa7_cp(const std::string& spec_name, con
 void CombustionKernels::mechanism_add_reaction_simple(const std::map<std::string, int>& reactants_stoich,
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::SIMPLE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -122,7 +123,7 @@ void CombustionKernels::mechanism_add_reaction_three_body(const std::map<std::st
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::THIRD_BODY;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -141,7 +142,7 @@ void CombustionKernels::mechanism_add_reaction_Lindemann(const std::map<std::str
     const std::map<std::string, int>& products_stoich, const bool reversible, const double fwd_pre_exp_value,
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::LINDEMANN;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -164,7 +165,7 @@ void CombustionKernels::mechanism_add_reaction_Troe(const std::map<std::string, 
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy,
     const std::vector<double>& troe_parameters) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::TROE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = false;
@@ -186,7 +187,7 @@ void CombustionKernels::mechanism_add_reaction_Troe(const std::map<std::string, 
 void CombustionKernels::mechanism_add_reaction_simple_with_special_orders(const std::map<std::string, int>& reactants_stoich,
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy, const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::SIMPLE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -205,7 +206,7 @@ void CombustionKernels::mechanism_add_reaction_three_body_with_special_orders(co
     const std::map<std::string, int>& products_stoich, const bool reversible, const double& fwd_pre_exp_value,
     const double& fwd_temp_exponent, const double& fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::THIRD_BODY;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -226,7 +227,7 @@ void CombustionKernels::mechanism_add_reaction_Lindemann_with_special_orders(con
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy,
     const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::LINDEMANN;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -250,7 +251,7 @@ void CombustionKernels::mechanism_add_reaction_Troe_with_special_orders(const st
     const double fwd_temp_exponent, const double fwd_act_energy, const std::map<std::string, double>& three_body_efficiencies,
     const double& default_efficiency, const double flf_pre_exp_value, const double flf_temp_exponent, const double flf_act_energy,
     const std::vector<double>& troe_parameters, const std::map<std::string, double>& special_orders) {
-  typename griffon::ReactionData<6,52>::ReactionRateData rxnratedata;
+  typename griffon::ReactionData<NSR,NTB>::ReactionRateData rxnratedata;
   rxnratedata.type = griffon::ReactionRateType::TROE;
   rxnratedata.reversible = reversible;
   rxnratedata.hasOrders = true;
@@ -388,18 +389,46 @@ void ReactionData<NSR, NTB>::ReactionRateData::finalize(const PhaseData& pd) {
     }
     n_net = 0;
     for (const auto& net_index : net_indices_stoichs) {
+      const auto stoich = std::get<0>(net_index.second);
+      if (std::abs(stoich) > 1.e-14) {
+        ++n_net;
+      }
+    }
+    if (n_net < 2 or n_net > 8) {
+      std::string msg = "\n\nBad number of net reacting species (n < 2 or n > 8) detected.";
+      msg += "\n  Number of net species detected is " + std::to_string(n_net);
+      msg += "\n  The species are [";
+      for (const auto& net_index : net_indices_stoichs) {
+        const auto index = net_index.first;
+        const auto stoich = std::get<0>(net_index.second);
+        if (std::abs(stoich) > 1.e-14) {
+          msg += pd.speciesNames[index] + ", ";
+        }
+      }
+      msg += "]";
+      msg += "\n  Reactants: [";
+      for(int i=0; i<n_reactants; ++i){
+        msg += pd.speciesNames[reactant_indices[i]] + ", ";
+      }
+      msg += "]";
+      msg += "\n  Products: [";
+      for(int i=0; i<n_products; ++i){
+        msg += pd.speciesNames[product_indices[i]] + ", ";
+      }
+      msg += "]";
+      throw std::runtime_error(msg.c_str());
+    }
+    int idx = 0;
+    for (const auto& net_index : net_indices_stoichs) {
       const auto index = net_index.first;
       const auto stoich = std::get<0>(net_index.second);
       const auto invmw = std::get<1>(net_index.second);
       if (std::abs(stoich) > 1.e-14) {
-        net_indices[n_net] = index;
-        net_stoich[n_net] = stoich;
-        net_mw[n_net] = 1. / invmw;
-        ++n_net;
+        net_indices[idx] = index;
+        net_stoich[idx] = stoich;
+        net_mw[idx] = 1. / invmw;
+        ++idx;
       }
-    }
-    if (n_net < 2 or n_net > 6) {
-      throw std::runtime_error("bad number of net reacting species, need 2 < n < 7");
     }
 
     is_dense = false;

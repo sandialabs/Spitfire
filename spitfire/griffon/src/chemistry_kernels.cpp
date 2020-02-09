@@ -310,6 +310,15 @@ void CombustionKernels::production_rates(const double &temperature, const double
         case 5:
           kr = k * std::exp(rxnData.sumStoich * std::log(port) - invT * invGasConstant * (GRIFFON_SUM5(GIBBS)));
           break;
+        case 6:
+          kr = k * std::exp(rxnData.sumStoich * std::log(port) - invT * invGasConstant * (GRIFFON_SUM6(GIBBS)));
+          break;
+        case 7:
+          kr = k * std::exp(rxnData.sumStoich * std::log(port) - invT * invGasConstant * (GRIFFON_SUM7(GIBBS)));
+          break;
+        case 8:
+          kr = k * std::exp(rxnData.sumStoich * std::log(port) - invT * invGasConstant * (GRIFFON_SUM8(GIBBS)));
+          break;
         }
       }
 

@@ -204,11 +204,15 @@ struct ReactionData {
  * @class MechanismData
  * @brief collection of phase, heat capacity, and reaction data
  */
-template<int NSR, int NTB, int NCP>
+template<int NSRn, int NTBn, int NCPn>
 struct MechanismData {
   PhaseData phaseData;
-  HeatCapacityData<NCP> heatCapacityData;
-  ReactionData<NSR, NTB> reactionData;
+  HeatCapacityData<NCPn> heatCapacityData;
+  ReactionData<NSRn, NTBn> reactionData;
+
+  static constexpr int NSR = NSRn;
+  static constexpr int NTB = NTBn;
+  static constexpr int NCP = NCPn;
 };
 
 /*
@@ -217,7 +221,12 @@ struct MechanismData {
  */
 class CombustionKernels {
 
-  MechanismData<6, 52, 15> mechanismData; // note: moving the template integers to CombustionKernels causes Cython problems...
+  using MechData = MechanismData<8, 52, 15>;
+  MechData mechanismData; // note: moving the template integers to CombustionKernels causes Cython problems...
+
+  static constexpr int NSR = MechData::NSR;
+  static constexpr int NTB = MechData::NTB;
+  static constexpr int NCP = MechData::NCP;
 
   inline void ideal_gas_density(const double &pressure, const double &temperature, const double &mmw, double *out_density) const {
     *out_density = pressure * mmw / (temperature * mechanismData.phaseData.Ru);
