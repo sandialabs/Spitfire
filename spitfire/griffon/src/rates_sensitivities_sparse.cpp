@@ -8,7 +8,7 @@
  * Questions? Contact Mike Hansen (mahanse@sandia.gov)    
  */
 
-// the exact Jacobian option, magic number = 0
+// the sparse exact Jacobian option, magic number = 2
 //
 #include "combustion_kernels.h"
 #include <cmath>
@@ -28,7 +28,7 @@
 #define DBDT( i ) (net_stoich[(i)] * dBdTSpec[net_indices[(i)]])
 
 namespace griffon {
-void CombustionKernels::prod_rates_sens_exact(const double &temperature, const double &density, const double &mmw, const double *y,
+void CombustionKernels::prod_rates_sens_sparse(const double &temperature, const double &density, const double &mmw, const double *y,
     double *out_prodrates, double *out_prodratessens) const {
   const double T = temperature;
   const double rho = density;
@@ -125,6 +125,10 @@ void CombustionKernels::prod_rates_sens_exact(const double &temperature, const d
     const auto& net_stoich = rxnData.net_stoich;
     const auto& net_mw = rxnData.net_mw;
     const auto n_net = rxnData.n_net;
+
+    const auto& sens_indices = rxnData.sens_indices;
+    const auto n_sens = rxnData.n_sens;
+    const auto is_dense = rxnData.is_dense;
 
     const auto& kCoefs = rxnData.kFwdCoefs;
     const auto& kPCoefs = rxnData.kPressureCoefs;
@@ -894,8 +898,17 @@ void CombustionKernels::prod_rates_sens_exact(const double &temperature, const d
       out_prodrates[index] += factor * q;
       out_prodratessens[index] += factor * dqdrho;
       out_prodratessens[index + nsp1] += factor * dqdT;
-      for (int s = 0; s < nsm1; ++s) {
-        out_prodratessens[offset + nsp1 * s] += factor * dqdY[s];
+
+      if(is_dense){
+        for (int s = 0; s < nsm1; ++s) {
+          out_prodratessens[offset + nsp1 * s] += factor * dqdY[s];
+        }
+      }
+      else{
+        for (int j = 0; j < n_sens; ++j) {
+          const int s = sens_indices[j];
+          out_prodratessens[offset + nsp1 * s] += factor * dqdY[s];
+        }
       }
     }
   }

@@ -82,7 +82,10 @@ class Flamelet(object):
     include_variable_cp : bool
         whether or not to include variation of the heat capacity (True) or use the simplest flamelet formulation (False)
     rates_sensitivity_type : str
-        how the chemical source term Jacobian is formed, either 'exact' or 'no-TBAF' which ignores third-body and falloff sensitivities
+        how the chemical source term Jacobian is formed, either 'dense' or 'sparse' for exact formulations
+        or 'no-TBAF' which ignores third-body and falloff sensitivities. The default is 'dense'.
+        For large mechanisms (over 100 species) the 'sparse' formulation is far faster than 'dense',
+        especially for mechanisms of more than 300 species.
     sensitivity_transform_type : str
         how the Jacobian is transformed, currently only 'exact' is supported
     """
@@ -90,7 +93,7 @@ class Flamelet(object):
     _heat_transfers = ['adiabatic', 'nonadiabatic']
     _initializations = ['unreacted', 'equilibrium', 'Burke-Schumann', 'linear-TY']
     _grid_types = ['uniform', 'clustered']
-    _rates_sensitivity_option_dict = {'exact': 0, 'no-TBAF': 1}
+    _rates_sensitivity_option_dict = {'dense': 0, 'no-TBAF': 1, 'sparse': 2}
     _sensitivity_transform_option_dict = {'exact': 0}
 
     @classmethod
@@ -220,7 +223,7 @@ class Flamelet(object):
                  radiation_temperature=None,
                  convection_coefficient=None,
                  radiative_emissivity=None,
-                 rates_sensitivity_type='exact',
+                 rates_sensitivity_type='dense',
                  sensitivity_transform_type='exact',
                  include_enthalpy_flux=False,
                  include_variable_cp=False,
@@ -1964,15 +1967,20 @@ class Flamelet(object):
             self._final_state = np.copy(state)
             return True, np.min(ds)
 
-    def compute_steady_state(self, tolerance=1.e-6, verbose=False):
+    def compute_steady_state(self, tolerance=1.e-6, verbose=False, use_psitc=True):
         """Solve for the steady state of this flamelet, using a number of numerical algorithms
 
         This will first try Newton's method, which is fast if it manages to converge.
         If Newton's method fails, the pseudo-transient continuation (psitc) method is used.
+        The psitc solver will attempt several restarts with consecutively more conservative solver settings.
         Finally, if both Newton's method and psitc fail, ESDIRK64 time integration with adaptive stepping is attempted.
 
         This is meant to be a convenient interface for common usage.
         If it fails, try utilizing each of the steady solvers on their own with special parameters specified.
+
+        For exceptionally large mechanisms, say, > 150 species, the psitc solver can be slow,
+        and setting use_psitc=False will bypass it when Newton's method fails in favor of the ESDIRK solver.
+        This is only recommended for large mechanisms.
 
         Parameters
         ----------
@@ -1980,11 +1988,17 @@ class Flamelet(object):
             residual tolerance below which the solution has converged
         verbose : bool
             whether or not to write out status and failure messages
+        use_psitc : bool
+            whether or not to use the psitc method when Newton's method fails (if False, tries ESDIRK time stepping next)
         """
 
         if not self.steady_solve_newton(tolerance=tolerance, log_rate=1, verbose=verbose, max_iterations=16):
-            conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=1, max_iterations=200,
-                                                verbose=verbose)
+            conv = False
+            mds = 1.e-6
+            if use_psitc:
+                conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=1, max_iterations=200,
+                                                    verbose=verbose)
             if not conv:
                 self.integrate_to_steady(steady_tolerance=tolerance, transient_tolerance=1.e-8, max_time_step=1.e4,
-                                         write_log=verbose, log_rate=1, first_time_step=1.e-2 * mds)
+                                         write_log=verbose, log_rate=1, first_time_step=1.e-2 * mds,
+                                         maximum_steps_per_jacobian=10)

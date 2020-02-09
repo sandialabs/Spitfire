@@ -403,7 +403,7 @@ void CombustionKernels::prod_rates_primitive_sensitivities(const double &density
     double *out_prodratessens) const {
   const int nSpec = mechanismData.phaseData.nSpecies;
   double prod_rates[nSpec];
-  prod_rates_sens_dense(temperature, density, mixture_molecular_weight(y), y, prod_rates, out_prodratessens);
+  prod_rates_sens_exact(temperature, density, mixture_molecular_weight(y), y, prod_rates, out_prodratessens);
 
 }
 

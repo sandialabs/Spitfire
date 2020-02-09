@@ -119,6 +119,7 @@ struct HeatCapacityData {
  */
 template<int NSR, int NTB>
 struct ReactionData {
+    static constexpr int NJR = 2*NSR+NTB;
 
   /*
    * @class ReactionRateData
@@ -136,29 +137,33 @@ struct ReactionData {
     std::array<int, NSR> reactant_indices;
     std::array<int, NSR> reactant_stoich;
     std::array<double, NSR> reactant_invmw;
-    int n_reactants;
+    int n_reactants = 0;
 
     std::array<int, NSR> product_indices;
     std::array<int, NSR> product_stoich;
     std::array<double, NSR> product_invmw;
-    int n_products;
+    int n_products = 0;
 
     std::array<int, NSR> net_indices;
     std::array<int, NSR> net_stoich;
     std::array<double, NSR> net_mw;
-    int n_net;
+    int n_net = 0;
 
     std::array<int, NTB> tb_indices;
     std::array<double, NTB> tb_invmw;
     std::array<double, NTB> tb_efficiencies;
-    int n_tb;
+    int n_tb = 0;
 
-    bool hasOrders;
+    bool hasOrders = false;
     std::array<int, NSR> special_indices;
     std::array<double, NSR> special_orders;
     std::array<bool, NSR> special_nonzero;
     std::array<double, NSR> special_invmw;
-    int n_special;
+    int n_special = 0;
+
+    bool is_dense = false;
+    int n_sens = 0;
+    std::array<int, NJR> sens_indices;
 
     double thdBdyDefault;
     std::array<double, 3> kFwdCoefs;
@@ -188,7 +193,7 @@ struct ReactionData {
     void set_special_orders(const std::map<std::string, double>& orders, const PhaseData& pd);
     void set_three_body_efficiencies(const std::map<std::string, double>& eff_map, const double& default_efficiency, const PhaseData& pd);
     void set_troe_parameters(const std::vector<double>& troe_params);
-    void finalize();
+    void finalize(const PhaseData& phaseData);
   };
 
   int nReactions;
@@ -227,9 +232,11 @@ class CombustionKernels {
     cp_sens_T(temperature, y, out_cvmixsens, out_cvspeciessens);
   }
   void production_rates(const double &temperature, const double &density, const double &mmw, const double *y, double *out_prodrates) const;
-  void prod_rates_sens_dense(const double &temperature, const double &density, const double &mmw, const double *y, double *out_prodrates,
+  void prod_rates_sens_exact(const double &temperature, const double &density, const double &mmw, const double *y, double *out_prodrates,
       double *out_prodratessens) const;
   void prod_rates_sens_no_tbaf(const double &temperature, const double &density, const double &mmw, const double *y, double *out_prodrates,
+      double *out_prodratessens) const;
+  void prod_rates_sens_sparse(const double &temperature, const double &density, const double &mmw, const double *y, double *out_prodrates,
       double *out_prodratessens) const;
   void chem_rhs_isobaric(const double &rho, const double &cp, const double *h, const double *w, double *out_rhs) const;
   void heat_rhs_isobaric(const double &temperature, const double &rho, const double &cp, const double &fluidTemperature,

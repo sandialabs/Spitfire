@@ -113,7 +113,7 @@ void CombustionKernels::mechanism_add_reaction_simple(const std::map<std::string
   rxnratedata.set_fwd_activation_energy(fwd_act_energy);
   rxnratedata.set_reactants(reactants_stoich, mechanismData.phaseData);
   rxnratedata.set_products(products_stoich, mechanismData.phaseData);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -132,7 +132,7 @@ void CombustionKernels::mechanism_add_reaction_three_body(const std::map<std::st
   rxnratedata.set_reactants(reactants_stoich, mechanismData.phaseData);
   rxnratedata.set_products(products_stoich, mechanismData.phaseData);
   rxnratedata.set_three_body_efficiencies(three_body_efficiencies, default_efficiency, mechanismData.phaseData);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -154,7 +154,7 @@ void CombustionKernels::mechanism_add_reaction_Lindemann(const std::map<std::str
   rxnratedata.set_falloff_pre_exponential(flf_pre_exp_value);
   rxnratedata.set_falloff_temp_exponent(flf_temp_exponent);
   rxnratedata.set_falloff_activation_energy(flf_act_energy);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -178,7 +178,7 @@ void CombustionKernels::mechanism_add_reaction_Troe(const std::map<std::string, 
   rxnratedata.set_falloff_temp_exponent(flf_temp_exponent);
   rxnratedata.set_falloff_activation_energy(flf_act_energy);
   rxnratedata.set_troe_parameters(troe_parameters);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -196,7 +196,7 @@ void CombustionKernels::mechanism_add_reaction_simple_with_special_orders(const 
   rxnratedata.set_reactants(reactants_stoich, mechanismData.phaseData);
   rxnratedata.set_products(products_stoich, mechanismData.phaseData);
   rxnratedata.set_special_orders(special_orders, mechanismData.phaseData);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -216,7 +216,7 @@ void CombustionKernels::mechanism_add_reaction_three_body_with_special_orders(co
   rxnratedata.set_products(products_stoich, mechanismData.phaseData);
   rxnratedata.set_special_orders(special_orders, mechanismData.phaseData);
   rxnratedata.set_three_body_efficiencies(three_body_efficiencies, default_efficiency, mechanismData.phaseData);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -240,7 +240,7 @@ void CombustionKernels::mechanism_add_reaction_Lindemann_with_special_orders(con
   rxnratedata.set_falloff_pre_exponential(flf_pre_exp_value);
   rxnratedata.set_falloff_temp_exponent(flf_temp_exponent);
   rxnratedata.set_falloff_activation_energy(flf_act_energy);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -265,7 +265,7 @@ void CombustionKernels::mechanism_add_reaction_Troe_with_special_orders(const st
   rxnratedata.set_falloff_temp_exponent(flf_temp_exponent);
   rxnratedata.set_falloff_activation_energy(flf_act_energy);
   rxnratedata.set_troe_parameters(troe_parameters);
-  rxnratedata.finalize();
+  rxnratedata.finalize(mechanismData.phaseData);
   mechanismData.reactionData.reactions.push_back(rxnratedata);
   ++mechanismData.reactionData.nReactions;
 }
@@ -361,7 +361,7 @@ void ReactionData<NSR, NTB>::ReactionRateData::set_troe_parameters(const std::ve
   troeParams[3] = troe_params[3];
 }
 template<int NSR, int NTB>
-void ReactionData<NSR, NTB>::ReactionRateData::finalize() {
+void ReactionData<NSR, NTB>::ReactionRateData::finalize(const PhaseData& pd) {
   {
     sumStoich = 0;
     std::map<int, std::tuple<int, double>> net_indices_stoichs; // spec idx to stoich, mw, invmw
@@ -399,7 +399,52 @@ void ReactionData<NSR, NTB>::ReactionRateData::finalize() {
       }
     }
     if (n_net < 2 or n_net > 6) {
-      throw std::runtime_error("too many/few net reacting species, not 2 < n < 7");
+      throw std::runtime_error("bad number of net reacting species, need 2 < n < 7");
+    }
+
+    is_dense = false;
+    for(int i=0; i<n_net; ++i){
+      if(net_indices[i] == pd.nSpecies-1){
+        is_dense = true;
+      }
+    }
+    for(int i=0; i<n_tb; ++i){
+      if(tb_indices[i] == pd.nSpecies-1){
+        is_dense = true;
+      }
+    }
+    n_sens = 0;
+    if(not is_dense){
+      for(int i=0; i<NJR; ++i){
+        sens_indices[i] = -1;
+      }
+      for(int i=0; i<n_reactants; ++i){
+        const int idx = reactant_indices[i];
+        if(std::find(sens_indices.end(),
+                     sens_indices.end(),
+                     idx) == sens_indices.end()){
+          sens_indices[n_sens] = idx;
+          n_sens++;
+        }
+      }
+      for(int i=0; i<n_products; ++i){
+        const int idx = product_indices[i];
+        if(std::find(sens_indices.end(),
+                     sens_indices.end(),
+                     idx) == sens_indices.end()){
+          sens_indices[n_sens] = idx;
+          n_sens++;
+        }
+      }
+      for(int i=0; i<n_tb; ++i){
+        const int idx = tb_indices[i];
+        if(std::find(sens_indices.end(),
+                     sens_indices.end(),
+                     idx) == sens_indices.end()){
+          sens_indices[n_sens] = idx;
+          n_sens++;
+        }
+      }
     }
 
     switch (n_reactants) {

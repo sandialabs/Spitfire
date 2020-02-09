@@ -357,7 +357,10 @@ void CombustionKernels::flamelet_jacobian(const double *state, const double &pre
       prod_rates_sens_no_tbaf(T, rho, mmw, y, w, wsens);
       break;
     case 0:
-      prod_rates_sens_dense(T, rho, mmw, y, w, wsens);
+      prod_rates_sens_exact(T, rho, mmw, y, w, wsens);
+      break;
+    case 2:
+      prod_rates_sens_sparse(T, rho, mmw, y, w, wsens);
       break;
     }
 

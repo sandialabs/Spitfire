@@ -545,7 +545,8 @@ def build_adiabatic_slfm_library(flamelet_specs,
                                  verbose=True,
                                  solver_verbose=False,
                                  return_intermediates=False,
-                                 post_processors=None):
+                                 post_processors=None,
+                                 solver_use_psitc=True):
     """Build an adiabatic steady laminar flamelet library, tabulating quantities over the mixture fraction and dissipation rate
 
     Parameters
@@ -616,7 +617,7 @@ def build_adiabatic_slfm_library(flamelet_specs,
         if verbose:
             print(f'{idx + 1:4}/{nchi:4} (chi{suffix} = {chival:8.1e} 1/s) ', end='', flush=True)
         cput0 = perf_counter()
-        flamelet.compute_steady_state(tolerance=1.e-6, verbose=solver_verbose)
+        flamelet.compute_steady_state(tolerance=1.e-6, verbose=solver_verbose, use_psitc=solver_use_psitc)
         dcput = perf_counter() - cput0
 
         if np.max(flamelet.final_temperature - flamelet.linear_temperature) < 10.:
@@ -745,11 +746,13 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                          solver_verbose=False,
                                                          h_stoich_spacing=10.e3,
                                                          num_procs=1,
-                                                         integration_args=None):
+                                                         integration_args=None,
+                                                         solver_use_psitc=True):
     table_dict, z_values, x_values = build_adiabatic_slfm_library(flamelet_specs, tabulated_quantities,
                                                                   diss_rate_values, diss_rate_ref,
                                                                   verbose, solver_verbose,
-                                                                  return_intermediates=True)
+                                                                  return_intermediates=True,
+                                                                  solver_use_psitc=solver_use_psitc)
 
     if verbose:
         print('integrating enthalpy defect dimension ...', flush=True)
@@ -908,7 +911,8 @@ def build_nonadiabatic_defect_slfm_library(flamelet_specs,
                                            integration_args=None,
                                            n_defect_st=32,
                                            post_processors=None,
-                                           extend_defect_dim=False):
+                                           extend_defect_dim=False,
+                                           solver_use_psitc=True):
     if post_processors is not None:
         dependency_only_quantities = []
         for p in post_processors:
@@ -926,7 +930,8 @@ def build_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                                solver_verbose,
                                                                h_stoich_spacing,
                                                                num_procs,
-                                                               integration_args)
+                                                               integration_args,
+                                                               solver_use_psitc)
 
     structured_defect_table, x_values, g_values = _interpolate_to_structured_defect_dimension(ugt,
                                                                                               n_defect_st,

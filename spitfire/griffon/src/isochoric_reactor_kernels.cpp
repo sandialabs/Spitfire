@@ -246,7 +246,7 @@ void CombustionKernels::reactor_jac_isochoric(const double *state, const double 
   cv_mix_and_species(temperature, y, mmw, &cv, cvi);
   cv_sens_T(temperature, y, &cvsensT, cvisensT);
   species_energies(temperature, energies);
-  prod_rates_sens_dense(temperature, density, mmw, y, w, wsens);
+  prod_rates_sens_exact(temperature, density, mmw, y, w, wsens);
 
   chem_jacexactdense_isochoric(temperature, y, density, cv, cvi, cvsensT, energies, w, wsens, out_rhs, out_jac);
 

@@ -225,7 +225,10 @@ void CombustionKernels::reactor_jac_isobaric(const double *state, const double &
     prod_rates_sens_no_tbaf(temperature, rho, mmw, y, w, wsens);
     break;
   case 0:
-    prod_rates_sens_dense(temperature, rho, mmw, y, w, wsens);
+    prod_rates_sens_exact(temperature, rho, mmw, y, w, wsens);
+    break;
+  case 2:
+    prod_rates_sens_sparse(temperature, rho, mmw, y, w, wsens);
     break;
   }
 
