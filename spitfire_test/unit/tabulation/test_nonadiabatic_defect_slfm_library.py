@@ -1,6 +1,6 @@
 import unittest
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.chemistry.tabulation import build_nonadiabatic_defect_slfm_library, Library
+from spitfire.chemistry.tabulation import build_nonadiabatic_defect_transient_slfm_library, Library
 from numpy.testing import assert_allclose
 from os.path import join, abspath
 import numpy as np
@@ -21,9 +21,9 @@ class NonadiabaticDefectSLFMLibrary(unittest.TestCase):
 
         quantities = ['enthalpy', 'temperature', 'mass fraction OH']
 
-        l1 = build_nonadiabatic_defect_slfm_library(flamelet_specs, quantities, verbose=False,
-                                                    diss_rate_values=np.logspace(0, 1, 4),
-                                                    num_procs=4)
+        l1 = build_nonadiabatic_defect_transient_slfm_library(flamelet_specs, quantities, verbose=False,
+                                                              diss_rate_values=np.logspace(0, 1, 4),
+                                                              num_procs=4)
 
         file_name = abspath(join('spitfire_test',
                                  'unit',

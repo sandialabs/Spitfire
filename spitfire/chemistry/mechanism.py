@@ -15,7 +15,7 @@ from numpy import sum
 from spitfire.griffon.griffon import PyCombustionKernels
 
 
-class CanteraWrapper(object):
+class _CanteraWrapper(object):
     def __init__(self, mech_xml_path, group_name, solution=None):
         self._mech_xml_path = mech_xml_path if mech_xml_path is not None else 'cantera-XML-not-given'
         self._group_name = group_name if group_name is not None else 'cantera-group-not-given'
@@ -47,7 +47,7 @@ class ChemicalMechanismSpec(object):
     This class facilitates some simple way of specifying the fuel and oxidizer streams for flamelets
     and of blending these streams to make mixtures for zero-dimensional simulations.
 
-    **Constructor**: specify a chemical mechanism in cantera XML format
+    **Constructor**: specify a chemical mechanism file in cantera XML format
 
     Parameters
     ----------
@@ -55,19 +55,22 @@ class ChemicalMechanismSpec(object):
         a cantera XML file describing the thermochemistry and (optionally) transport properties
     group_name : str
         the phase to use (e.g. a phase with transport properties vs without, if such a split exists in the XML file)
+    cantera_solution: ct.Solution
+        a ct.Solution object to use directly (optional, if specified the xml and group name are ignored if given)
     """
 
     def __init__(self, cantera_xml=None, group_name=None, cantera_solution=None):
         if cantera_solution is None:
-            self._cantera_wrapper = CanteraWrapper(cantera_xml, group_name)
+            self._cantera_wrapper = _CanteraWrapper(cantera_xml, group_name)
         else:
-            self._cantera_wrapper = CanteraWrapper(None, None, cantera_solution)
+            self._cantera_wrapper = _CanteraWrapper(None, None, cantera_solution)
 
         self._griffon = PyCombustionKernels()
         self._populate_griffon_mechanism_data(*self._extract_cantera_mechanism_data(self._cantera_wrapper.solution))
 
     @classmethod
     def from_solution(cls, solution: ct.Solution):
+        """Construct a ChemicalMechanismSpec directly from a cantera solution"""
         return ChemicalMechanismSpec(cantera_solution=solution)
 
     def _populate_griffon_mechanism_data(self,
@@ -283,6 +286,12 @@ class ChemicalMechanismSpec(object):
         return self._cantera_wrapper.solution.species_index(name)
 
     def molecular_weight(self, id):
+        """
+        Obtain the molecular weight of a single species
+
+        :param id: either the name or integer index of the species
+        :return: molecular weight of the given species
+        """
         if isinstance(id, str):
             return self._cantera_wrapper.solution.molecular_weights[self._cantera_wrapper.solution.species_index(id)]
         elif isinstance(id, int):
@@ -326,13 +335,6 @@ class ChemicalMechanismSpec(object):
         q = ct.Quantity(self._cantera_wrapper.solution)
         q.TPX = stream.TPX
         return q
-
-    def copy_streams(self, streams):
-        """Make a copy of a list of streams, returning a list with copies of each stream."""
-        qlist = []
-        for stream in streams:
-            qlist.append(self.copy_stream(stream))
-        return qlist
 
     @staticmethod
     def mix_streams(streams, basis, constant='HP'):

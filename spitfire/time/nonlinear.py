@@ -17,22 +17,24 @@ from numpy import any, logical_or, isinf, isnan, abs, Inf
 from scipy.linalg import norm
 
 
-def finite_difference_jacobian(residual_func, residual_value, state):
+def finite_difference_jacobian(residual_func, residual_value, state, offset_rel=1.e-5, offset_abs=1.e-8):
     """
     Compute a simple one-sided finite difference approximation to the Jacobian of a residual function.
 
     :param residual_func: residual function of the state vector, r(q)
     :param residual_value: value of the residual function at the specified state vector
     :param state: the state vector
-    :return: a np.ndarray of the Jacobian matrix
+    :param offset_rel: the relative contribution to the finite difference delta (optional, default: 1e-5)
+    :param offset_abs: the absolute contribution to the finite difference delta (optional, default: 1e-8)
+    :return: np.ndarray of the approximate Jacobian matrix
     """
     neq = state.size
     j = np.ndarray((neq, neq))
     for i in range(neq):
         state_offset = numpy_copy(state)
-        offset = 1.e-5 * state[i] + 1.e-8
+        offset = offset_rel * np.abs(state[i]) + offset_abs
         state_offset[i] += offset
-        j[:, i] = (residual_func(state_offset) - residual_value) / np.abs(offset)
+        j[:, i] = (residual_func(state_offset) - residual_value) / offset
     return j
 
 
@@ -175,7 +177,7 @@ class SimpleNewtonSolver(NonlinearSolver):
         """
         Solve a nonlinear problem and return the result.
 
-        :param residual_method: residual function of the solution that returns both the residual and right-hand side of an ODE
+        :param residual_method: residual function of the solution that returns both the residual and right-hand side of an ODE,
             to use this on a non-ODE problem simply have your residual method return as residual, None
         :param setup_method: setup function of the solution for the linear projector (e.g. Jacobian eval and factorize)
         :param solve_method: linear projector solver function of a residual alone,

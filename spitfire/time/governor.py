@@ -2,10 +2,9 @@
 This module contains the time integration governor abstraction,
 which combines time steppers, nonlinear solvers, and step controllers into a generic integration loop
 that supports arbitrary in situ processing, logging, termination of the integration loop, and more.
-For instance, evaluation of the linear projector (Jacobian/preconditioner evaluation and factorization)
-for implicit methods is guided by the Governor class as it can oversee the entire integration.
+For instance, evaluation of the linear operator (Jacobian/preconditioner evaluation and factorization)
+in implicit methods is guided by the Governor, as it can oversee the entire integration.
 In many cases the Jacobian/preconditioner can be lagged for several time steps to speed up the integration process substantially.
-
 """
 
 # Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
@@ -17,7 +16,7 @@ In many cases the Jacobian/preconditioner can be lagged for several time steps t
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 from numpy import copy as numpy_copy
-from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices
+from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices, save as numpy_save
 from scipy.linalg import norm
 from spitfire.time.stepcontrol import ConstantTimeStep
 from spitfire.time.methods import ImplicitTimeStepper
@@ -41,13 +40,23 @@ class SaveAllDataToList(object):
         the initial solution
     save_frequency : int
         how many steps are taken between solution data and times being saved (default: 1.)
+    file_prefix : str
+        file prefix where solution times and solution data will be dumped (to numpy binary) during the simulation
+    file_first_and_last_only : bool
+        whether or not to save all data (False, default) or only the first and last solutions to the numpy binary file
+    save_first_and_last_only : bool
+        whether or not to retain (in memory) all data (False, default) or only the first and last solutions
     """
 
-    def __init__(self, initial_solution, initial_time=0., save_frequency=1):
+    def __init__(self, initial_solution, initial_time=0., save_frequency=1, file_prefix=None,
+                 file_first_and_last_only=False, save_first_and_last_only=False):
         self._t_list = [initial_time]
         self._solution_list = [initial_solution]
         self._save_count = 0
         self._save_frequency = save_frequency
+        self._file_prefix = file_prefix
+        self._file_first_and_last_only = file_first_and_last_only
+        self._save_first_and_last_only = save_first_and_last_only
 
     @property
     def t_list(self):
@@ -66,6 +75,19 @@ class SaveAllDataToList(object):
             self._save_count = 0
             self._t_list.append(t)
             self._solution_list.append(numpy_copy(solution))
+            if len(self.t_list) > 1 and self._save_first_and_last_only:
+                self._t_list[-1] = t
+                self._solution_list[-1] = numpy_copy(solution)
+            else:
+                self._t_list.append(t)
+                self._solution_list.append(numpy_copy(solution))
+            if self._file_prefix is not None:
+                if self._file_first_and_last_only:
+                    numpy_save(self._file_prefix + '_times.npy', self.t_list[[0, -1]])
+                    numpy_save(self._file_prefix + '_solutions.npy', self.solution_list[[0, -1], :])
+                else:
+                    numpy_save(self._file_prefix + '_times.npy', self.t_list)
+                    numpy_save(self._file_prefix + '_solutions.npy', self.solution_list)
 
     def reset_data(self, initial_solution, initial_time=0.):
         """Reset the data on a SaveAllDataToList object"""
@@ -294,7 +316,7 @@ class Governor(object):
             self._print_debug_mode('check_state_update(): NaN or Inf detected')
             return False
         elif nonlinear_solve_converged is not None and (
-                not nonlinear_solve_converged and self.nonlinear_solve_must_converge):
+                    not nonlinear_solve_converged and self.nonlinear_solve_must_converge):
             self._print_debug_mode('check_state_update(): required nonlinear solve failed to converge')
             return False
         elif self.custom_update_checking_rule is not None:

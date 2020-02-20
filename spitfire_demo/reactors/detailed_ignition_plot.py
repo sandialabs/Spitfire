@@ -1,6 +1,5 @@
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec as Mechanism
 from spitfire.chemistry.reactors import HomogeneousReactor
-from os.path import abspath, join
 import matplotlib.pyplot as plt
 
 sm = Mechanism(cantera_xml='h2-burke.xml', group_name='h2-burke')

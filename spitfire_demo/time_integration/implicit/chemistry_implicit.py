@@ -144,6 +144,6 @@ solve_info_diaggmres = governor.integrate(right_hand_side=problem.rhs,
                                           projector_setup=problem.setup_gmres,
                                           projector_solve=problem.solve_gmres)
 
-print('Dense (LU)  : {}'.format(solve_info_lapack[0]['nonlinear iter']))
-print('Diagonal    : {}'.format(solve_info_diagonal[0]['nonlinear iter']))
-print('GMRES-Jacobi: {}'.format(solve_info_diaggmres[0]['nonlinear iter']))
+print('Dense (LU)  : {} nonlinear iterations'.format(solve_info_lapack[0]['nonlinear iter']))
+print('Diagonal    : {} nonlinear iterations'.format(solve_info_diagonal[0]['nonlinear iter']))
+print('GMRES-Jacobi: {} nonlinear iterations'.format(solve_info_diaggmres[0]['nonlinear iter']))

@@ -19,23 +19,39 @@ from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 from spitfire.chemistry.flamelet import Flamelet
 import pickle as pickle
 
-_mixture_fraction_name = 'mixture_fraction'
-_dissipation_rate_name = 'dissipation_rate'
-_enthalpy_defect_name = 'enthalpy_defect'
-_enthalpy_offset_name = 'enthalpy_offset'
-
-_stoich_suffix = '_stoich'
-
 
 class Dimension(object):
-    def __init__(self, name: str, values: np.array, structured=True):
+    """A class to contain details of a particular independent variable in a structured or unstructured library
+
+    **Constructor**: specify a name, values, and whether or not the dimension is structured
+
+    Parameters
+    ----------
+    name : str
+        the name of the mechanism - hyphens and spaces may not be used here, use underscore separators
+    values: np.array
+        the values of the independent variable in the grid
+    structured: bool
+        whether or not the dimension is structured (optional, default: True)
+    """
+
+    def __init__(self, name: str, values: np.array, structured=True, _library_owned=False):
         self._name = name
         self._values = np.copy(values)
         self._min = np.min(values)
         self._max = np.max(values)
         self._npts = values.size
         self._structured = structured
-        self._grid = self._values
+        self._grid = None
+        self._library_owned = _library_owned
+
+        if '-' in name or ' ' in name:
+            raise ValueError(f'Error in building Dimension "{name}", the name cannot contain hyphens or spaces '
+                             f'(it must be a valid Python variable name)')
+
+        if len(self._values.shape) != 1:
+            raise ValueError(f'Error in building Dimension "{name}", the values object must be one-dimensional.'
+                             f' Call the ravel() method to flatten your data (without a deep copy).')
 
         if structured:
             if self._values.size != np.unique(self._values).size:
@@ -44,10 +60,12 @@ class Dimension(object):
 
     @property
     def name(self):
+        """Obtain the name of the independent variable"""
         return self._name
 
     @property
     def values(self):
+        """Obtain the one-dimensional np.array of the specified values of this independent variable"""
         return self._values
 
     @property
@@ -68,19 +86,51 @@ class Dimension(object):
 
     @property
     def grid(self):
-        return self._grid
+        """Obtain the np.ndarray "meshgrid" of the values of this variable in a multi-dimensional library
+        Upon construction of the Dimension instance, this returns the given one-dimensional values,
+        but after incorporation of the Dimension into a library, this is made into a meshgrid object.
+        Note that the library object will always copy Dimension data into a brand new instance,
+        so the Dimension instances fed to a Library are not modified. This is consistent in that a Dimension instance
+        does not have multidimensional grid data unless incorporated into a multidimensional Library. In the case
+        of unstructured data, the grid is always equivalent to the values and consistency is implicit."""
+        return self._values if self._grid is None else self._grid
 
     @grid.setter
     def grid(self, grid):
-        self._grid = grid
-    
-    def get_dict(self):
+        """Set the meshgrid object - do not call explicitly, this can only be called by the Library class
+        that owns the Dimension."""
+        if self._library_owned:
+            self._grid = grid
+        else:
+            raise ValueError(f'Explicitly setting the "grid" property on Dimension "{self._name}" is not allowed.'
+                             f'Only an owning Library object can set the multidimensional grid.')
+
+    def _get_dict_for_file_save(self):
         return {'name': self._name, 'values': self._values, 'structured': self._structured}
 
 
 class Library(object):
+    """A class for holding tabulated datasets over structured and unstructured grids
+
+    Upon constructing the Library object, the following properties are made available for each Dimension:
+      library.[dimension_name]_name
+      library.[dimension_name]_values
+      library.[dimension_name]_min
+      library.[dimension_name]_max
+      library.[dimension_name]_npts
+      library.[dimension_name]_structured
+      library.[dimension_name]_grid
+
+    **Constructor**: specify the argument list of dimensions defining the grid
+
+    Parameters
+    ----------
+    dimensions : argument list of Dimension instances
+        the dimensions that define the grid
+    """
+
     def __init__(self, *dimensions):
-        self._dims = dict({d.name: d for d in dimensions})
+        self._dims = dict({d.name: Dimension(d.name, d.values, d.structured, _library_owned=True) for d in dimensions})
         self._props = dict()
         self._dims_ordering = dict()
         for i, d in enumerate(dimensions):
@@ -89,7 +139,8 @@ class Library(object):
         self._structured = all([self._dims[d].structured for d in self._dims])
         unstructured = all([not self._dims[d].structured for d in self._dims])
         if not self._structured and not unstructured:
-            raise ValueError('Dimensions must be either all structured or all unstructured!')
+            raise ValueError(
+                'Error in building Library - Dimensions must be either all structured or all unstructured!')
 
         if self._structured:
             grid = np.meshgrid(*[self._dims[d].values for d in self._dims], indexing='ij')
@@ -108,10 +159,21 @@ class Library(object):
         for d in self._dims:
             self.__dict__[self._dims[d].name] = d
             for a in self._dims[d].__dict__:
-                self.__dict__[self._dims[d].name + a] = self._dims[d].__dict__[a]
+                if a is not '_library_owned':
+                    self.__dict__[self._dims[d].name + a] = self._dims[d].__dict__[a]
+
+    def save_to_file(self, file_name):
+        """Save a library to a specified file using pickle"""
+        instance_dict = dict(
+            {'dimensions': {d: self._dims[d]._get_dict_for_file_save() for d in self._dims},
+             'dim_ordering': self._dims_ordering,
+             'properties': self._props})
+        with open(file_name, 'wb') as file_output:
+            pickle.dump(instance_dict, file_output)
 
     @classmethod
     def load_from_file(cls, file_name):
+        """Load a library from a specified file name with pickle (following save_to_file)"""
         with open(file_name, 'rb') as file_input:
             instance_dict = pickle.load(file_input)
             ordered_dims = list([None] * len(instance_dict['dimensions'].keys()))
@@ -125,99 +187,156 @@ class Library(object):
             return l
 
     def __setitem__(self, quantity: str, values: np.ndarray):
+        """Use the bracket operator, as in lib['myprop'] = values, to add a property defined on the grid
+           The np.ndarray of values must be shaped correctly"""
+        if values.shape != self._grid_shape:
+            raise ValueError(f'The shape of the "{quantity}" array does not conform to that of the library. '
+                             f'Given shape = {values.shape}, grid shape = {self._grid_shape}')
+
         self._props[quantity] = np.copy(values)
 
     def __getitem__(self, quantity: str):
+        """Use the bracket operator, as in lib['myprop'], to obtain the value array of a property"""
         return self._props[quantity]
 
     @property
     def props(self):
+        """Obtain a list of the names of properties set on the library"""
         return list(self._props.keys())
 
     @property
     def dims(self):
+        """Obtain a list of the Dimension objects associated with the library"""
         dims = []
         for d in self._dims_ordering:
             dims.append(self._dims[self._dims_ordering[d]])
         return dims
 
     def dim(self, name):
+        """Obtain a Dimension object by name"""
         return self._dims[name]
 
     def get_empty_dataset(self):
+        """Obtain an empty dataset in the shape of the grid, to enable filling one point, line, plane, etc. at a time,
+        before then possibly setting a library property with the data"""
         return np.ndarray(self._grid_shape)
 
-    def remove_from_dataset(self, *quantities):
+    def remove(self, *quantities):
+        """Remove quantities (argument list of strings) from the library"""
         for quantity in quantities:
             self._props.pop(quantity)
 
-    def save_to_file(self, file_name):
-        instance_dict = dict({'dimensions': {d: self._dims[d].get_dict() for d in self._dims}, 'dim_ordering': self._dims_ordering, 'properties': self._props})
-        with open(file_name, 'wb') as file_output:
-            pickle.dump(instance_dict, file_output)
-
 
 class PostProcessor(object):
+    """A base class for classes that post-process tabulated chemistry data from flamelet solutions, etc. to add
+    properties to a Library object. This base class simply stores a list of strings to enumerate dependency fields
+    that the flamelet solution, etc. must save off in the solution process for the PostProcessor to use.
+
+    **Constructor**: specify the list of field names needed by the post processor, such as temperature or mass fractions
+
+    Parameters
+    ----------
+    dependencies : list of strings
+        the names of fields needed by the PostProcessor instance to evaluate its additional properties
+    """
+
     def __init__(self, dependencies):
         self._dependencies = dependencies
 
     @property
     def dependencies(self):
+        """Obtain the list of field names"""
         return self._dependencies
 
     def evaluate(self, library):
+        """Evaluate the post-processed fields on the input library, returning the library with processed fields added"""
         raise TypeError('Base class PostProcessor evaluate() method was called, must be overridden in derived classes')
 
 
-def build_unreacted_library(flamelet_specs,
-                            tabulated_quantities,
-                            verbose=True,
-                            post_processors=None):
-    m = flamelet_specs['mech_spec']
-    fuel = flamelet_specs['fuel_stream']
-    oxy = flamelet_specs['oxy_stream']
-    fs0 = dict(flamelet_specs)
-    fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'unreacted'})
-    cput00 = perf_counter()
-    flamelet = Flamelet(**fs0)
+"""these names are specific to tabulated chemistry libraries for combustion"""
+_mixture_fraction_name = 'mixture_fraction'
+_dissipation_rate_name = 'dissipation_rate'
+_enthalpy_defect_name = 'enthalpy_defect'
+_enthalpy_offset_name = 'enthalpy_offset'
+_stoich_suffix = '_stoich'
 
+
+def _write_library_header(lib_type, mech, fuel, oxy, verbose):
+    if verbose:
+        print('-' * 82)
+        print(f'building {lib_type} library')
+        print('-' * 82)
+        print(f'- mechanism: {mech.mech_xml_path}')
+        print(f'- {mech.n_species} species, {mech.n_reactions} reactions')
+        print(f'- stoichiometric mixture fraction: {mech.stoich_mixture_fraction(fuel, oxy):.3f}')
+        print('-' * 82)
+    return perf_counter()
+
+
+def _write_library_footer(cput0, verbose):
     if verbose:
         print('----------------------------------------------------------------------------------')
-        print('building unreacted library (linear mass fractions and enthalpy)')
-        print('----------------------------------------------------------------------------------')
-        print(f'- mechanism: {m.mech_xml_path}')
-        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
-        print('- tabulated quantities: ' + str(tabulated_quantities))
-        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
-        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
-        print('----------------------------------------------------------------------------------')
+        print(f'library built in {perf_counter() - cput0:6.2f} s')
+        print('----------------------------------------------------------------------------------', flush=True)
 
+
+def _add_post_processor_dependencies(tabulated_quantities, post_processors):
+    dependency_only_quantities = []
     if post_processors is not None:
-        dependency_only_quantities = []
         for p in post_processors:
             for dep in p.dependencies:
                 if dep not in tabulated_quantities:
                     dependency_only_quantities.append(dep)
                     tabulated_quantities.append(dep)
     tabulated_quantities = list(set(tabulated_quantities))
+    return tabulated_quantities, dependency_only_quantities
+
+
+def _compute_post_processed_fields(post_processors, library, dependency_only_quantities):
+    if post_processors is not None:
+        for p in post_processors:
+            library = p.evaluate(library)
+        for dep in dependency_only_quantities:
+            library.remove(dep)
+    return library
+
+
+def build_unreacted_library(flamelet_specs,
+                            tabulated_quantities,
+                            verbose=True,
+                            post_processors=None):
+    """
+    Build a flamelet library with the unreacted state (linear enthalpy and mass fractions)
+
+    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream)
+    :param tabulated_quantities: quantities to be tabulated on the resultant library
+    :param verbose: whether or not to show progress of the library construction
+    :param post_processors: extra quantities computed with user-defined classes derived from the PostProcessor class
+    :return: the library instance
+    """
+    m = flamelet_specs['mech_spec']
+    fuel = flamelet_specs['fuel_stream']
+    oxy = flamelet_specs['oxy_stream']
+    fs0 = dict(flamelet_specs)
+
+    cput0 = _write_library_header('unreacted', m, fuel, oxy, verbose)
+
+    fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'unreacted'})
+    flamelet = Flamelet(**fs0)
+
+    tabulated_quantities, dependency_only_quantities = _add_post_processor_dependencies(tabulated_quantities,
+                                                                                        post_processors)
+
     flamelet.insitu_process_quantity(tabulated_quantities)
     data_dict = flamelet.process_quantities_on_state(flamelet.initial_state)
-
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print(f'library built in {perf_counter() - cput00:6.2f} s')
-        print('----------------------------------------------------------------------------------', flush=True)
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     library = Library(z_dim)
     for quantity in tabulated_quantities:
         library[quantity] = data_dict[quantity].ravel()
 
-    if post_processors is not None:
-        for p in post_processors:
-            library = p.evaluate(library)
-        for dep in dependency_only_quantities:
-            library.remove_from_dataset(dep)
+    library = _compute_post_processed_fields(post_processors, library, dependency_only_quantities)
+    _write_library_footer(cput0, verbose)
 
     return library
 
@@ -226,51 +345,38 @@ def build_adiabatic_eq_library(flamelet_specs,
                                tabulated_quantities,
                                verbose=True,
                                post_processors=None):
+    """
+    Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption
+
+    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
+     details of the grid in mixture fraction are required)
+    :param tabulated_quantities: quantities to be tabulated on the resultant library
+    :param verbose: whether or not to show progress of the library construction
+    :param post_processors: extra quantities computed with user-defined classes derived from the PostProcessor class
+    :return: the library instance
+    """
     m = flamelet_specs['mech_spec']
     fuel = flamelet_specs['fuel_stream']
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
+
+    cput0 = _write_library_header('adiabatic equilibrium', m, fuel, oxy, verbose)
+
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'equilibrium'})
-    cput00 = perf_counter()
     flamelet = Flamelet(**fs0)
 
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print('building adiabatic equilibrium library')
-        print('----------------------------------------------------------------------------------')
-        print(f'- mechanism: {m.mech_xml_path}')
-        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
-        print('- tabulated quantities: ' + str(tabulated_quantities))
-        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
-        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
-        print('----------------------------------------------------------------------------------')
-
-    if post_processors is not None:
-        dependency_only_quantities = []
-        for p in post_processors:
-            for dep in p.dependencies:
-                if dep not in tabulated_quantities:
-                    dependency_only_quantities.append(dep)
-                    tabulated_quantities.append(dep)
-    tabulated_quantities = list(set(tabulated_quantities))
+    tabulated_quantities, dependency_only_quantities = _add_post_processor_dependencies(tabulated_quantities,
+                                                                                        post_processors)
     flamelet.insitu_process_quantity(tabulated_quantities)
     data_dict = flamelet.process_quantities_on_state(flamelet.initial_state)
-
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print(f'library built in {perf_counter() - cput00:6.2f} s')
-        print('----------------------------------------------------------------------------------', flush=True)
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     library = Library(z_dim)
     for quantity in tabulated_quantities:
         library[quantity] = data_dict[quantity].ravel()
 
-    if post_processors is not None:
-        for p in post_processors:
-            library = p.evaluate(library)
-        for dep in dependency_only_quantities:
-            library.remove_from_dataset(dep)
+    library = _compute_post_processed_fields(post_processors, library, dependency_only_quantities)
+    _write_library_footer(cput0, verbose)
 
     return library
 
@@ -279,52 +385,39 @@ def build_adiabatic_bs_library(flamelet_specs,
                                tabulated_quantities,
                                verbose=True,
                                post_processors=None):
+    """
+    Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions
+
+    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
+     details of the grid in mixture fraction are required)
+    :param tabulated_quantities: quantities to be tabulated on the resultant library
+    :param verbose: whether or not to show progress of the library construction
+    :param post_processors: extra quantities computed with user-defined classes derived from the PostProcessor class
+    :return: the library instance
+    """
     m = flamelet_specs['mech_spec']
     fuel = flamelet_specs['fuel_stream']
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
+
+    cput0 = _write_library_header('adiabatic Burke-Schumann', m, fuel, oxy, verbose)
+
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'Burke-Schumann'})
-    cput00 = perf_counter()
     flamelet = Flamelet(**fs0)
 
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print('building adiabatic Burke-Schumann library')
-        print('----------------------------------------------------------------------------------')
-        print(f'- mechanism: {m.mech_xml_path}')
-        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
-        print('- tabulated quantities: ' + str(tabulated_quantities))
-        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
-        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
-        print('----------------------------------------------------------------------------------')
-
-    if post_processors is not None:
-        dependency_only_quantities = []
-        for p in post_processors:
-            for dep in p.dependencies:
-                if dep not in tabulated_quantities:
-                    dependency_only_quantities.append(dep)
-                    tabulated_quantities.append(dep)
-    tabulated_quantities = list(set(tabulated_quantities))
+    tabulated_quantities, dependency_only_quantities = _add_post_processor_dependencies(tabulated_quantities,
+                                                                                        post_processors)
 
     flamelet.insitu_process_quantity(tabulated_quantities)
     data_dict = flamelet.process_quantities_on_state(flamelet.initial_state)
-
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print(f'library built in {perf_counter() - cput00:6.2f} s')
-        print('----------------------------------------------------------------------------------', flush=True)
 
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     library = Library(z_dim)
     for quantity in tabulated_quantities:
         library[quantity] = data_dict[quantity].ravel()
 
-    if post_processors is not None:
-        for p in post_processors:
-            library = p.evaluate(library)
-        for dep in dependency_only_quantities:
-            library.remove_from_dataset(dep)
+    library = _compute_post_processed_fields(post_processors, library, dependency_only_quantities)
+    _write_library_footer(cput0, verbose)
 
     return library
 
@@ -336,7 +429,7 @@ def _enthalpy_defect_fz(z, z_st):
     return f
 
 
-def _get_enthalpy(h_ad, z, z_st, d_st):
+def _get_enthalpy_from_defect(h_ad, z, z_st, d_st):
     return h_ad + d_st * _enthalpy_defect_fz(z, z_st)
 
 
@@ -358,33 +451,30 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
                                          n_defect_st=16,
                                          verbose=True,
                                          post_processors=None):
+    """
+    Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption and with
+    heat loss effects with a presumed (triangular) form of the enthalpy defect.
+
+    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
+     details of the grid in mixture fraction are required)
+    :param tabulated_quantities: quantities to be tabulated on the resultant library
+    :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the table
+    :param verbose: whether or not to show progress of the library construction
+    :param post_processors: extra quantities computed with user-defined classes derived from the PostProcessor class
+    :return: the library instance
+    """
     m = flamelet_specs['mech_spec']
     fuel = flamelet_specs['fuel_stream']
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
+
+    cput0 = _write_library_header('nonadiabatic (defect) equilibrium', m, fuel, oxy, verbose)
+
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'equilibrium'})
-    cput00 = perf_counter()
     flamelet = Flamelet(**fs0)
 
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print('building nonadiabatic equilibrium library')
-        print('----------------------------------------------------------------------------------')
-        print(f'- mechanism: {m.mech_xml_path}')
-        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
-        print('- tabulated quantities: ' + str(tabulated_quantities))
-        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
-        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
-        print('----------------------------------------------------------------------------------')
-
-    if post_processors is not None:
-        dependency_only_quantities = []
-        for p in post_processors:
-            for dep in p.dependencies:
-                if dep not in tabulated_quantities:
-                    dependency_only_quantities.append(dep)
-                    tabulated_quantities.append(dep)
-    tabulated_quantities = list(set(tabulated_quantities))
+    tabulated_quantities, dependency_only_quantities = _add_post_processor_dependencies(tabulated_quantities,
+                                                                                        post_processors)
     flamelet.insitu_process_quantity(tabulated_quantities)
 
     z = flamelet.mixfrac_grid
@@ -414,7 +504,7 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
 
     new_state = flamelet.initial_state.copy()
     for ig in range(n_defect_st):
-        new_enthalpy = _get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
+        new_enthalpy = _get_enthalpy_from_defect(enthalpy_ad, z, z_st, defect_range[ig])
         for i in range(z.size):
             ym1 = new_state[i * ns + 1:(i + 1) * ns]
             yn = 1. - np.sum(ym1)
@@ -432,16 +522,8 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
         library['enthalpy'][:, ig] = np.copy(new_enthalpy)
         library[_mixture_fraction_name][:, ig] = np.copy(flamelet.mixfrac_grid.ravel())
 
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print(f'library built in {perf_counter() - cput00:6.2f} s')
-        print('----------------------------------------------------------------------------------', flush=True)
-
-    if post_processors is not None:
-        for p in post_processors:
-            library = p.evaluate(library)
-        for dep in dependency_only_quantities:
-            library.remove_from_dataset(dep)
+    library = _compute_post_processed_fields(post_processors, library, dependency_only_quantities)
+    _write_library_footer(cput0, verbose)
 
     return library
 
@@ -451,33 +533,30 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
                                          n_defect_st=16,
                                          verbose=True,
                                          post_processors=None):
+    """
+    Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions and with
+    heat loss effects with a presumed (triangular) form of the enthalpy defect.
+
+    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
+     details of the grid in mixture fraction are required)
+    :param tabulated_quantities: quantities to be tabulated on the resultant library
+    :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the table
+    :param verbose: whether or not to show progress of the library construction
+    :param post_processors: extra quantities computed with user-defined classes derived from the PostProcessor class
+    :return: the library instance
+    """
     m = flamelet_specs['mech_spec']
     fuel = flamelet_specs['fuel_stream']
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
+
+    cput0 = _write_library_header('nonadiabatic (defect) Burke-Schumann', m, fuel, oxy, verbose)
+
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': 'Burke-Schumann'})
-    cput00 = perf_counter()
     flamelet = Flamelet(**fs0)
 
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print('building nonadiabatic equilibrium library')
-        print('----------------------------------------------------------------------------------')
-        print(f'- mechanism: {m.mech_xml_path}')
-        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
-        print('- tabulated quantities: ' + str(tabulated_quantities))
-        print(f'- mixture fraction # of values: {flamelet.mixfrac_grid.size}')
-        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
-        print('----------------------------------------------------------------------------------')
-
-    if post_processors is not None:
-        dependency_only_quantities = []
-        for p in post_processors:
-            for dep in p.dependencies:
-                if dep not in tabulated_quantities:
-                    dependency_only_quantities.append(dep)
-                    tabulated_quantities.append(dep)
-    tabulated_quantities = list(set(tabulated_quantities))
+    tabulated_quantities, dependency_only_quantities = _add_post_processor_dependencies(tabulated_quantities,
+                                                                                        post_processors)
     flamelet.insitu_process_quantity(tabulated_quantities)
 
     z = flamelet.mixfrac_grid
@@ -507,7 +586,7 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
 
     new_state = flamelet.initial_state.copy()
     for ig in range(n_defect_st):
-        new_enthalpy = get_enthalpy(enthalpy_ad, z, z_st, defect_range[ig])
+        new_enthalpy = _get_enthalpy_from_defect(enthalpy_ad, z, z_st, defect_range[ig])
         for i in range(z.size):
             ym1 = new_state[i * ns + 1:(i + 1) * ns]
             yn = 1. - np.sum(ym1)
@@ -524,16 +603,8 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
             library['enthalpy'][:, ig] = np.copy(new_enthalpy)
         library[_mixture_fraction_name][:, ig] = np.copy(flamelet.mixfrac_grid.ravel())
 
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print(f'library built in {perf_counter() - cput00:6.2f} s')
-        print('----------------------------------------------------------------------------------', flush=True)
-
-    if post_processors is not None:
-        for p in post_processors:
-            library = p.evaluate(library)
-        for dep in dependency_only_quantities:
-            library.remove_from_dataset(dep)
+    library = _compute_post_processed_fields(post_processors, library, dependency_only_quantities)
+    _write_library_footer(cput0, verbose)
 
     return library
 
@@ -544,67 +615,40 @@ def build_adiabatic_slfm_library(flamelet_specs,
                                  diss_rate_ref='stoichiometric',
                                  verbose=True,
                                  solver_verbose=False,
-                                 return_intermediates=False,
                                  post_processors=None,
-                                 solver_use_psitc=True):
-    """Build an adiabatic steady laminar flamelet library, tabulating quantities over the mixture fraction and dissipation rate
-
-    Parameters
-    ----------
-    flamelet_specs : dict
-        a dictionary of arguments for building Flamelet objects
-    tabulated_quantities : list[str]
-        quantities to compute over the table
-    diss_rate_values : np.array
-        the values of the dissipation rate at the specified reference point, defaults to logspace(-3, 2, 64)
-    diss_rate_ref : str
-        the reference point of the dissipation rate, either 'stoichiometric' (default) or 'maximum'
-    verbose : bool
-        whether or not to write out status messages of the table generation
-    solver_verbose : bool
-        whether or not to write out status and failure messages of the solvers driving the table
-    return_intermediates : bool
-        whether to return a library (False, default) or intermediates useful in building nonadiabatic libraries
+                                 _return_intermediates=False):
     """
+    Build a flamelet library with an adiabatic strained laminar flamelet model
 
-    if post_processors is not None:
-        dependency_only_quantities = []
-        for p in post_processors:
-            for dep in p.dependencies:
-                if dep not in tabulated_quantities:
-                    dependency_only_quantities.append(dep)
-                    tabulated_quantities.append(dep)
-    tabulated_quantities = list(set(tabulated_quantities))
+    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
+     details of the grid in mixture fraction are required)
+    :param tabulated_quantities: quantities to be tabulated on the resultant library
+    :param diss_rate_values: the np.array of reference dissipation rate values in the table (note that if the flamelet
+     extinguishes at any point, the extinguished flamelet and larger dissipation rates are not included in the library)
+    :param diss_rate_ref: the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
+    :param verbose: whether or not to show progress of the library construction
+    :param post_processors: extra quantities computed with user-defined classes derived from the PostProcessor class
+    :return: the library instance
+    """
 
     m = flamelet_specs['mech_spec']
     fuel = flamelet_specs['fuel_stream']
     oxy = flamelet_specs['oxy_stream']
     fs0 = dict(flamelet_specs)
-    init = 'Burke-Schumann' if 'initial_condition' not in flamelet_specs else flamelet_specs['initial_condition']
+    init = 'equilibrium' if 'initial_condition' not in flamelet_specs else flamelet_specs['initial_condition']
+
+    cput00 = _write_library_header('adiabatic SLFM', m, fuel, oxy, verbose)
+
     fs0.update({'max_dissipation_rate': 0., 'initial_condition': init})
     f = Flamelet(**fs0)
 
+    tabulated_quantities, dependency_only_quantities = _add_post_processor_dependencies(tabulated_quantities,
+                                                                                        post_processors)
+    f.insitu_process_quantity(tabulated_quantities)
+
     table_dict = dict()
 
-    cput00 = perf_counter()
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print('building adiabatic SLFM library')
-        print('----------------------------------------------------------------------------------')
-        print(f'- mechanism: {m.mech_xml_path}')
-        print(f'- {m.n_species} species, {m.n_reactions} elementary reactions')
-        print('- tabulated quantities: ' + str(tabulated_quantities))
-        print(f'- mixture fraction # of values: {f.mixfrac_grid.size}')
-        print(f'- stoichiometric mixture fraction: {m.stoich_mixture_fraction(fuel, oxy):.3f}')
-        print('----------------------------------------------------------------------------------')
-
     nchi = diss_rate_values.size
-    if verbose:
-        print(f'- {diss_rate_ref} dissipation rate lower limit: {np.min(diss_rate_values):.3e} Hz')
-        print(f'- {diss_rate_ref} dissipation rate upper limit: {np.max(diss_rate_values):.3e} Hz')
-        print(f'- {diss_rate_ref} dissipation rate # of values: {nchi}')
-        print('----------------------------------------------------------------------------------')
-
     diss_rate_key = 'max_dissipation_rate' if diss_rate_ref == 'maximum' else 'stoich_dissipation_rate'
     suffix = _stoich_suffix if diss_rate_ref == 'stoichiometric' else '_max'
 
@@ -617,7 +661,7 @@ def build_adiabatic_slfm_library(flamelet_specs,
         if verbose:
             print(f'{idx + 1:4}/{nchi:4} (chi{suffix} = {chival:8.1e} 1/s) ', end='', flush=True)
         cput0 = perf_counter()
-        flamelet.compute_steady_state(tolerance=1.e-6, verbose=solver_verbose, use_psitc=solver_use_psitc)
+        flamelet.compute_steady_state(tolerance=1.e-6, verbose=solver_verbose, use_psitc=True)
         dcput = perf_counter() - cput0
 
         if np.max(flamelet.final_temperature - flamelet.linear_temperature) < 10.:
@@ -639,15 +683,11 @@ def build_adiabatic_slfm_library(flamelet_specs,
         for k in tabulated_quantities:
             table_dict[chi_st][k] = data_dict[k].ravel()
         fs['initial_condition'] = flamelet.final_interior_state
-        if return_intermediates:
+        if _return_intermediates:
             table_dict[chi_st]['adiabatic_state'] = np.copy(flamelet.final_interior_state)
 
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print(f'library built in {perf_counter() - cput00:6.2f} s')
-        print('----------------------------------------------------------------------------------', flush=True)
-
-    if return_intermediates:
+    if _return_intermediates:
+        _write_library_footer(cput00, verbose)
         return table_dict, f.mixfrac_grid, np.array(x_values)
     else:
         z_dim = Dimension(_mixture_fraction_name, f.mixfrac_grid)
@@ -663,11 +703,8 @@ def build_adiabatic_slfm_library(flamelet_specs,
 
             library[quantity] = values
 
-        if post_processors is not None:
-            for p in post_processors:
-                library = p.evaluate(library)
-            for dep in dependency_only_quantities:
-                library.remove_from_dataset(dep)
+        library = _compute_post_processed_fields(post_processors, library, dependency_only_quantities)
+        _write_library_footer(cput00, verbose)
 
         return library
 
@@ -684,7 +721,7 @@ def _expand_enthalpy_defect_dimension(args):
     h_stoich_spacing = args[8]
     verbose = args[9]
     input_integration_args = args[10]
-    solver_verbose= args[11]
+    solver_verbose = args[11]
     fsnad = dict(flamelet_specs)
     fsnad['mech_spec'] = ChemicalMechanismSpec(*mech_args)
     fsnad['oxy_stream'] = fsnad['mech_spec'].stream('TPY', oxy_tpy)
@@ -696,7 +733,8 @@ def _expand_enthalpy_defect_dimension(args):
     fsnad['convection_coefficient'] = 1.e7
     fsnad['radiative_emissivity'] = 0.
 
-    integration_args = dict({'first_time_step': 1.e-9, 'max_time_step': 1.e-1, 'write_log': solver_verbose, 'log_rate': 100})
+    integration_args = dict(
+        {'first_time_step': 1.e-9, 'max_time_step': 1.e-1, 'write_log': solver_verbose, 'log_rate': 100})
 
     if input_integration_args is not None:
         integration_args.update(input_integration_args)
@@ -746,13 +784,11 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                          solver_verbose=False,
                                                          h_stoich_spacing=10.e3,
                                                          num_procs=1,
-                                                         integration_args=None,
-                                                         solver_use_psitc=True):
+                                                         integration_args=None):
     table_dict, z_values, x_values = build_adiabatic_slfm_library(flamelet_specs, tabulated_quantities,
                                                                   diss_rate_values, diss_rate_ref,
                                                                   verbose, solver_verbose,
-                                                                  return_intermediates=True,
-                                                                  solver_use_psitc=solver_use_psitc)
+                                                                  _return_intermediates=True)
 
     if verbose:
         print('integrating enthalpy defect dimension ...', flush=True)
@@ -900,28 +936,46 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
     return structured_table, np.array(sorted(chi_st_space)), defect_st_space[::-1]
 
 
-def build_nonadiabatic_defect_slfm_library(flamelet_specs,
-                                           tabulated_quantities,
-                                           diss_rate_values=np.logspace(-3, 2, 16),
-                                           diss_rate_ref='stoichiometric',
-                                           verbose=True,
-                                           solver_verbose=False,
-                                           h_stoich_spacing=10.e3,
-                                           num_procs=1,
-                                           integration_args=None,
-                                           n_defect_st=32,
-                                           post_processors=None,
-                                           extend_defect_dim=False,
-                                           solver_use_psitc=True):
-    if post_processors is not None:
-        dependency_only_quantities = []
-        for p in post_processors:
-            for dep in p.dependencies:
-                if dep not in tabulated_quantities:
-                    dependency_only_quantities.append(dep)
-                    tabulated_quantities.append(dep)
-    tabulated_quantities = list(set(tabulated_quantities))
-    cput00 = perf_counter()
+def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
+                                                     tabulated_quantities,
+                                                     diss_rate_values=np.logspace(-3, 2, 16),
+                                                     diss_rate_ref='stoichiometric',
+                                                     verbose=True,
+                                                     solver_verbose=False,
+                                                     h_stoich_spacing=10.e3,
+                                                     num_procs=1,
+                                                     integration_args=None,
+                                                     n_defect_st=32,
+                                                     post_processors=None,
+                                                     extend_defect_dim=False):
+    """
+    Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
+    where heat loss profiles are generated through rapid, transient extinction (as opposed to quasisteady heat loss)
+
+    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
+     details of the grid in mixture fraction are required)
+    :param tabulated_quantities: quantities to be tabulated on the resultant library
+    :param diss_rate_values: the np.array of reference dissipation rate values in the table (note that if the flamelet
+     extinguishes at any point, the extinguished flamelet and larger dissipation rates are not included in the library)
+    :param diss_rate_ref: the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
+    :param verbose: whether or not to show progress of the library construction
+    :param solver_verbose: whether or not to show detailed progress of sub-solvers in generating the library
+    :param h_stoich_spacing: the stoichiometric enthalpy spacing used in subsampling the transient solution history
+    of each extinction solve
+    :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the library
+    :param integration_args: extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
+    :param num_procs: how many processors over which to distribute the parallel extinction solves
+    :param extend_defect_dim: whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
+    :param post_processors: extra quantities computed with user-defined classes derived from the PostProcessor class
+    :return: the library instance
+    """
+    cput00 = _write_library_header('nonadiabatic (defect) SLFM', flamelet_specs['mech_spec'],
+                                   flamelet_specs['fuel_stream'], flamelet_specs['oxy_stream'],
+                                   verbose)
+
+    tabulated_quantities, dependency_only_quantities = _add_post_processor_dependencies(tabulated_quantities,
+                                                                                        post_processors)
+
     ugt = _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                                tabulated_quantities,
                                                                diss_rate_values,
@@ -930,8 +984,7 @@ def build_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                                solver_verbose,
                                                                h_stoich_spacing,
                                                                num_procs,
-                                                               integration_args,
-                                                               solver_use_psitc)
+                                                               integration_args)
 
     structured_defect_table, x_values, g_values = _interpolate_to_structured_defect_dimension(ugt,
                                                                                               n_defect_st,
@@ -956,15 +1009,6 @@ def build_nonadiabatic_defect_slfm_library(flamelet_specs,
 
         library[quantity] = values
 
-    if post_processors is not None:
-        for p in post_processors:
-            library = p.evaluate(library)
-        for dep in dependency_only_quantities:
-            library.remove_from_dataset(dep)
-
-    if verbose:
-        print('----------------------------------------------------------------------------------')
-        print(f'library built in {perf_counter() - cput00:6.2f} s')
-        print('----------------------------------------------------------------------------------', flush=True)
-
+    library = _compute_post_processed_fields(post_processors, library, dependency_only_quantities)
+    _write_library_footer(cput00, verbose)
     return library

@@ -1,5 +1,6 @@
 """
-This module contains the Flamelet class that provides a high-level interface for nonpremixed flamelets
+This module contains the Flamelet class that provides a high-level interface for nonpremixed flamelets,
+namely setting up models and solving both unsteady and steady flamelets
 """
 
 # Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
@@ -14,13 +15,11 @@ from spitfire.time.governor import Governor, Steady, FinalTime, CustomTerminatio
 from spitfire.time.methods import ESDIRK64
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
-from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 import numpy as np
 from numpy import array, hstack, sum
 from numpy import any, logical_or, isinf, isnan
 from scipy.special import erfinv
 from scipy.sparse import csc_matrix
-from time import perf_counter
 from scipy.sparse.linalg import splu as superlu_factor
 from cantera import gas_constant
 from numpy.linalg import norm
@@ -40,21 +39,23 @@ class Flamelet(object):
     mech_spec : spitfire.chemistry.mechanism.ChemicalMechanismSpec instance
         the mechanism
     initial_condition : str or np.ndarray
-        the initial state of the flamelet, either 'equilibrium', 'unreacted', 'linear-TY', or a state vector from another flamelet
+        the initial state of the flamelet, either 'equilibrium', 'unreacted', 'linear-TY', 'Burke-Schumann',
+        or the interior state vector from another flamelet (obtained with Flamelet.*_interior_state properties)
     pressure : float
-        the pressure of the flamelet
+        the thermodynamic pressure
     oxy_stream : Cantera.Quantity (a Spitfire stream) or Cantera.gas object
         the oxidizer stream
     fuel_stream : Cantera.Quantity (a Spitfire stream) or Cantera.gas object
         the fuel stream
     max_dissipation_rate : float
-        the maximum dissipation rate
+        the maximum dissipation rate (cannot be specified alongside stoich_dissipation_rate or dissipation_rate)
+    stoich_dissipation_rate : float
+        the stoichiometric dissipation rate (cannot be specified alongside max_dissipation_rate or dissipation_rate)
     dissipation_rate : np.ndarray
-        the dissipation rate over mixture fraction
+        the np.ndarray of dissipation rates over mixture fraction (cannot be specified with max_ or stoich_dissipation_rate)
     dissipation_rate_form : str
-        the form of dissipation rate to use if the maximum value is specified ('Peters' (default) or 'constant')
-    lewis_numbers : np.ndarray
-        the Lewis numbers - do not use at the moment, as the nonunity Le formulation does not currently have consistent enthalpy fluxes
+        the form of dissipation rate to use if the maximum value is specified ('Peters' (default) or 'constant'),
+        cannot be specified with the dissipation_rate argument
     grid : np.ndarray
         the location of the grid points (specifying the grid directly invalidates other grid arguments)
     grid_points : int
@@ -152,7 +153,7 @@ class Flamelet(object):
         z = np.linspace(0., 1., grid_points)
         zo = 1.0 / (2.0 * grid_cluster_intensity) * np.log(
             (1. + (np.exp(grid_cluster_intensity) - 1.) * grid_cluster_point) / (
-                    1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
+                1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
         a = np.sinh(grid_cluster_intensity * zo)
         for i in range(grid_points):
             z[i] = grid_cluster_point / a * (np.sinh(grid_cluster_intensity * (z[i] - zo)) + a)
@@ -212,7 +213,6 @@ class Flamelet(object):
                  stoich_dissipation_rate=None,
                  dissipation_rate=None,
                  dissipation_rate_form='Peters',
-                 lewis_numbers=None,
                  grid=None,
                  grid_points=None,
                  grid_type='clustered',
@@ -344,9 +344,6 @@ class Flamelet(object):
                 self._x = np.zeros_like(self._z)
                 self._max_dissipation_rate = np.max(self._x)
                 self._dissipation_rate_form = 'unspecified-set-to-0'
-                # error_message = 'Flamelet specifications: you must specify either both of the dissipation_rate_form ' \
-                #                 'and max_dissipation_rate or only the dissipation_rate argument'
-                # raise ValueError(error_message)
             else:
                 if max_dissipation_rate is not None:
                     self._max_dissipation_rate = max_dissipation_rate
@@ -357,15 +354,15 @@ class Flamelet(object):
                 elif stoich_dissipation_rate is not None:
                     if dissipation_rate_form in ['peters', 'Peters']:
                         z_st = self.mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
-                        self._max_dissipation_rate = stoich_dissipation_rate / \
-                                                     np.exp(-2. * (erfinv(2. * z_st - 1.)) ** 2)
+                        self._max_dissipation_rate = stoich_dissipation_rate / np.exp(
+                            -2. * (erfinv(2. * z_st - 1.)) ** 2)
                     elif dissipation_rate_form == 'uniform':
                         self._max_dissipation_rate = stoich_dissipation_rate
                     self._dissipation_rate_form = dissipation_rate_form
                     self._x = self._compute_dissipation_rate(self._z,
                                                              self._max_dissipation_rate,
                                                              self._dissipation_rate_form)
-        self._lewis_numbers = lewis_numbers if lewis_numbers is not None else np.ones(self._n_species)
+        self._lewis_numbers = np.ones(self._n_species)
 
         self._use_scaled_heat_loss = use_scaled_heat_loss
         if self._use_scaled_heat_loss:
@@ -377,9 +374,6 @@ class Flamelet(object):
             self._h_rad *= factor
 
         # set up the initialization
-        #
-        # str - 'unreacted', 'equilibrium', 'linear-TY', 'Burke-Schumann'
-        # ndarray - the interior state, useful for initializing another flamelet from an existing one
         if isinstance(initial_condition, str):
             state_interior = np.ndarray((self._nz_interior, self._n_equations))
 
@@ -658,7 +652,7 @@ class Flamelet(object):
         saving_trajectory_data = data_dict is None or data_dict == self._insitu_processed_data
         if saving_trajectory_data:
             data_dict = self._insitu_processed_data
-            state = self.state_with_bcs(state).flatten()
+            state = self._state_2d_with_bcs(state).flatten()
         if self._no_insitu_processors_enabled and saving_trajectory_data:
             self._solution_times.append(t)
             return
@@ -812,14 +806,6 @@ class Flamelet(object):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _interpolate_state(self, state, new_grid):
-        state_rect = np.vstack((self._state_oxy,
-                                state.reshape((self._nz_interior, self._n_equations)),
-                                self._state_fuel))
-        for i in range(self._n_equations):
-            state_rect[:, i] = interp1d(self._z, state_rect[:, i], kind='cubic')(new_grid)
-        return state_rect[1:-1, :].ravel()
-
     def check_ignition_delay(self, state):
         ne = self._n_equations
         has_ignited = np.max(state[::ne] - self._initial_state[::ne]) > self._delta_temperature_ignition
@@ -841,8 +827,6 @@ class Flamelet(object):
     def _stop_at_linear_temperature_or_steady(self, state, t, nt, residual):
         T_bc_max = max([self._oxy_stream.T, self._fuel_stream.T])
         is_linear_enough = np.max(state) < (1. + self._temperature_tolerance) * T_bc_max
-        # TminusTlinear = state[::self._n_equations] - self.linear_temperature[1:-1]
-        # is_linear_enough = np.max(np.abs(TminusTlinear)) < self._temperature_tolerance * T_bc_max
         is_steady = residual < self._steady_tolerance
         return not (is_linear_enough or is_steady)
 
@@ -1135,80 +1119,86 @@ class Flamelet(object):
             i = key + 1
             return state[i::self._n_equations]
 
-    def state_with_bcs(self, state):
+    def _state_2d_with_bcs(self, state):
         nzi = state.size // self._n_equations
-        return np.vstack((self.oxy_state,
+        return np.vstack((self._oxy_state,
                           state.reshape((nzi, self._n_equations)),
-                          self.fuel_state)).ravel()
+                          self._fuel_state)).ravel()
 
     @property
     def mechanism(self):
+        """Obtain the flamelet's ChemicalMechanismSpec object"""
         return self._mechanism
 
     @property
     def dissipation_rate(self):
+        """Obtain the np.ndarray of scalar dissipation rate values"""
         return self._x
 
     @property
     def mixfrac_grid(self):
+        """Obtain the np.ndarray of mixture fraction grid points"""
         return self._z
 
     @property
-    def oxy_state(self):
-        return self._state_oxy
-
-    @property
-    def fuel_state(self):
-        return self._state_fuel
-
-    @property
     def oxy_stream(self):
+        """Obtain the stream associated with the oxidizer"""
         return self._oxy_stream
 
     @property
     def fuel_stream(self):
+        """Obtain the stream associated with the fuel"""
         return self._fuel_stream
 
     @property
     def pressure(self):
+        """Obtain the thermodynamic pressure"""
         return self._pressure
 
     @property
     def linear_temperature(self):
-        """Get the linear temperature profile"""
+        """Obtain the np.ndarray of linear temperature values"""
         To = self._oxy_stream.T
         Tf = self._fuel_stream.T
         return To + (Tf - To) * self._z
 
     @property
     def initial_interior_state(self):
+        """Obtain the initial interior (no boundary states) state vector of the flamelet, useful for initializing another flamelet object"""
         return self._initial_state
 
     @property
     def initial_state(self):
-        return self.state_with_bcs(self._initial_state)
+        """Obtain the initial full (interior + boundaries) state vector of the flamelet"""
+        return self._state_2d_with_bcs(self._initial_state)
 
     @property
     def initial_temperature(self):
+        """Obtain the np.ndarray of values of the temperature before solving the steady/unsteady flamelet"""
         return np.hstack((self._state_oxy[0], self._initial_state[::self._n_equations], self._state_fuel[0]))
 
     def initial_mass_fraction(self, key):
-        return self._get_mass_fraction_with_bcs(key, self.state_with_bcs(self._initial_state))
+        """Obtain the np.ndarray of values of a particular mass fraction before solving the steady/unsteady flamelet"""
+        return self._get_mass_fraction_with_bcs(key, self._state_2d_with_bcs(self._initial_state))
 
     @property
     def final_interior_state(self):
+        """Obtain the final interior (no boundary states) state vector of the flamelet, useful for initializing another flamelet object"""
         return self._final_state
 
     @property
     def final_state(self):
-        return self.state_with_bcs(self._final_state)
+        """Obtain the initial full (interior + boundaries) state vector of the flamelet"""
+        return self._state_2d_with_bcs(self._final_state)
 
     @property
     def final_temperature(self):
+        """Obtain the np.ndarray of values of the temperature after solving the steady/unsteady flamelet"""
         return np.hstack((self._state_oxy[0], self._final_state[::self._n_equations], self._state_fuel[0]))
 
     def final_mass_fraction(self, key):
-        return self._get_mass_fraction_with_bcs(key, self.state_with_bcs(self._final_state))
+        """Obtain the np.ndarray of values of a particular mass fraction after solving the steady/unsteady flamelet"""
+        return self._get_mass_fraction_with_bcs(key, self._state_2d_with_bcs(self._final_state))
 
     @property
     def solution_times(self):
@@ -1217,7 +1207,16 @@ class Flamelet(object):
 
     @property
     def iteration_count(self):
+        """Obtain the number of iterations needed to solve the steady flamelet (after solving...)"""
         return self._iteration_count
+
+    @property
+    def _oxy_state(self):
+        return self._state_oxy
+
+    @property
+    def _fuel_state(self):
+        return self._state_fuel
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1266,6 +1265,20 @@ class Flamelet(object):
             tolerance for the nonlinear solver
         linear_solver : str
             which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
+        stepper_type : spitfire.time.TimeStepper
+            which (single step) stepper method to use (optional, default: ESDIRK64)
+        nlsolver_type : spitfire.time.NonlinearSolver
+            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+        stepcontrol_type : spitfire.time.StepControl
+            which time step adaptation method to use (optional, default: PIController)
+        extra_governor_args : dict
+            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_stepper_args : dict
+            extra arguments to specify on the spitfire.time.TimeStepper object
+        extra_nlsolver_args : dict
+            extra arguments to specify on the spitfire.time.NonlinearSolver object
+        extra_stepcontrol_args : dict
+            extra arguments to specify on the spitfire.time.StepControl object
         """
 
         self._initialize_insitu_processing()
@@ -1345,6 +1358,20 @@ class Flamelet(object):
             tolerance for the nonlinear solver
         linear_solver : str
             which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
+        stepper_type : spitfire.time.TimeStepper
+            which (single step) stepper method to use (optional, default: ESDIRK64)
+        nlsolver_type : spitfire.time.NonlinearSolver
+            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+        stepcontrol_type : spitfire.time.StepControl
+            which time step adaptation method to use (optional, default: PIController)
+        extra_governor_args : dict
+            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_stepper_args : dict
+            extra arguments to specify on the spitfire.time.TimeStepper object
+        extra_nlsolver_args : dict
+            extra arguments to specify on the spitfire.time.NonlinearSolver object
+        extra_stepcontrol_args : dict
+            extra arguments to specify on the spitfire.time.StepControl object
         """
 
         self._steady_tolerance = steady_tolerance
@@ -1375,6 +1402,20 @@ class Flamelet(object):
             tolerance for the nonlinear solver
         linear_solver : str
             which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
+        stepper_type : spitfire.time.TimeStepper
+            which (single step) stepper method to use (optional, default: ESDIRK64)
+        nlsolver_type : spitfire.time.NonlinearSolver
+            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+        stepcontrol_type : spitfire.time.StepControl
+            which time step adaptation method to use (optional, default: PIController)
+        extra_governor_args : dict
+            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_stepper_args : dict
+            extra arguments to specify on the spitfire.time.TimeStepper object
+        extra_nlsolver_args : dict
+            extra arguments to specify on the spitfire.time.NonlinearSolver object
+        extra_stepcontrol_args : dict
+            extra arguments to specify on the spitfire.time.StepControl object
         """
 
         self.final_time = final_time
@@ -1411,6 +1452,20 @@ class Flamelet(object):
             tolerance for the nonlinear solver
         linear_solver : str
             which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
+        stepper_type : spitfire.time.TimeStepper
+            which (single step) stepper method to use (optional, default: ESDIRK64)
+        nlsolver_type : spitfire.time.NonlinearSolver
+            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+        stepcontrol_type : spitfire.time.StepControl
+            which time step adaptation method to use (optional, default: PIController)
+        extra_governor_args : dict
+            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_stepper_args : dict
+            extra arguments to specify on the spitfire.time.TimeStepper object
+        extra_nlsolver_args : dict
+            extra arguments to specify on the spitfire.time.NonlinearSolver object
+        extra_stepcontrol_args : dict
+            extra arguments to specify on the spitfire.time.StepControl object
         """
 
         self._delta_temperature_ignition = delta_temperature_ignition
@@ -1448,6 +1503,20 @@ class Flamelet(object):
             tolerance for the nonlinear solver
         linear_solver : str
             which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
+        stepper_type : spitfire.time.TimeStepper
+            which (single step) stepper method to use (optional, default: ESDIRK64)
+        nlsolver_type : spitfire.time.NonlinearSolver
+            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+        stepcontrol_type : spitfire.time.StepControl
+            which time step adaptation method to use (optional, default: PIController)
+        extra_governor_args : dict
+            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_stepper_args : dict
+            extra arguments to specify on the spitfire.time.TimeStepper object
+        extra_nlsolver_args : dict
+            extra arguments to specify on the spitfire.time.NonlinearSolver object
+        extra_stepcontrol_args : dict
+            extra arguments to specify on the spitfire.time.StepControl object
         """
 
         self._steady_tolerance = steady_tolerance
@@ -1484,6 +1553,20 @@ class Flamelet(object):
             tolerance for the nonlinear solver
         linear_solver : str
             which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
+        stepper_type : spitfire.time.TimeStepper
+            which (single step) stepper method to use (optional, default: ESDIRK64)
+        nlsolver_type : spitfire.time.NonlinearSolver
+            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+        stepcontrol_type : spitfire.time.StepControl
+            which time step adaptation method to use (optional, default: PIController)
+        extra_governor_args : dict
+            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_stepper_args : dict
+            extra arguments to specify on the spitfire.time.TimeStepper object
+        extra_nlsolver_args : dict
+            extra arguments to specify on the spitfire.time.NonlinearSolver object
+        extra_stepcontrol_args : dict
+            extra arguments to specify on the spitfire.time.StepControl object
 
         Returns
         -------
@@ -1497,132 +1580,6 @@ class Flamelet(object):
         self.integrate(CustomTermination(self._stop_at_ignition), **kwargs)
         has_ignited = self.check_ignition_delay(self._final_state)
         return self._solution_times[-1] if has_ignited else np.Inf
-
-    def temporary_alc_in_chi_max(self):
-        # import matplotlib.pyplot as plt
-
-        tol = 1.e-8
-        dh = 1.e-4
-        h = 0.
-
-        q = np.copy(self._initial_state)
-        p = np.copy(self._max_dissipation_rate)
-
-        p_target = 1.e5
-        a_sign = 1.
-
-        # plt.ion()
-        # fig, axarray = plt.subplots(2, 1)
-
-        total_iter = 0
-        c = 0
-        while p < p_target:
-            c += 1
-
-            # a single local nonlinear problem
-            # save (q0, p0) and set up the linear system solvers
-
-            def H_fun(q, p):
-                self._x = self._compute_dissipation_rate(self._z, p)
-                self._griffon.flamelet_stencils(self._dz, self._nz_interior, self._x, 1. / self._lewis_numbers,
-                                                self._maj_coeff_griffon, self._sub_coeff_griffon,
-                                                self._sup_coeff_griffon,
-                                                self._mcoeff_griffon, self._ncoeff_griffon)
-                return getattr(self, '_' + self._heat_transfer + '_rhs')(0., q)
-
-            nzi = self._nz_interior
-            neq = self._n_equations
-
-            J = np.zeros(self._jac_nelements_griffon)
-            btl = self._block_thomas_l_values
-            btp = self._block_thomas_d_pivots
-
-            q0 = np.copy(q)
-            p0 = np.copy(p)
-
-            # setting up Newton's method on this local problem requires the tangent vectors at (q0,p0)
-            # set up the Hq linear solves
-            J = getattr(self, '_' + self._heat_transfer + '_jac')(q0)
-            py_btddod_full_factorize(J, nzi, neq, btl, btp, btf)
-
-            q = np.copy(q0)
-            p = np.copy(p0)
-
-            # finite difference the parameter Jacobian Hp for now
-            Hp = (H_fun(q0, p0 + 1.e-2) - H_fun(q0, p0)) / 1.e-2
-
-            # compute the tangent vectors
-            phi = np.zeros_like(Hp)
-            v = np.zeros_like(Hp)
-            w = np.zeros_like(Hp)
-            py_btddod_full_solve(J, btl, btp, btf, -Hp, nzi, neq, phi)
-            a = a_sign / np.sqrt(1. + phi.dot(phi))
-            qdot0 = a * phi
-            pdot0 = np.copy(a)
-            # compute the auxiliary equation Jacobian
-            Nq = qdot0.T
-            Np = pdot0
-
-            # enter into Newton's method
-            for i in range(20):
-                # evaluate the residual
-                H = H_fun(q, p)
-                N = qdot0.dot(q - q0) + pdot0 * (p - p0) - dh
-
-                res_vec = np.hstack((H, N))
-                res = res_vec.dot(res_vec)
-                if res < tol:
-                    break
-                else:
-                    Hq = csc_matrix((self._adiabatic_jac(q), self._jac_indices_griffon))
-                    A = np.zeros((self._n_dof + 1, self._n_dof + 1))
-                    A[:-1, :-1] = Hq.todense()
-                    A[:-1, -1] = Hp
-                    A[-1, :-1] = Nq
-                    A[-1, -1] = Np
-                    b = np.zeros(self._n_dof + 1)
-                    b[:-1] = H
-                    b[-1] = N
-                    x = np.linalg.solve(A, -b)
-                    dq = x[:-1]
-                    dp = x[-1]
-
-                    # do the bordering algorithm to solve the composite linear system
-                    # J = getattr(self, '_' + self._heat_transfer + '_jac')(q0)
-                    # py_btddod_full_factorize(J, nzi, neq, btl, btp, btf)
-                    # Hp = (H_fun(q0, p0 + 1.e-2) - H_fun(q0, p0)) / 1.e-2
-                    #
-                    # py_btddod_full_solve(J, btl, btp, btf, Hp, nzi, neq, v)
-                    # py_btddod_full_solve(J, btl, btp, btf, H, nzi, neq, w)
-                    #
-                    # dp = -(N - Nq.dot(w)) / (Np - Nq.dot(v))
-                    # dq = w + dp * v
-
-                    q += dq
-                    p += dp
-            h += dh
-            dqn = (q - q0) / self._variable_scales
-            dtarget = 1.e-4
-            dhmax = 10.
-            dh = np.min([dhmax, dh * np.sqrt(dtarget / dqn.dot(dqn))])
-
-            if total_iter > 100:
-                if pmp0_old * (p - p0) < 0.:
-                    a_sign *= -1.
-                    print('switch!')
-                    dtarget *= 1.e-4
-
-            print(np.max(q), p, p - p0, dh)
-            pmp0_old = p - p0
-            if c == 100:
-                c = 0
-                # axarray[0].plot(self._z[1:-1], q[::self._n_equations])
-                # axarray[0].loglog(h, 1. / p, '.')
-                # axarray[1].semilogx(1. / p, np.max(q), '.')
-                # plt.pause(1.e-3)
-            total_iter += 1
-        # plt.ioff()
-        # plt.show()
 
     def steady_solve_newton(self,
                             initial_guess=None,
@@ -1871,7 +1828,7 @@ class Flamelet(object):
                 evaluate_jacobian = False
             else:
                 jac_age += 1
-            
+
             evaluate_jacobian = (jac_age == jac_refresh_age) or res > 1.e-2
 
             dstate = np.zeros(self._n_dof)

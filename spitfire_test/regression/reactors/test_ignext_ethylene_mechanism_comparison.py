@@ -13,14 +13,14 @@ class Test(unittest.TestCase):
 
         cantera.suppress_thermo_warnings()
 
-        T = 1000.
+        T = 1200.
         p = 101325.
 
-        mech_marker_dict = [('luo', 'bs'), ('williams', 'gD')]
+        mech_marker_dict = [('luo', 'bs')]  # , ('williams', 'gD')]
 
         base_path = abspath(join('spitfire_test', 'test_mechanisms'))
 
-        ntau = 80
+        ntau = 20
         tau_vec = np.logspace(-7, 3, ntau)
 
         def make_mix_and_feed(spitfire_mech):

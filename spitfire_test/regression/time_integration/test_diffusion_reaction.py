@@ -1,11 +1,12 @@
-# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
-# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS). 
-#                       
-# You should have received a copy of the 3-clause BSD License                                        
-# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.   
-#                    
-# Questions? Contact Mike Hansen (mahanse@sandia.gov)    
+# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations
+# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS).
+#
+# You should have received a copy of the 3-clause BSD License
+# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.
+#
+# Questions? Contact Mike Hansen (mahanse@sandia.gov)
 
+import unittest
 from spitfire.time.governor import Governor, Steady, FinalTime
 from spitfire.time.methods import ESDIRK64, AdaptiveERK54CashKarp, ForwardEuler
 from spitfire.time.nonlinear import SimpleNewtonSolver
@@ -21,50 +22,12 @@ class DiffusionReaction1D_FiniteDifference(object):
 
     @classmethod
     def _uniform_grid(cls, grid_points):
-        """Make a uniform grid in mixture fraction space with a particular number of grid points
-
-            Parameters
-            ----------
-            grid_points : int
-                the number of uniformly-distributed grid points
-
-            Returns
-            -------
-            z : array_like
-                Locations of grid points, including the boundary points
-            dz : array_like
-                Spacings between grid points
-            """
         z = np.linspace(0., 1., grid_points)
         dz = z[1:] - z[:-1]
         return z, dz
 
     @classmethod
     def _clustered_grid(cls, grid_points, grid_cluster_point, grid_cluster_intensity=6.):
-        """Make a grid in mixture fraction space with clustering around a particular mixture fraction.
-
-            Parameters
-            ----------
-            grid_points : int
-                the number of grid points
-            grid_cluster_point : float
-                the location around which grid points will be clustered
-            grid_cluster_intensity : float, optional
-                clustering coefficient, increase for more dense clustering, must be positive, defaults to 6.0
-
-            Returns
-            -------
-            z : array_like
-                Locations of grid points, including the boundary points
-            dz : array_like
-                Spacings between grid points
-
-            Notes
-            -----
-            This function uses the clustering method given in [1]_.
-
-            .. [1] J. D. Anderson, "Computational Fluid Dynamics: the Basics with Applications," McGraw-Hill Inc., 1995 pp. 585-588, 1996.
-            """
 
         if grid_cluster_intensity < 1.e-16:
             raise ValueError('cluster_coeff must be strictly positive! Given value: ' + str(grid_cluster_intensity))
@@ -75,7 +38,7 @@ class DiffusionReaction1D_FiniteDifference(object):
         z = np.linspace(0., 1., grid_points)
         zo = 1.0 / (2.0 * grid_cluster_intensity) * np.log(
             (1. + (np.exp(grid_cluster_intensity) - 1.) * grid_cluster_point) / (
-                    1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
+                1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
         a = np.sinh(grid_cluster_intensity * zo)
         for i in range(grid_points):
             z[i] = grid_cluster_point / a * (np.sinh(grid_cluster_intensity * (z[i] - zo)) + a)
@@ -277,7 +240,6 @@ class DiffusionReaction1D_FiniteDifference(object):
 
     @property
     def solution_times(self):
-        """Obtain this reactor's integration times"""
         return np.array(self._solution_times)
 
     def integrate(self,
@@ -292,34 +254,7 @@ class DiffusionReaction1D_FiniteDifference(object):
                   log_rate=100,
                   maximum_steps_per_jacobian=1,
                   linear_solve_tolerance=1.e-15,
-                  nonlinear_solve_tolerance=1.e-12,
-                  linear_solver='superlu'):
-        """Base method for flamelet integration
-
-        Parameters
-        ----------
-        termination : Termination object as in spitfire.time.governor
-            how integration is stopped - instead of calling integrate() directly, use the integrate_to_time(), integrate_to_steady(), etc. methods of this class
-        first_time_step : float
-            The time step size initially used by the time integrator
-        minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        linear_solver : str
-            which linear solver to use, at the moment either 'lapack' (dense, direct) or 'superlu' (sparse, direct) are available
-        plot : list
-            List of variables (temperature and/or specific species names) to be plotted after the time integration completes.
-            No plot is shown if a list is not provided.
-            Temperature is plotted in the first subplot if any list of variables is provided for plotting (even if temperature is not specified in the list of variables).
-            Species mass fractions will be plotted in a second subplot if any species names are provided in the list of variables.
-        """
+                  nonlinear_solve_tolerance=1.e-12):
 
         governor = Governor()
         governor.termination_criteria = termination
@@ -327,10 +262,6 @@ class DiffusionReaction1D_FiniteDifference(object):
         governor.projector_setup_rate = maximum_steps_per_jacobian
         governor.do_logging = write_log
         governor.log_rate = log_rate
-        # governor.extra_logger_log = self._extra_logger_log
-        # governor.extra_logger_title_line1 = self._extra_logger_title_line1
-        # governor.extra_logger_title_line2 = self._extra_logger_title_line2
-        # governor.clip_to_positive = True
         governor.norm_weighting = 1. / self._variable_scales
         governor.custom_post_process_step = self._do_insitu_processing
 
@@ -372,29 +303,93 @@ class DiffusionReaction1D_FiniteDifference(object):
                                                method=method)[1]
 
     def integrate_to_steady(self, steady_tolerance=1.e-4, **kwargs):
-        """Integrate a flamelet until steady state is reached
-
-        Parameters
-        ----------
-        steady_tolerance : float
-            residual tolerance below which steady state is defined
-
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
-        """
         self.steady_tolerance = steady_tolerance
         self.integrate(Steady(steady_tolerance), **kwargs)
 
     def integrate_to_time(self, final_time, **kwargs):
-        """Integrate a flamelet until it reaches a specified simulation time
-
-        Parameters
-        ----------
-        final_time : float
-            time at which integration ceases
-
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
-        """
         self.final_time = final_time
         self.integrate(FinalTime(final_time), **kwargs)
+
+
+class Test(unittest.TestCase):
+    def test(self):
+        import numpy as np
+
+        def right_hand_side(c, k_ab, k_bc):
+            """
+            Computes the right-hand side function for the ODE system.
+
+            Note that time integration requires a function that takes (t, y) as arguments.
+            To accomodate this, we will write a lambda after defining the rate constants,
+            which passes the appropriate y value and rate constant to this function (and ignores the time).
+
+            :param c: current concentration vector
+            :param k_ab: the rate constant of the reaction A -> B
+            :param k_bc: the rate constant of the reaction A + B -> 2C
+            :return: right-hand side of the ODE system
+            """
+            c_a = c[0]
+            c_b = c[1]
+            c_c = c[2]
+            q_1 = k_ab * c_a
+            q_2 = k_bc * c_a * c_b
+            return np.array([-q_1 - q_2, q_1 - q_2, 2. * q_2])
+
+        def jacobian(c, k_ab, k_bc):
+            c_a = c[0]
+            c_b = c[1]
+            c_c = c[2]
+            q_1 = k_ab * c_a
+            q_2 = k_bc * c_a * c_b
+            dq1_ca = k_ab
+            dq1_cb = 0.
+            dq1_cc = 0.
+            dq2_ca = k_bc * c_b
+            dq2_cb = k_bc * c_a
+            dq2_cc = 0.
+            return np.array([[-dq1_ca - q_2, -dq1_cb - dq2_cb, -dq1_cc - dq2_cc],
+                             [dq1_ca - q_2, dq1_cb - dq2_cb, dq1_cc - dq2_cc],
+                             [2. * dq2_ca, 2. * dq2_cb, 2. * dq2_cc]])
+
+        k_ab = 1.
+        k_bc = 10.
+
+        dr = DiffusionReaction1D_FiniteDifference(initial_conditions=[lambda x: np.exp(-100. * x ** 2),
+                                                                      lambda x: 0.5 * (1. + np.sin(2. * np.pi * x)),
+                                                                      0.],
+                                                  left_boundary_state=[1., 1., 0.],
+                                                  right_boundary_state=[0., 1., 0.],
+                                                  diffusion_coefficient=lambda x: np.exp(-1.e0 * (x - 0.2) ** 2),
+                                                  source_term=lambda y: right_hand_side(y, k_ab, k_bc),
+                                                  source_term_jacobian=lambda y: jacobian(y, k_ab, k_bc),
+                                                  variable_names=['A', 'B', 'C'],
+                                                  grid_points=32,
+                                                  grid_type='clustered',
+                                                  grid_cluster_intensity=2.,
+                                                  grid_cluster_point=0.2)
+
+        dr.integrate_to_time(final_time=0.05,
+                             first_time_step=1.e-5,
+                             time_step=1.e-5,
+                             time_method='forward euler',
+                             log_rate=40, write_log=False,
+                             transient_tolerance=1.e-8)
+        dr.integrate_to_time(final_time=0.05,
+                             first_time_step=1.e-4,
+                             time_method='erk54 cash karp',
+                             log_rate=40, write_log=False,
+                             transient_tolerance=1.e-8)
+        dr.integrate_to_time(final_time=0.05,
+                             first_time_step=1.e-3,
+                             time_method='esdirk64',
+                             log_rate=10, write_log=False,
+                             transient_tolerance=1.e-8)
+
+        ca = dr.trajectory_data('A')
+        cb = dr.trajectory_data('B')
+        cc = dr.trajectory_data('C')
+        x = dr.grid[1:-1]
+
+
+if __name__ == '__main__':
+    unittest.main()

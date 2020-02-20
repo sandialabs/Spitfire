@@ -5,7 +5,6 @@ class Test(unittest.TestCase):
     def test(self):
         from spitfire.chemistry.mechanism import ChemicalMechanismSpec
         from spitfire.chemistry.reactors import HomogeneousReactor
-        import matplotlib.pyplot as plt
         from numpy import sin as sin, pi as pi
 
         from os.path import abspath, join
@@ -38,7 +37,7 @@ class Test(unittest.TestCase):
                                      shape_dimension_dict={'shape': 'tetrahedron', 'char. length': 1.e-3})
 
         reactor.insitu_process_quantity('temperature')
-        reactor.integrate_to_time(0.4, write_log=False, log_rate=50)
+        reactor.integrate_to_time(0.2, write_log=False, log_rate=50)
 
 
 if __name__ == '__main__':

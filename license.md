@@ -1,5 +1,7 @@
-Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations
-Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS).
+# Spitfire
+A Python-C++ library for building tabulated chemistry models and solving differential equations
+
+Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC (NTESS).
 
 Version 1.0
 

@@ -1,5 +1,5 @@
 """
-This module contains the HomogeneousReactor class that provides a high-level interface for 0-D reactors
+This module contains the HomogeneousReactor class that provides a high-level interface for a variety of 0-D reactors
 """
 
 # Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations                    
@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 class HomogeneousReactor(object):
     """A class for solving zero-dimensional reactors
 
-    **Constructor**: specify a mechanism, initial mixture, reactor specifications, and thermochemical property evaluation
+    **Constructor**: specify a mechanism, initial mixture, and reactor specifications
 
     Parameters
     ----------
@@ -93,7 +93,7 @@ class HomogeneousReactor(object):
                                   'v->sov': lambda v: 3. * sqrt(6.) / np.power(3. * v / np.sqrt(2.), 1. / 3.)},
                    'icosahedron': {'l->sov': lambda a: 12. * sqrt(3.) / ((3. + sqrt(5.)) * a),
                                    'v->sov': lambda v: 12. * sqrt(3.) / (
-                                           (3. + sqrt(5.)) * np.power(12. * v / 5. / (3. + sqrt(5.)), 1. / 3.))}}
+                                       (3. + sqrt(5.)) * np.power(12. * v / 5. / (3. + sqrt(5.)), 1. / 3.))}}
     _shapes = list(_shape_dict.keys())
 
     @classmethod
@@ -756,6 +756,7 @@ class HomogeneousReactor(object):
 
     @property
     def gas(self):
+        """Obtain a cantera gas object for the mechanism in this reactor"""
         return self._gas
 
     @property
@@ -820,195 +821,6 @@ class HomogeneousReactor(object):
         """Obtain a list of supported reactor geometries"""
         return HomogeneousReactor._shape_dict.keys()
 
-    def temporary_alc_in_tau(self, taus, temps):
-        # import matplotlib.pyplot as plt
-
-        if self._configuration == 'isobaric':
-            def rhs_method(t, state):
-                k = np.zeros(self._n_equations)
-                self._update_mass_transfer_parameters(t)
-                self._update_heat_transfer_parameters(t)
-                self._griffon.reactor_rhs_isobaric(state, self._initial_pressure,
-                                                   self._tf_value, self._yf_value, self._tau_value,
-                                                   self._tc_value, self._tr_value,
-                                                   self._cc_value, self._re_value,
-                                                   self._surface_area_to_volume,
-                                                   self._heat_transfer_option, self._is_open, k)
-                return k
-
-            def jac_method(state):
-                k = np.zeros(self._n_equations)
-                j = np.zeros(self._n_equations * self._n_equations)
-                self._griffon.reactor_jac_isobaric(state, self._initial_pressure,
-                                                   self._tf_value, self._yf_value, self._tau_value,
-                                                   self._tc_value, self._tr_value,
-                                                   self._cc_value, self._re_value,
-                                                   self._surface_area_to_volume,
-                                                   self._heat_transfer_option, self._is_open,
-                                                   self._rates_sensitivity_option, self._sensitivity_transform_option,
-                                                   k, j)
-                return j.reshape((self._n_equations, self._n_equations), order='F')
-
-        elif self._configuration == 'isochoric':
-            def rhs_method(t, state):
-                k = np.zeros(self._n_equations)
-                self._update_mass_transfer_parameters(t)
-                self._update_heat_transfer_parameters(t)
-                self._griffon.reactor_rhs_isochoric(state,
-                                                    self._rf_value, self._tf_value, self._yf_value, self._tau_value,
-                                                    self._tc_value, self._tr_value,
-                                                    self._cc_value, self._re_value,
-                                                    self._surface_area_to_volume,
-                                                    self._heat_transfer_option, self._is_open, k)
-                return k
-
-            def jac_method(state):
-                k = np.zeros(self._n_equations)
-                j = np.zeros(self._n_equations * self._n_equations)
-                self._griffon.reactor_jac_isochoric(state,
-                                                    self._rf_value, self._tf_value, self._yf_value, self._tau_value,
-                                                    self._tc_value, self._tr_value,
-                                                    self._cc_value, self._re_value,
-                                                    self._surface_area_to_volume,
-                                                    self._heat_transfer_option, self._is_open,
-                                                    self._rates_sensitivity_option, k, j)
-                return j.reshape((self._n_equations, self._n_equations), order='F')
-
-        tol = 1.e-8
-        dh = 1.e-4
-        h = 0.
-
-        q = np.copy(self._initial_state)
-        p = np.copy(self._tau_value)
-
-        p_target = 1.e-6
-        a_sign = -1.
-
-        # plt.ion()
-        # fig, axarray = plt.subplots(2, 1)
-        # for tau, temp in zip(taus, temps):
-        #     axarray[1].semilogx(tau, temp, 'sc', markersize=10, markeredgecolor='k')
-
-        total_iter = 0
-        c = 0
-        has_switched = False
-        p_list = [np.copy(p)]
-        T_list = [np.copy(q[0])]
-        h_list = [np.copy(dh)]
-        # hp_line, = axarray[0].loglog(h_list, p_list, 'k-')
-        # pT_line, = axarray[1].semilogx(p_list, T_list, 'k-')
-        # hp_pt, = axarray[0].loglog(h_list, p_list, 'k*')
-        # pT_pt, = axarray[1].semilogx(p_list, T_list, 'k*')
-        while p > p_target:
-            c += 1
-
-            # a single local nonlinear problem
-            # save (q0, p0) and set up the linear system solvers
-
-            def H_fun(q, p):
-                self._tau_value = p
-                return rhs_method(0., q)
-
-            neq = self._n_equations
-
-            q0 = np.copy(q)
-            p0 = np.copy(p)
-
-            # setting up Newton's method on this local problem requires the tangent vectors at (q0,p0)
-            # set up the Hq linear solves
-            J = jac_method(q)
-            J_lu = lapack_lu_factor(J)[:2]
-
-            q = np.copy(q0)
-            p = np.copy(p0)
-
-            # finite difference the parameter Jacobian Hp for now
-            Hp = (H_fun(q0, p0 + 1.e-8) - H_fun(q0, p0)) / 1.e-8
-
-            # compute the tangent vectors
-            phi = np.zeros_like(Hp)
-            v = np.zeros_like(Hp)
-            w = np.zeros_like(Hp)
-            phi = lapack_lu_solve(J_lu[0], J_lu[1], -Hp)[0]
-            a = a_sign / np.sqrt(1. + phi.dot(phi))
-            qdot0 = a * phi
-            pdot0 = np.copy(a)
-            # compute the auxiliary equation Jacobian
-            Nq = qdot0.T
-            Np = pdot0
-
-            # enter into Newton's method
-            for i in range(20):
-                # evaluate the residual
-                H = H_fun(q, p)
-                N = qdot0.dot(q - q0) + pdot0 * (p - p0) - dh
-
-                res_vec = np.hstack((H, N))
-                res = res_vec.dot(res_vec)
-                if res < tol:
-                    break
-                else:
-                    Hq = jac_method(q)
-                    A = np.zeros((neq + 1, neq + 1))
-                    A[:-1, :-1] = Hq
-                    A[:-1, -1] = Hp
-                    A[-1, :-1] = Nq
-                    A[-1, -1] = Np
-                    b = np.zeros(neq + 1)
-                    b[:-1] = H
-                    b[-1] = N
-                    x = np.linalg.solve(A, -b)
-                    dq = x[:-1]
-                    dp = x[-1]
-
-                    # do the bordering algorithm to solve the composite linear system
-                    # J = getattr(self, '_' + self._heat_transfer + '_jac')(q0)
-                    # py_btddod_full_factorize(J, nzi, neq, btl, btp, btf)
-                    # Hp = (H_fun(q0, p0 + 1.e-2) - H_fun(q0, p0)) / 1.e-2
-                    #
-                    # py_btddod_full_solve(J, btl, btp, btf, Hp, nzi, neq, v)
-                    # py_btddod_full_solve(J, btl, btp, btf, H, nzi, neq, w)
-                    #
-                    # dp = -(N - Nq.dot(w)) / (Np - Nq.dot(v))
-                    # dq = w + dp * v
-
-                    q += dq
-                    p += dp
-            h += dh
-            dqn = (q - q0) / self._variable_scales
-            dtarget = 1.e-10
-            dhmax = 1.
-            dh = np.min([dhmax, dh * np.sqrt(dtarget / dqn.dot(dqn))])
-
-            p_list.append(np.copy(p))
-            h_list.append(np.copy(h))
-            T_list.append(np.copy(q[0]))
-
-            if total_iter > 100:
-                if pmp0_old * (p - p0) < 0.:
-                    a_sign *= -1.
-                    has_switched = True
-                    print('switch!')
-                    # dtarget *= 1.e-4
-
-            print(q[0], p, p - p0, dh)
-            pmp0_old = p - p0
-            if c == 10000:
-                c = 0
-                # axarray[0].plot(self._z[1:-1], q[::self._n_equations])
-                # axarray[0].loglog(h, p, '.')
-                # axarray[1].semilogx(p, q[0], '.')
-                # hp_line.set_data(h_list, p_list)
-                # axarray[0].set_xlim([0.9 * np.min(h_list[1:]), 1.1 * np.max(h_list)])
-                # axarray[0].set_ylim([0.9 * np.min(p_list), 1.1 * np.max(p_list)])
-                # hp_pt.set_data(h, p)
-                # pT_pt.set_data(p, q[0])
-                # pT_line.set_data(p_list, T_list)
-                plt.pause(1.e-3)
-            total_iter += 1
-        # plt.ioff()
-        # plt.show()
-
     def integrate(self,
                   termination,
                   first_time_step=1.e-6,
@@ -1036,6 +848,8 @@ class HomogeneousReactor(object):
             how integration is stopped - instead of calling integrate() directly, use the integrate_to_time(), integrate_to_steady(), etc. methods of this class
         first_time_step : float
             The time step size initially used by the time integrator
+        max_time_step : float
+            The largest time step the time stepper is allowed to take
         minimum_time_step_count : int
             The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
         transient_tolerance : float
@@ -1046,6 +860,8 @@ class HomogeneousReactor(object):
             how often to print log information
         maximum_steps_per_jacobian : int
             maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
+        nonlinear_solve_tolerance : float
+            tolerance for the nonlinear solver used in implicit time stepping (optional, default: 1e-12)
         linear_solver : str
             which linear solver to use, at the moment either 'lapack' (dense, direct) or 'superlu' (sparse, direct) are available
         plot : list
@@ -1053,6 +869,20 @@ class HomogeneousReactor(object):
             No plot is shown if a list is not provided.
             Temperature is plotted in the first subplot if any list of variables is provided for plotting (even if temperature is not specified in the list of variables).
             Species mass fractions will be plotted in a second subplot if any species names are provided in the list of variables.
+        stepper_type : spitfire.time.TimeStepper
+            which (single step) stepper method to use (optional, default: ESDIRK64)
+        nlsolver_type : spitfire.time.NonlinearSolver
+            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+        stepcontrol_type : spitfire.time.StepControl
+            which time step adaptation method to use (optional, default: PIController)
+        extra_governor_args : dict
+            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_stepper_args : dict
+            extra arguments to specify on the spitfire.time.TimeStepper object
+        extra_nlsolver_args : dict
+            extra arguments to specify on the spitfire.time.NonlinearSolver object
+        extra_stepcontrol_args : dict
+            extra arguments to specify on the spitfire.time.StepControl object
         """
 
         self.insitu_process_quantity(['temperature'])
@@ -1099,10 +929,10 @@ class HomogeneousReactor(object):
 
         # build the rhs and projector methods and do the integration
         if self._configuration == 'isobaric':
-            def rhs_method(t, state):
+            def rhs_method(time, state):
                 k = np.zeros(self._n_equations)
-                self._update_mass_transfer_parameters(t)
-                self._update_heat_transfer_parameters(t)
+                self._update_mass_transfer_parameters(time)
+                self._update_heat_transfer_parameters(time)
                 self._griffon.reactor_rhs_isobaric(state, self._initial_pressure,
                                                    self._tf_value, self._yf_value, self._tau_value,
                                                    self._tc_value, self._tr_value,
@@ -1125,10 +955,10 @@ class HomogeneousReactor(object):
                 return j.reshape((self._n_equations, self._n_equations), order='F')
 
         elif self._configuration == 'isochoric':
-            def rhs_method(t, state):
+            def rhs_method(time, state):
                 k = np.zeros(self._n_equations)
-                self._update_mass_transfer_parameters(t)
-                self._update_heat_transfer_parameters(t)
+                self._update_mass_transfer_parameters(time)
+                self._update_heat_transfer_parameters(time)
                 self._griffon.reactor_rhs_isochoric(state,
                                                     self._rf_value, self._tf_value, self._yf_value, self._tau_value,
                                                     self._tc_value, self._tr_value,
@@ -1213,39 +1043,6 @@ class HomogeneousReactor(object):
         self.steady_tolerance = steady_tolerance
         self.integrate(Steady(steady_tolerance), **kwargs)
 
-    def integrate_to_steady_direct_griffon(self, steady_tolerance=1.e-4, **kwargs):
-        final_state = np.zeros(self._n_equations)
-        transient_tolerance = 1.e-10 if 'transient_tolerance' not in kwargs else kwargs['transient_tolerance']
-        nonlinear_tolerance = 1.e-8
-        inv_dof_scales = 1. / self._variable_scales
-        if self._configuration == 'isobaric':
-            self._griffon.isobaric_esdirk64_solver(self._initial_state, self._initial_pressure,
-                                                   self._tf_value, self._yf_value, self._tau_value,
-                                                   self._tc_value, self._tr_value,
-                                                   self._cc_value, self._re_value,
-                                                   self._surface_area_to_volume,
-                                                   self._heat_transfer_option, self._is_open,
-                                                   self._rates_sensitivity_option,
-                                                   self._sensitivity_transform_option,
-                                                   transient_tolerance, steady_tolerance,
-                                                   nonlinear_tolerance,
-                                                   inv_dof_scales,
-                                                   40, 10000, 1.e-6, 1.e6, -1.,
-                                                   400., 1, final_state)
-
-        if self._configuration == 'isobaric':
-            self._final_pressure = self._initial_pressure
-            self._final_temperature = final_state[0]
-            ynm1 = final_state[1:]
-            self._final_mass_fractions = hstack((ynm1, 1. - sum(ynm1)))
-        elif self._configuration == 'isochoric':
-            ynm1 = final_state[2:]
-            self._final_mass_fractions = hstack((ynm1, 1. - sum(ynm1)))
-            self._gas.TDY = final_state[1], final_state[0], self._final_mass_fractions
-            self._final_pressure = self._gas.P
-            self._final_temperature = final_state[1]
-        self._final_state = np.copy(final_state)
-
     def integrate_to_time(self, final_time, **kwargs):
         """Integrate a reactor until it reaches a specified simulation time
 
@@ -1320,62 +1117,3 @@ class HomogeneousReactor(object):
                 return np.Inf
             else:
                 return self._solution_times[-1]
-
-    def compute_ignition_delay_direct_griffon(self,
-                                              delta_temperature_ignition=400.,
-                                              minimum_allowable_residual=1.e-12,
-                                              **kwargs):
-        """Integrate in time until ignition (exceeding a specified threshold of the increase in temperature)
-
-        Parameters
-        ----------
-        delta_temperature_ignition : float
-            how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-
-        minimum_allowable_residual : float
-            how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
-
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
-
-        Returns
-        -------
-            the ignition delay of the reactor, in seconds
-        """
-        if self._heat_transfer == 'isothermal':
-            raise ValueError(
-                'compute_ignition_delay_direct_griffon() called on an isothermal reactor! This is not currently supported!')
-        else:
-            if delta_temperature_ignition is not None:
-                self._delta_temperature_ignition = delta_temperature_ignition
-            self._minimum_allowable_residual_for_ignition = minimum_allowable_residual
-            self._no_insitu_processors_enabled = True
-
-            transient_tolerance = 1.e-10 if 'transient_tolerance' not in kwargs else kwargs['transient_tolerance']
-            steady_tolerance = 1.e-8
-            nonlinear_tolerance = 1.e-12
-
-            inv_dof_scales = 1. / self._variable_scales
-
-            if self._configuration == 'isobaric':
-                final_state = np.zeros(self._n_equations)
-                tau_ign = self._griffon.isobaric_esdirk64_solver(self._initial_state, self._initial_pressure,
-                                                                 self._tf_value, self._yf_value, self._tau_value,
-                                                                 self._tc_value, self._tr_value,
-                                                                 self._cc_value, self._re_value,
-                                                                 self._surface_area_to_volume,
-                                                                 self._heat_transfer_option, self._is_open,
-                                                                 self._rates_sensitivity_option,
-                                                                 self._sensitivity_transform_option,
-                                                                 transient_tolerance, steady_tolerance,
-                                                                 nonlinear_tolerance,
-                                                                 inv_dof_scales,
-                                                                 40, 10000, 1.e-9, 1.e6, -1.,
-                                                                 delta_temperature_ignition, 0, final_state)
-                if tau_ign > 0:
-                    return tau_ign
-                else:
-                    return np.Inf
-            else:
-                raise ValueError(
-                    'compute_ignition_delay_direct_griffon() called on an isochoric reactor! This is not currently supported!')

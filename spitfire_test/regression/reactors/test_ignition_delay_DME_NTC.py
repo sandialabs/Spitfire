@@ -8,7 +8,6 @@ class Test(unittest.TestCase):
         import matplotlib.pyplot as plt
         from numpy import linspace, zeros_like
         from cantera import one_atm
-        from time import perf_counter as timer
 
         from os.path import abspath, join
         xml = abspath(join('spitfire_test', 'test_mechanisms', 'dme-bhagatwala.xml'))
@@ -20,11 +19,10 @@ class Test(unittest.TestCase):
         phi = 1.0
         blend = b.mix_for_equivalence_ratio(phi, h2, air)
 
-        temperature_list = linspace(600., 1800., 40)
-        pressure_atm_list = [4.]
+        temperature_list = linspace(600., 1800., 4)
+        pressure_atm_list = [2.]
         markers_list = ['o', 's', '^', 'D', 'P', '*']
 
-        t0 = timer()
         for pressure, marker in zip(pressure_atm_list, markers_list):
             tau_list = zeros_like(temperature_list)
 

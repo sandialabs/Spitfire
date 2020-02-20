@@ -1,5 +1,5 @@
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.chemistry.tabulation import build_nonadiabatic_defect_slfm_library
+from spitfire.chemistry.tabulation import build_nonadiabatic_defect_transient_slfm_library
 import numpy as np
 
 m = ChemicalMechanismSpec(cantera_xml='h2-burke.xml', group_name='h2-burke')
@@ -14,7 +14,7 @@ flamelet_specs = {'mech_spec': m, 'pressure': pressure,
 
 quantities = ['enthalpy', 'temperature', 'mass fraction OH']
 
-l = build_nonadiabatic_defect_slfm_library(flamelet_specs, quantities, verbose=True,
-                                           diss_rate_values=np.logspace(0, 1, 4))
+l = build_nonadiabatic_defect_transient_slfm_library(flamelet_specs, quantities, verbose=True,
+                                                     diss_rate_values=np.logspace(0, 1, 4))
 
 l.save_to_file('library_gold.pkl')

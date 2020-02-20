@@ -8,90 +8,162 @@
  * Questions? Contact Mike Hansen (mahanse@sandia.gov)    
  */
 
+/*
+ * This file includes a few wrappers around LAPACK and BLAS routines,
+ * some of which are written natively here to unleash optimizing compilers
+ * that seem to be better than BLAS/LAPACK for certain operations.
+ *
+ * Note that the factorization and solution routines below will make copies of
+ * input matrices or solution vectors/matrices that LAPACK otherwise modifies
+ * in place. This is for convenience when copying is required or acceptable.
+ * If copies are not acceptable, the methods should make it simple enough to
+ * see how to directly use the underlying LAPACK routines.
+ */
+
 #ifndef GRIFFON_LAPACK_WRAPPER_H
 #define GRIFFON_LAPACK_WRAPPER_H
 
 #include <cstddef>
 
-namespace griffon {
+namespace griffon
+{
 
-namespace blas {
+  namespace blas
+  {
 
-extern "C" double ddot_(const int *n, const double *x, const int *incx, const double *y, const int *incy);
-double inner_product(const int n, const double *x, const double *y);
+    /*
+     * @brief compute an inner product of two arrays
+     *
+     * @param n the number of elements
+     * @param x the first vector
+     * @param y the second vector
+     */
+    inline double
+    inner_product (const int n, const double *x, const double *y)
+    {
+      double d = 0.;
+      for (int i = 0; i < n; ++i)
+        d += y[i] * x[i];
+      return d;
+    }
 
-extern "C" void dcopy_(const int *n, const double *x, const int *incx, double *y, const int *incy);
-void copy_vector(const int n, double *y, const double *x);
+    extern "C" void
+    dgemv_ (const char *transpose, const int *m, const int *n, const double *alpha, const double *mat, const int *lda,
+            const double *x, const int *incx, const double *beta, double *y, const int *incy);
+    inline void
+    matrix_vector_multiply (const int n, double *y, const double alpha, const double *mat, const double *x,
+                            const double beta)
+    {
+      const int one = 1;
+      char trans = 'N';
+      dgemv_ (&trans, &n, &n, &alpha, mat, &n, x, &one, &beta, y, &one);
+    }
 
-extern "C" void dscal_(const int *n, const double *alpha, double *x, const int *incx);
-void scale_vector(const int n, double *x, const double alpha);
+  }
 
-extern "C" void daxpy_(const int *n, const double *alpha, const double *x, const int *incx, double *y, const int *incy);
-void vector_plus_scaled_vector(const int n, double *y, const double alpha, const double *x);
+  namespace lapack
+  {
 
-extern "C" void dgemv_(const char *transpose, const int *m, const int *n, const double *alpha, const double *mat, const int *lda,
-    const double *x, const int *incx, const double *beta, double *y, const int *incy);
-void matrix_vector_multiply(const int n, double *y, const double alpha, const double *mat, const double *x, const double beta);
+    extern "C" void
+    dgetrf_ (const int *nrows, const int *ncols, double *a, const int *lda, int *ipiv, int *info);
+    /*
+     * @brief factorize a linear system of equations for later solution
+     *
+     * @param n number of rows in the matrix
+     * @param matrix the left-hand side matrix
+     * @param ipiv the pivots from dgetrf (out argument)
+     * @param factor the factored matrix (out argument)
+     */
+    inline void
+    lu_factorize (const int n, const double *matrix, int *ipiv, double *factor)
+    {
+      for (int i = 0; i < n * n; ++i)
+        factor[i] = matrix[i];
+      int info;
+      dgetrf_ (&n, &n, factor, &n, ipiv, &info);
+    }
 
-}
+    extern "C" void
+    dgetrs_ (const char *transpose, const int *nrows, const int *nrhs, const double *plu, const int *lda,
+             const int *ipiv, double *rhs, const int *ldb, int *info);
+    /*
+     * @brief compute the solution to a prefactored linear system of equations
+     *
+     * @param n number of rows in the matrix
+     * @param factor the factored matrix from dgetrf
+     * @param ipiv the pivots from dgetrf
+     * @param rhs the right-hand side of the linear system
+     * @param solution the solution (out argument)
+     */
+    inline void
+    lu_solve (const int n, const double *factor, const int *ipiv, const double *rhs, double *solution)
+    {
+      const int one = 1;
+      char trans = 'N';
+      int info;
+      for (int i = 0; i < n; ++i)
+        solution[i] = rhs[i];
+      dgetrs_ (&trans, &n, &one, factor, &n, ipiv, solution, &n, &info);
+    }
+    /*
+     * @brief compute the solution to a set of prefactored linear system of equations with the same left-hand side matrix
+     *
+     * @param n number of rows in the matrix
+     * @param factor the factored matrix from dgetrf
+     * @param ipiv the pivots from dgetrf
+     * @param rhsmatrix the right-hand side matrix
+     * @param solutionmatrix the solution (out argument)
+     */
+    inline void
+    lu_solve_on_matrix (const int n, const double *factor, const int *ipiv, const double *rhsmatrix,
+                        double *solutionmatrix)
+    {
+      const int one = 1;
+      char trans = 'N';
+      int info;
+      for (int i = 0; i < n * n; ++i)
+        solutionmatrix[i] = rhsmatrix[i];
+      dgetrs_ (&trans, &n, &n, factor, &n, ipiv, solutionmatrix, &n, &info);
+    }
 
-namespace lapack {
+    extern "C" void
+    dgeev_ (const char *doleft, const char *doright, const int *n, double *a, const int *lda, double *real,
+            double *imag, double *leftmat, const int *ldleft, double *rightmat, const int *ldright, double *work,
+            int *lwork, int *info);
+    /*
+     * @brief compute the eigenvalues of a matrix
+     *
+     * @param n number of rows in the matrix
+     * @param matrix the values of the matrix in column-major form
+     * @param realparts the real parts of the eigenvalues (out argument)
+     * @param imagparts the imaginary parts of the eigenvalues (out argument)
+     */
+    inline void
+    eigenvalues (const int n, const double *matrix, double *realparts, double *imagparts)
+    {
+      const char rightchar = 'N';
+      const char leftchar = 'N';
+      double null[1];
+      int lwork, info;
+      double wkopt;
 
-/*
- * @brief LU factorization of a dense matrix
- *
- * @param nrows number of rows in A, integer reference
- * @param ncols number of columns in A, integer reference
- * @param a a matrix in column-major form, double array
- * @param lda leading dimension of A, integer reference
- * @param ipiv pivot indices, integer array of size nrows
- * @param info info structure, integer reference
- */
-extern "C" void dgetrf_(const int *nrows, const int *ncols, double *a, const int *lda, int *ipiv, int *info);
+      double matrixcopy[n * n];
+      for (int i = 0; i < n * n; ++i)
+        matrixcopy[i] = matrix[i];
 
-void lu_factorize(const int nrows, const double *matrix, int *ipiv, double *factor);
-void lu_factorize_blocks(const double *blocks, const int numBlocks, const int blockSize, double *out_factors, int *out_pivots);
+      // first query dgeev for the optimal workspace size
+      lwork = -1;
+      dgeev_ (&leftchar, &rightchar, &n, matrixcopy, &n, realparts, imagparts, null, &n, null, &n, &wkopt, &lwork,
+              &info);
 
-/*
- * @brief solution to a dense system of equations with LU factorization pre-computed
- *
- * @param nrows number of rows in A, integer reference
- * @param ncols number of columns in A, integer reference
- * @param a a matrix in column-major form, double array
- * @param lda leading dimension of A, integer reference
- * @param ipiv pivot indices, integer array of size nrows
- * @param info info structure, integer reference
- */
-extern "C" void dgetrs_(const char *transpose, const int *nrows, const int *nrhs, const double *plu, const int *lda, const int *ipiv,
-    double *rhs, const int *ldb, int *info);
+      // allocate the workspace and compute the decomposition
+      lwork = static_cast<std::size_t> (wkopt);
+      double* work = new double[lwork];
+      dgeev_ (&leftchar, &rightchar, &n, matrixcopy, &n, realparts, imagparts, null, &n, null, &n, work, &lwork, &info);
+      delete[] work;
+    }
 
-void lu_solve(const int nrows, const double *factor, const int *ipiv, const double *rhs, double *solution);
-void lu_solve_on_matrix(const int nrows, const double *factor, const int *ipiv, const double *rhsmatrix, double *solutionmatrix);
-
-/*
- * @brief full spectral decomposition of a general, double-precision matrix
- *
- * @param doleft 'N' for no left eigenmatrix and 'V' for computing it, char ref.
- * @param doright 'N' for no right eigenmatrix and 'V' for computing it, char ref.
- * @param n number of rows in A, integer reference
- * @param a a matrix in column-major form, double array
- * @param lda leading dimension of A, integer reference
- * @param real eigenvalue real parts, double array
- * @param imag eigenvalue imaginary parts, double array
- * @param leftmat left eigenmatrix, double array
- * @param ldleft leading dim. of left eig matrix, integer reference
- * @param rightmat right eigenmatrix, double array
- * @param ldright leading dim. of right eig matrix, integer reference
- * @param work work array size, double reference
- * @param lwork work array, double array
- * @param info info structure, integer reference
- */
-extern "C" void dgeev_(const char *doleft, const char *doright, const int *n, double *a, const int *lda, double *real, double *imag,
-    double *leftmat, const int *ldleft, double *rightmat, const int *ldright, double *work, int *lwork, int *info);
-
-void eigenvalues(const int nrows, const double *matrix, double *realparts, double *imagparts);
-
-}
+  }
 
 }
 

@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
         chi_max = 1.e3
         npts_interior = 32
 
-        k1mult_list = [0.01, 0.1, 0.5, 1.0, 2., 5.]
+        k1mult_list = [0.01, 1.0]
         sol_dict = dict()
         fig, axarray = plt.subplots(1, len(k1mult_list), sharex=True, sharey=True)
 

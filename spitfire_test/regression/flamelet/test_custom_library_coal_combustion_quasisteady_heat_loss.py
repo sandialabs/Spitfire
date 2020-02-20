@@ -3,13 +3,11 @@ import unittest
 
 class Test(unittest.TestCase):
     def test(self):
-        import cantera as ct
         import numpy as np
         from spitfire.chemistry.mechanism import ChemicalMechanismSpec
         from spitfire.chemistry.flamelet import Flamelet
         from spitfire.chemistry.tabulation import Dimension, Library
         import pickle
-        from time import perf_counter
         from os.path import abspath, join
 
         def get_fuel_stream(coal_fuels, alpha, mechanism, pressure):
@@ -25,9 +23,8 @@ class Test(unittest.TestCase):
 
         xml = abspath(join('spitfire_test', 'test_mechanisms', 'methane-gri30.xml'))
         mechanism = ChemicalMechanismSpec(cantera_xml=xml, group_name='methane-gri30')
-        gas = mechanism.gas
 
-        pressure = ct.one_atm
+        pressure = 101325.
 
         oxy = mechanism.stream(stp_air=True)
         oxy.TP = 350., pressure
@@ -38,11 +35,11 @@ class Test(unittest.TestCase):
         with open(bcs_file, 'rb') as bcs_src:
             coal_fuels = pickle.load(bcs_src)
 
-        alpha_vec = np.array([0.0, 0.7])
-        chist_vec = np.logspace(-1., 2., 6)
-        h_vec = np.hstack([0., np.logspace(-3, 0, 6)])
+        alpha_vec = np.array([0.7])
+        chist_vec = np.logspace(0., 2., 3)
+        h_vec = np.hstack([0., np.logspace(-3, -1, 6)])
 
-        npts_interior = 96
+        npts_interior = 32
 
         base_specs = {'mech_spec': mechanism,
                       'pressure': pressure,
@@ -70,7 +67,6 @@ class Test(unittest.TestCase):
 
         values_dict = dict({q: l.get_empty_dataset() for q in quantities})
 
-        cput0 = perf_counter()
         for ia, alpha in enumerate(alpha_vec):
             base_specs.update({'fuel_stream': get_fuel_stream(coal_fuels, alpha, mechanism, pressure)})
 
@@ -83,9 +79,7 @@ class Test(unittest.TestCase):
                         {'initial_condition': 'equilibrium' if ichi == 0 and ih == 0 else f.final_interior_state})
                     f = Flamelet(**base_specs)
 
-                    cput1 = perf_counter()
                     f.compute_steady_state()
-                    dcput = perf_counter() - cput1
 
                     data_dict = f.process_quantities_on_state(f.final_state, quantities)
 

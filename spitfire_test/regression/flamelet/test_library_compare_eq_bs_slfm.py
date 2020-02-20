@@ -26,7 +26,7 @@ class Test(unittest.TestCase):
                           'pressure': pressure,
                           'oxy_stream': air,
                           'fuel_stream': fuel,
-                          'grid_points': 66,
+                          'grid_points': 34,
                           'include_enthalpy_flux': True,
                           'include_variable_cp': True}
 

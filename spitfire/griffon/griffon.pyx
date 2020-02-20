@@ -162,6 +162,61 @@ cdef extern from "combustion_kernels.h" namespace "griffon":
     void flamelet_jacobian(const double *state, const double &pressure, const double *oxyState, const double *fuelState, const bool adiabatic, const double *T_convection, const double *h_convection, const double *T_radiation, const double *h_radiation, const int &nzi, const double *cmajor, const double *csub, const double *csup, const double *mcoeff, const double *ncoeff, const double *chi, const bool compute_eigenvalues, const double diffterm, const bool scale_and_offset, const double prefactor, const int &rates_sensitivity_option, const int &sensitivity_transform_option, const bool include_enthalpy_flux, const bool include_variable_cp, const bool use_scaled_heat_loss, double *out_expeig, double *out_jac )
 
 
+    void flamelet2d_rhs(const double *state,
+                            const double &pressure,
+                            const int nx,
+                            const int ny,
+                            const double *xcp,
+                            const double *xcl,
+                            const double *xcr,
+                            const double *ycp,
+                            const double *ycb,
+                            const double *yct,
+                            double *out_rhs)
+
+    void flamelet2d_factored_block_diag_jacobian( const double *state,
+                                                      const double pressure,
+                                                      const int nx,
+                                                      const int ny,
+                                                      const double *xcp,
+                                                      const double *ycp,
+                                                      const double prefactor,
+                                                      double *out_values,
+                                                      double *out_factors,
+                                                      int* out_pivots)
+
+    void flamelet2d_offdiag_matvec( const double *vec,
+                                        const int nx,
+                                        const int ny,
+                                        const double *xcp,
+                                        const double *xcl,
+                                        const double *xcr,
+                                        const double *ycp,
+                                        const double *ycb,
+                                        const double *yct,
+                                        const double prefactor,
+                                        double *out_vec)
+    void flamelet2d_matvec( const double *vec,
+                                const int &nx,
+                                const int &ny,
+                                const double *xcp,
+                                const double *xcl,
+                                const double *xcr,
+                                const double *ycp,
+                                const double *ycb,
+                                const double *yct,
+                                const double &prefactor,
+                                const double *block_diag_values,
+                                double *out_matvec )
+
+    void flamelet2d_block_diag_solve( const int nx,
+                                          const int ny,
+                                          const double *factors,
+                                          const int *pivots,
+                                          const double *b,
+                                          double* out_x)
+
+
 cdef class PyCombustionKernels:
     """This is the Python-side interface to the CombustionKernels class defined in the griffon C++ code.
       """
@@ -835,6 +890,127 @@ cdef class PyCombustionKernels:
         np.ndarray[ np.double_t, ndim=1] rightHandSide,
         np.ndarray[ np.double_t, ndim=1] jacobian):
       self.c_calculator.reactor_jac_isochoric(&state[0], inflowDensity, inflowTemperature, &inflowY[0], tau, fluidTemperature, surfTemperature, hConv, epsRad, surfaceAreaOverVolume, heatTransferOption, open, rates_sensitivity_option, &rightHandSide[0], &jacobian[0])
+
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def flamelet2d_rhs(self,
+                       np.ndarray[np.double_t, ndim=1] state,
+                       np.float_t pressure,
+                       int nx,
+                       int ny,
+                       np.ndarray[np.double_t, ndim=1] xcp,
+                       np.ndarray[np.double_t, ndim=1] xcl,
+                       np.ndarray[np.double_t, ndim=1] xcr,
+                       np.ndarray[np.double_t, ndim=1] ycp,
+                       np.ndarray[np.double_t, ndim=1] ycb,
+                       np.ndarray[np.double_t, ndim=1] yct,
+                       np.ndarray[np.double_t, ndim=1] out_rhs):
+        self.c_calculator.flamelet2d_rhs(&state[0],
+                                         pressure,
+                                         nx,
+                                         ny,
+                                         &xcp[0],
+                                         &xcl[0],
+                                         &xcr[0],
+                                         &ycp[0],
+                                         &ycb[0],
+                                         &yct[0],
+                                         &out_rhs[0])
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def flamelet2d_factored_block_diag_jacobian(self,
+                       np.ndarray[np.double_t, ndim=1] state,
+                       np.float_t pressure,
+                       int nx,
+                       int ny,
+                       np.ndarray[np.double_t, ndim=1] xcp,
+                       np.ndarray[np.double_t, ndim=1] ycp,
+                       np.float_t prefactor,
+                       np.ndarray[np.double_t, ndim=1] out_values,
+                       np.ndarray[np.double_t, ndim=1] out_factors,
+                       np.ndarray[int, ndim=1] out_pivots):
+        self.c_calculator.flamelet2d_factored_block_diag_jacobian(&state[0],
+                                                                  pressure,
+                                                                  nx,
+                                                                  ny,
+                                                                  &xcp[0],
+                                                                  &ycp[0],
+                                                                  prefactor,
+                                                                  &out_values[0],
+                                                                  &out_factors[0],
+                                                                  &out_pivots[0])
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def flamelet2d_offdiag_matvec(self,
+                                  np.ndarray[np.double_t, ndim=1] vec,
+                                  int nx,
+                                  int ny,
+                                  np.ndarray[np.double_t, ndim=1] xcp,
+                                  np.ndarray[np.double_t, ndim=1] xcl,
+                                  np.ndarray[np.double_t, ndim=1] xcr,
+                                  np.ndarray[np.double_t, ndim=1] ycp,
+                                  np.ndarray[np.double_t, ndim=1] ycb,
+                                  np.ndarray[np.double_t, ndim=1] yct,
+                                  np.float_t prefactor,
+                                  np.ndarray[np.double_t, ndim=1] out_vec):
+        self.c_calculator.flamelet2d_offdiag_matvec(&vec[0],
+                                                    nx,
+                                                    ny,
+                                                    &xcp[0],
+                                                    &xcl[0],
+                                                    &xcr[0],
+                                                    &ycp[0],
+                                                    &ycb[0],
+                                                    &yct[0],
+                                                    prefactor,
+                                                    &out_vec[0])
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def flamelet2d_matvec(self,
+                          np.ndarray[np.double_t, ndim=1] vec,
+                          int nx,
+                          int ny,
+                          np.ndarray[np.double_t, ndim=1] xcp,
+                          np.ndarray[np.double_t, ndim=1] xcl,
+                          np.ndarray[np.double_t, ndim=1] xcr,
+                          np.ndarray[np.double_t, ndim=1] ycp,
+                          np.ndarray[np.double_t, ndim=1] ycb,
+                          np.ndarray[np.double_t, ndim=1] yct,
+                          np.float_t prefactor,
+                          np.ndarray[np.double_t, ndim=1] block_diag_values,
+                          np.ndarray[np.double_t, ndim=1] out_vec):
+        self.c_calculator.flamelet2d_matvec(&vec[0],
+                                            nx,
+                                            ny,
+                                            &xcp[0],
+                                            &xcl[0],
+                                            &xcr[0],
+                                            &ycp[0],
+                                            &ycb[0],
+                                            &yct[0],
+                                            prefactor,
+                                            &block_diag_values[0],
+                                            &out_vec[0])
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def flamelet2d_block_diag_solve(self,
+                                    int nx,
+                                    int ny,
+                                    np.ndarray[np.double_t, ndim=1] factors,
+                                    np.ndarray[int, ndim=1] pivots,
+                                    np.ndarray[np.double_t, ndim=1] b,
+                                    np.ndarray[np.double_t, ndim=1] out_x):
+        self.c_calculator.flamelet2d_block_diag_solve(nx,
+                                                      ny,
+                                                      &factors[0],
+                                                      &pivots[0],
+                                                      &b[0],
+                                                      &out_x[0])
 
 
 

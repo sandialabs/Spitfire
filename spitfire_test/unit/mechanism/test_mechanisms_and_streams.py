@@ -1,15 +1,29 @@
 import unittest
 from os.path import join, abspath
+from cantera import Solution
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 
 
 class MechanismSpec(unittest.TestCase):
-    def test_create_valid_mechanism_spec(self):
+    def test_create_valid_mechanism_spec_from_xml(self):
         try:
             xml = abspath(join('spitfire_test', 'test_mechanisms', 'h2-burke.xml'))
             m = ChemicalMechanismSpec(xml, 'h2-burke')
             g = m.griffon
             x = m.mech_xml_path
+            s = m.gas
+            self.assertTrue(True)
+        except:
+            self.assertTrue(False)
+
+    def test_create_valid_mechanism_spec_from_solution(self):
+        try:
+            xml = abspath(join('spitfire_test', 'test_mechanisms', 'h2-burke.xml'))
+            sol = Solution(xml)
+            m = ChemicalMechanismSpec.from_solution(sol)
+            g = m.griffon
+            x = m.mech_xml_path
+            n = m.group_name
             s = m.gas
             self.assertTrue(True)
         except:
@@ -58,6 +72,37 @@ class MechanismSpec(unittest.TestCase):
             xml = abspath(join('spitfire_test', 'test_mechanisms', 'h2-burke.xml'))
             m = ChemicalMechanismSpec(xml, 'h2-burke')
             m.stream('TPX')
+            self.assertTrue(False)
+        except:
+            self.assertTrue(True)
+
+    def test_mechanism_simple_api_methods(self):
+        try:
+            xml = abspath(join('spitfire_test', 'test_mechanisms', 'h2-burke.xml'))
+            sol = Solution(xml)
+            m = ChemicalMechanismSpec.from_solution(sol)
+            self.assertEqual(m.n_species, sol.n_species, 'ChemicalMechanismSpec.n_species vs ct.Solution.n_species')
+            self.assertEqual(m.n_reactions, sol.n_reactions,
+                             'ChemicalMechanismSpec.n_reactions vs ct.Solution.n_reactions')
+            for i in range(m.n_species):
+                self.assertEqual(m.species_names[i], sol.species_names[i],
+                                 'ChemicalMechanismSpec.species_name[i] vs ct.Solution.species_name[i]')
+            for n in m.species_names:
+                self.assertEqual(m.species_index(n), sol.species_index(n),
+                                 'ChemicalMechanismSpec.species_index(name) vs ct.Solution.species_index(name)')
+
+            for i, n in enumerate(m.species_names):
+                self.assertEqual(m.species_index(n), i, 'species names and indices are consistent, index vs i')
+                self.assertEqual(n, m.species_names[i], 'species names and indices are consistent, name vs n')
+                self.assertEqual(m.molecular_weight(i), m.molecular_weight(n),
+                                 'ChemicalMechanismSpec molecular_weight(name) vs molecular_weight(idx)')
+        except:
+            self.assertTrue(False)
+
+        try:
+            xml = abspath(join('spitfire_test', 'test_mechanisms', 'h2-burke.xml'))
+            m = ChemicalMechanismSpec.from_solution(Solution(xml))
+            m.molecular_weight(list())
             self.assertTrue(False)
         except:
             self.assertTrue(True)

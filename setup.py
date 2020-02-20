@@ -17,12 +17,12 @@ import platform
 
 
 def readfile(filename):
-  try:
-    with open(filename) as f:
-        return f.read()
-  except:
-    with open(filename, encoding='utf-8') as f:
-        return f.read()
+    try:
+        with open(filename) as f:
+            return f.read()
+    except:
+        with open(filename, encoding='utf-8') as f:
+            return f.read()
 
 
 griffon_build_dir = None
@@ -72,14 +72,15 @@ setup(name='Spitfire',
       ext_modules=griffon_cython,
       package_data={'spitfire.griffon': ['*.so']})
 
-print('\n- done installing spitfire!')
-unit_test_line = python_cmd + ' -m unittest discover -s spitfire_test/unit'
-regr_test_line = python_cmd + ' -m unittest discover -s spitfire_test/regression -v'
-docs_line = 'cd docs; make html; make latexpdf; cd ..'
-docs_html = 'open in a browser: file://' + os.path.join(os.getcwd(), 'docs', 'build', 'html', 'index.html')
+html_path = os.path.join(os.getcwd(), 'docs', 'build', 'html', 'index.html')
 
-print('- Run the unit tests         : ' + unit_test_line)
-print('- Run the regression tests   : ' + regr_test_line)
-print('- Build the documentation    : ' + docs_line)
-print('- View the html documentation: ' + docs_html)
-print('\n')
+print('- done installing Spitfire!')
+unit_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/unit'
+regr_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/regression -v'
+docs_line = 'cd docs; make html; make latexpdf; cd ..'
+docs_html = f'open in a browser: file://{html_path}'
+
+print(f'- Run the unit tests         : {unit_test_line}')
+print(f'- Run the regression tests   : {regr_test_line}')
+print(f'- Build the documentation    : {docs_line}')
+print(f'- View the html documentation: {docs_html}\n')

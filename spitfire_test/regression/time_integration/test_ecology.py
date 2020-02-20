@@ -42,7 +42,7 @@ class Test(unittest.TestCase):
 
         p = LotkaVolterraParameters()
 
-        final_time = 10.  # final time to integrate to
+        final_time = 1.  # final time to integrate to
         time_step_size = 0.001  # size of the time step used
 
         governor = Governor()

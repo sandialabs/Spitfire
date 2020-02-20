@@ -30,7 +30,7 @@ class Test(unittest.TestCase):
                                      feed_mass_fractions=feed.Y)
 
         reactor.insitu_process_quantity('temperature')
-        reactor.integrate_to_time(0.2, transient_tolerance=1.e-10, write_log=False, log_rate=200)
+        reactor.integrate_to_time(0.1, transient_tolerance=1.e-10, write_log=False, log_rate=200)
 
 
 if __name__ == '__main__':

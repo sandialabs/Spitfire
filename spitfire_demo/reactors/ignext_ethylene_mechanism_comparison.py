@@ -1,6 +1,5 @@
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 from spitfire.chemistry.reactors import HomogeneousReactor
-from os.path import abspath, join
 import matplotlib.pyplot as plt
 import numpy as np
 from time import perf_counter as timer
@@ -13,7 +12,7 @@ p = 101325.
 
 mech_marker_dict = [('luo', 'bs'), ('williams', 'gD')]
 
-ntau = 80
+ntau = 40
 tau_vec = np.logspace(-7, 3, ntau)
 
 
