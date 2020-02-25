@@ -128,6 +128,11 @@ class Flamelet2D(object):
                         mix = mech_spec.stream('HPY', (hmix, pressure, Ymix))
                         if initial_condition == 'equilibrium':
                             mix.equilibrate('HP')
+                        elif initial_condition == 'unreacted':
+                            pass
+                        else:
+                            raise ValueError(
+                                'invalid initial_condition string, only "equilibrium", "unreacted", and "linear-TY" are allowed')
                         self._initial_state[ij:ij + nq] = np.hstack([mix.T, mix.Y[:-1]])
 
         self._variable_scales = np.ones_like(self._initial_state)
