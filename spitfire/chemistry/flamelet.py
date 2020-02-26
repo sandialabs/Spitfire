@@ -52,7 +52,7 @@ class Flamelet(object):
     stoich_dissipation_rate : float
         the stoichiometric dissipation rate (cannot be specified alongside max_dissipation_rate or dissipation_rate)
     dissipation_rate : np.ndarray
-        the np.ndarray of dissipation rates over mixture fraction (cannot be specified with max_ or stoich_dissipation_rate)
+        the np.ndarray of dissipation rates over mixture fraction (cannot be specified with maximum or stoichiometric dissipation rate)
     dissipation_rate_form : str
         the form of dissipation rate to use if the maximum value is specified ('Peters' (default) or 'constant'),
         cannot be specified with the dissipation_rate argument

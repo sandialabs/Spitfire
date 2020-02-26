@@ -6,8 +6,6 @@
 Welcome to Spitfire's documentation!
 ====================================
 
-*This is largely under construction at the moment!*
-
 
 .. toctree::
     :numbered:

@@ -961,7 +961,7 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
     :param verbose: whether or not to show progress of the library construction
     :param solver_verbose: whether or not to show detailed progress of sub-solvers in generating the library
     :param h_stoich_spacing: the stoichiometric enthalpy spacing used in subsampling the transient solution history
-    of each extinction solve
+     of each extinction solve
     :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the library
     :param integration_args: extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
     :param num_procs: how many processors over which to distribute the parallel extinction solves

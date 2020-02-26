@@ -1,4 +1,4 @@
-Spitfire is a Python-C++ library for solving complex chemistry and reaction-diffusion problems used in constructing tabulated chemistry models, built atop a variety of composable methods for solving nonlinear systems and differential equations.
+Spitfire is a Python-C++ library for solving complex chemistry and reaction-diffusion problems used in constructing tabulated chemistry models, built atop a variety of methods for solving nonlinear systems and differential equations.
 
 # Prerequisites
 
@@ -75,19 +75,26 @@ Now navigate back to the root directory (in our case simply up one directory).
 cd ..
 ```
 
-Now run the following command to 'Cythonize' the Griffon C++ code and install Spitfire for use in Python.
+Now run the following commands to 'Cythonize' the Griffon C++ code and install Spitfire for use in Python.
 ```
-python3 setup.py build_ext --inplace install --griffon-build-dir=griffon_build
+python3 setup.py build_ext --inplace --griffon-build-dir=griffon_build
+python3 setup.py install --griffon-build-dir=griffon_build
 ```
 
 # Testing
-To run the unit tests, enter `python3 -m unittest discover -s spitfire_test/unit` from the base repo directory.
-To run the regression tests, enter `python3 -m unittest discover -s spitfire_test/regression -v` from the base repo directory.
+Spitfire has unit tests that verify correctness of many parts of the code,
+and regression tests that simply run higher-level capabilities that do not admit easy correctness testing but are important to maintain.
+
+To run the unit tests, go to the base repo directory and enter 
+`python3 -m unittest discover -s spitfire_test/unit`.
+
+To run the regression tests, go to the base repo directory and enter 
+`python3 -m unittest discover -s spitfire_test/regression -v`.
 
 # Examples
 Some demonstrations can be found in the `demo` directory.
-The regression tests also serve as demonstrations (just ignore the unittest code within).
+The regression tests also serve as demonstrations (just ignore the `unittest` code within).
 
 # Documentation
 To build HTML documentation, navigate to the `docs` directory and run `make html`.
-Open `docs/build/html/index.html` in your favorite web browser (on a Mac you can simply run `open docs/build/html/index.html`).
+Open `docs/build/html/index.html` in your favorite web browser (e.g., on Mac run `open docs/build/html/index.html` or on Linux, `firefox docs/build/html/index.html`).

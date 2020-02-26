@@ -373,7 +373,7 @@ Non-premixed Flamelets
 ++++++++++++++++++++++
 Spitfire provides a convenient Python API for solving the nonpremixed flamelet equations,
 a critical piece of building tabulated chemistry models for simulation of reactive flow systems.
-An API is provided for directly building a range of tabulated chemistry models; it is discussed in sec_tab_chemistry_.
+An API is provided for directly building a range of tabulated chemistry models; it is discussed later.
 Here we show several examples of solving the steady and unsteady nonpremixed flamelet equations, including both ignition and extinction phenomena.
 
 
@@ -451,8 +451,6 @@ This documentation is in progress... TODO:
 - steady coal flamelet demo
 - jupyter demos - clean up necessary
 
-
-.. _sec_tab_chemistry
 
 Flamelet Models for Tabulated Chemistry
 +++++++++++++++++++++++++++++++++++++++
