@@ -103,7 +103,8 @@ class Test(unittest.TestCase):
                                   residual,
                                   M=self._jacobi_preconditioner,
                                   atol=1.e-8,
-                                  callback=self._increment_gmres_iter)
+                                  callback=self._increment_gmres_iter,
+                                  callback_type='legacy')
                 return x, self._gmres_iter, not i
 
         c0 = np.array([1., 0., 0.])  # initial condition
