@@ -89,7 +89,7 @@ To run the unit tests, go to the base repo directory and enter
 `python3 -m unittest discover -s spitfire_test/unit`.
 
 To run the regression tests, go to the base repo directory and enter 
-`python3 -m unittest discover -s spitfire_test/regression -v`.
+`python3 -m unittest discover -s spitfire_test/regression -v`. If you observe a `_bootstrap.py` warning that's expected...
 
 # Examples
 Some demonstrations can be found in the `demo` directory.

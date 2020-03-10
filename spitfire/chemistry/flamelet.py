@@ -1945,8 +1945,7 @@ class Flamelet(object):
             conv = False
             mds = 1.e-6
             if use_psitc:
-                conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=1, max_iterations=200,
-                                                    verbose=verbose)
+                conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=1, max_iterations=200, verbose=verbose)
             if not conv:
                 self.integrate_to_steady(steady_tolerance=tolerance, transient_tolerance=1.e-8, max_time_step=1.e4,
                                          write_log=verbose, log_rate=1, first_time_step=1.e-2 * mds,
