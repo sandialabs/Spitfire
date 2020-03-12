@@ -3,3 +3,5 @@ spitfire/griffon/griffon.cpp
 spitfire/griffon/*.so
 .idea
 build
+griffon_build
+*checkpoints
