@@ -1,4 +1,4 @@
-docs/build
+spitfire_docs/build
 spitfire/griffon/griffon.cpp
 spitfire/griffon/*.so
 .idea

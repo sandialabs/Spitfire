@@ -694,13 +694,21 @@ class Flamelet(object):
                 data_dict['density'].append(np.copy(rho))
 
             if 'heat release rate' in self._enabled_insitu_processors or self._insitu_process_rates:
+                if 'density' not in self._enabled_insitu_processors:
+                    rho = np.zeros(nzi)
+                    self._griffon.flamelet_process_density(state, p, nzi, rho)
                 rates = np.zeros(ndof)
                 self._griffon.flamelet_process_isobaric_reactor_rhs(state, p, nzi, rates)
                 data_dict['heat release rate'].append(np.copy(rates[::neq]))
-                for i in range(self._n_species):
+                wn = np.zeros(nzi)
+                for i in range(self._n_species - 1):
                     name = 'production rate ' + self._gas.species_names[i]
                     if name in data_dict:
-                        data_dict[name].append(np.copy(rates[i + 1::neq]))
+                        data_dict[name].append(rho * rates[i + 1::neq])
+                        wn -= rho * rates[i + 1::neq]
+                name = 'production rate ' + self._gas.species_names[self._n_species - 1]
+                if name in data_dict:
+                    data_dict[name].append(np.copy(wn))
 
             if 'heat capacity cv' in self._enabled_insitu_processors:
                 cv = np.zeros(nzi)

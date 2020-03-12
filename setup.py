@@ -71,12 +71,12 @@ setup(name='Spitfire',
       ext_modules=griffon_cython,
       package_data={'spitfire.griffon': ['*.so']})
 
-html_path = os.path.join(os.getcwd(), 'docs', 'build', 'html', 'index.html')
+html_path = os.path.join(os.getcwd(), 'spitfire_docs', 'build', 'html', 'index.html')
 
 print('- done installing Spitfire!')
 unit_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/unit'
 regr_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/regression -v'
-docs_line = 'cd docs; make html; make latexpdf; cd ..'
+docs_line = 'cd spitfire_docs; make html; make latexpdf; cd ..'
 docs_html = f'open in a browser: file://{html_path}'
 
 print(f'- Run the unit tests         : {unit_test_line}')
