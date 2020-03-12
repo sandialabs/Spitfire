@@ -4,23 +4,24 @@ Spitfire is a Python-C++ library for solving complex chemistry and reaction-diff
 
 ## Python Packages
 Spitfire requires Python3 (developed and tested with version 3.6) and the following Python packages:
-- `numpy`
-- `scipy`
+- `NumPy`
+- `SciPy`
 - `matplotlib`
 - `Cython`
-- `cantera`
+- `Cantera`
 - `sphinx`
 - `sphinx-rtd-theme`
-- `numpydoc`
+- `NumPydoc`
 
 ## C++ Dependencies
-Spitfire's C++ internals are built with CMake, and it requires at least version 3.7.
-CMake is often readily available on many systems, but if not you may install it following instructions at the [CMake webpage](https://cmake.org/) or with the Conda package manager.
+Spitfire's C++ internals are built with CMake, and we require at least version 3.7 of CMake.
+CMake is often readily available on many systems, but if not you may install it following instructions at the [CMake webpage](https://cmake.org/) or with the Conda package manager (see below).
 Spitfire also requires a C++11-compliant compiler and the BLAS/LAPACK libraries.
 
 ## Prerequisite installation using Conda
-Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the cantera Python interface.
+Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface.
 It is probably best to make an environment for Spitfire.
+At the moment, stick to Python 3.6, as it is unclear if Spitfire and its dependencies run properly on Python 3.7.
 After activating it, run the following commands.
 ```
 conda install numpy scipy matplotlib Cython sphinx numpydoc
@@ -30,9 +31,9 @@ conda install -c anaconda sphinx_rtd_theme
 ```
 
 ## Prerequisite installation using pip
-The pip package manager may also be used, although this is more challenging because you'll have to install the cantera Python interface yourself.
-We use the latest version of cantera on their [GitHub repository](https://github.com/Cantera/cantera).
-Before installing cantera, run the following commands.
+The pip package manager may also be used, although this is more challenging because you'll have to install the Cantera Python interface yourself.
+We use the latest version of Cantera on their [GitHub repository](https://github.com/Cantera/cantera).
+Before installing Cantera, run the following commands.
 ```
 pip3.6 install --upgrade numpy
 pip3.6 install --upgrade scipy
