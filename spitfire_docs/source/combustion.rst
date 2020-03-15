@@ -6,34 +6,36 @@ and the following section discusses relevant combustion theory.
 
 Chemical Mechanisms
 +++++++++++++++++++
-The first step to solving any combustion problem in Spitfire is setting up the chemical mechanism,
-which contains all of the necessary information regarding thermodynamics, chemical kinetics, and (not necessarily) transport properties.
+The first step to solving any combustion problem in Spitfire is setting up the "chemical mechanism,"
+which consists of all the necessary information regarding thermodynamics, chemical kinetics, and (in some cases) transport properties.
 To manage mechanism data, Spitfire uses the Python interface of `Cantera`_.
-It is highly recommended for advanced users to become familiar with Cantera's Python interface,
-not only for using Spitfire but also for the wealth of useful capabilities of Cantera.
+It is highly recommended that advanced users become familiar with Cantera's Python interface,
+not only for using Spitfire but also for the wealth of useful capabilities provided directly by Cantera.
 
 .. _cantera: https://cantera.org/
 
-Mechanism data can be provided to Spitfire in any way that it can be provided to Cantera.
-Three useful routes are:
+Mechanism data can be passed to Spitfire in any way that it can be provided to Cantera.
+Three particularly useful routes are:
 
-- Build or find a Cantera XML file (often by converting a Cantera CTI or Chemkin database)
+- Build or find a Cantera XML file (often by converting a Cantera CTI file or Chemkin file)
 - Build a Cantera CTI file manually
 - Build a mechanism programmatically with Cantera's Python interface
 
-Mechanisms can be passed to Spitfire with either a Cantera ``Solution`` object or an XML file and phase group.
-Behind the scenes both leverage a ``Solution`` object.
+Mechanisms can be passed to Spitfire with either a Cantera ``Solution`` object or a corresponding XML file and phase specification.
+Behind the scenes both leverage a Cantera ``Solution`` object.
 
 
 Simulating Ignition with a One-Step Mechanism
 +++++++++++++++++++++++++++++++++++++++++++++
-First, we'll show a simple demonstration of programmatically building a one-step mechanism for n-heptane combustion
-and solving the equations governing an perfectly stirred reactor to simulate autoignition.
-This description follows the ``spitfire_demo/reactors/one_step_ignition.py`` script.
-The first lines in this script past module imports build a custom mechanism for the idealized combustion of heptane.
-To obtain the thermodynamic properties of the five species in the model, we leverage an existing XML file.
-The reaction is written out in CTI format in a string, following standard Cantera syntax.
-Using this data we build a Cantera ``Solution`` object and then a Spitfire ``Mechanism`` instance::
+As a first example we'll show a simple demonstration of programmatically building a one-step mechanism for n-heptane combustion
+and solving the equations governing a perfectly stirred reactor to simulate autoignition.
+This description walks through the ``spitfire_demo/reactors/one_step_ignition.py`` script.
+
+The first lines after some module imports build a custom mechanism for idealized n-heptane combustion.
+To obtain the thermodynamic properties of the five species included in the model, we leverage an existing XML file distributed with Spitfire.
+
+The global combustion reaction is written out in CTI format in a Python string following standard Cantera syntax.
+Using the species and reaction data we then build a Cantera ``Solution`` and a Spitfire ``ChemicalMechanismSpec``::
 
     species_in_model = ['NXC7H16', 'O2', 'H2O', 'CO2', 'N2']
     reaction_cti = '''
@@ -52,9 +54,9 @@ Using this data we build a Cantera ``Solution`` object and then a Spitfire ``Mec
                     kinetics='GasKinetics',
                     species=species_list,
                     reactions=[ct.Reaction.fromCti(reaction_cti)])
-    mech = Mechanism.from_solution(s)
+    mech = ChemicalMechanismSpec.from_solution(s)
 
-Given the mechanism object, we now build 'streams' of reactants and and mix them by equivalence ratio::
+Given the mechanism instance, we now build 'streams' of reactants and combine them to obtain a stoichiometric mixture::
 
     fuel = mech.stream('X', 'NXC7H16:1')
     air = mech.stream(stp_air=True)
@@ -62,7 +64,7 @@ Given the mechanism object, we now build 'streams' of reactants and and mix them
     mix = mech.mix_for_equivalence_ratio(phi=1., fuel=fuel, oxy=air)
     mix.TP = 1000, 101325
 
-Finally, we build an adiabatic, isobaric, closed reactor model, tell it to save off the temperature and species mass fractions,
+Finally, we build an adiabatic, isobaric (constant pressure piston-cylinder idealization), closed reactor, tell it to save off the temperature and species mass fractions while solving,
 and integrate the reactor to a final time of 100 ms::
 
     r = HomogeneousReactor(mech_spec=mech,
@@ -73,7 +75,7 @@ and integrate the reactor to a final time of 100 ms::
     r.insitu_process_quantity(['temperature', 'mass fractions'])
     r.integrate_to_time(0.1)
 
-Some Matplotlib code gives the following temperature and mass fraction profiles over the course of the autoignition event.
+Some matplotlib code gives the following temperature and mass fraction profiles over the course of the autoignition event.
 
 .. _figure_one_step_ignition:
 .. figure:: images/reactors/one_step_ignition.png
@@ -84,16 +86,16 @@ Some Matplotlib code gives the following temperature and mass fraction profiles 
 
     Autoignition profiles of the one-step heptane mechanism.
 
-This first example shows a simple end-to-end ignition calculation with a custom-made one-step chemical mechanism.
-In the following sections we provide a bit more detail on constructing material streams and reactors
-in addition to advanced integration and analysis capabilities.
+To summarize things so far, this first example shows a simple end-to-end ignition calculation with a custom-made global combustion mechanism.
+In the following sections we provide more detail on constructing material streams and reactors
+in addition to more advanced integration and analysis capabilities.
 
 
 Streams & Mixing
 ++++++++++++++++
-Having constructed a ``ChemicalMechanismSpec`` instance, either through a Cantera ``Solution`` or XML and phase group,
+After constructing a ``ChemicalMechanismSpec`` instance, either through a Cantera ``Solution`` or XML and phase group,
 we need to specify thermochemical properties of mixtures.
-In Spitfire this is accomplished with *streams* created by a ``ChemicalMechanismSpec`` instance.
+In Spitfire this is accomplished with *streams* created with a ``ChemicalMechanismSpec``.
 For example, a mixture of pure Hydrogen is created and its temperature and pressure set with::
 
     h2 = sm.stream('X', 'H2:1')
@@ -103,19 +105,17 @@ To specify the temperature and pressure at the same time as the composition (mol
 
     h2 = sm.stream('TPX', (300, 101325, 'H2:1'))
 
-Streams are instances of the ``Quantity`` class in Cantera's Python interface.
-The ``stream`` method on ``ChemicalMechanismSpec`` can be given temperature, pressure, and composition or any combination Cantera allows.
+Streams are Cantera ``Quantity`` instances and can be constructed with temperature, pressure, and composition as above or any combination of state variables that Cantera supports.
 See `Cantera documentation for options`_ regarding the construction of ``Quantity`` instances and setting/getting thermochemical properties.
 
 .. _Cantera documentation for options: https://www.cantera.org/docs/sphinx/html/cython/importing.html#cantera.Quantity
 
-For convenience, Spitfire makes it easy to create a stream of air at standard temperature and pressure::
+To create a stream of air at standard temperature and pressure, simply use::
 
     air = sm.stream(stp_air=True)
 
 New streams can be composed by mixing existing streams.
-Mixing can be done on a mass or mole basis, isobarically or isometrically, to attain a particular equivalence ratio or mixture fraction, etc.
-
+Mixing can be done on a mass or mole basis, isobarically or isometrically, to attain a particular equivalence ratio or mixture fraction, and more.
 To mix two streams, say, one unit mass of ``h2`` and two unit masses of ``air``, at constant pressure, call::
 
     mix = sm.mix_streams([(h2, 1.), (air, 2.)], 'mass')
@@ -131,19 +131,17 @@ Homogeneous Reactors
 
 A simple autoignition example
 _____________________________
-Starting from the point of constructing streams for air and fuel, we can mix them by specifying an equivalence ratio, :math:`\phi`.
-The `equivalence ratio`_ is the actual fuel-to-oxidizer ratio divided by the stoichiometric value.
-With the ``h2`` and ``air`` streams, setting it to one yields a stoichiometric mixture of hydrogen and air,
-meaning there is just the right amount of oxygen to burn all of the fuel in an ideal combustion reaction::
+Starting from the point of constructing streams for air and fuel, we can mix them by specifying an equivalence ratio, :math:`\phi`,
+which is the actual ratio of fuel to oxidizer divided by the stoichiometric value.
+With the ``h2`` and ``air`` streams created earlier, a stoichiometric mixture can be obtained with::
 
     mix = sm.mix_for_equivalence_ratio(1.0, h2, air)
 
 .. _equivalence ratio: https://en.wikipedia.org/wiki/Air%E2%80%93fuel_ratio#Fuel%E2%80%93air_equivalence_ratio_(%CF%95)
 
 The equivalence ratio varies from zero to infinity, with lean (too much oxygen) and rich (too much fuel) mixtures below and above one, respectively.
-The *normalized* equivalence ratio, :math:`\Phi=\phi/(\phi+1)`, however, varies more nicely from zero to one.
-Stoichiometric mixtures correspond to :math:`\phi=1` and :math:`\Phi=0.5`.
-As it may be more convenient in some cases, the normalized equivalence ratio can also be used for mixing fuel and air::
+The *normalized* equivalence ratio, :math:`\Phi=\phi/(\phi+1)`, however, varies from zero to one with stoichiometric mixtures at :math:`\Phi=0.5`.
+As it may be more convenient in some cases, the normalized equivalence ratio can also be specified::
 
     mix = sm.mix_for_normalized_equivalence_ratio(0.5, h2, air)
 
@@ -151,8 +149,8 @@ The temperature and pressure of the fuel-air blend can then be set with ``mix.TP
 Recall that streams are simply instances of the ``Quantity`` class in Cantera's Python interface.
 See `Cantera documentation for options`_ regarding the construction of ``Quantity`` instances and setting/getting thermochemical properties.
 
-Now we are ready to fill a reactor with this mixture and simulate its evolution.
-First, build a homogeneous reactor that holds a constant pressure (isobaric) and has impermeable (no mass flow - closed) and adiabatic (no heat flow) walls::
+Now we are ready to fill a reactor with this mixture and simulate ignition.
+The next step is to build a homogeneous reactor that holds a constant pressure and has impermeable and adiabatic walls::
 
     from spitfire import HomogeneousReactor
     r = HomogeneousReactor(sm, mix,
@@ -160,15 +158,15 @@ First, build a homogeneous reactor that holds a constant pressure (isobaric) and
                            heat_transfer='adiabatic',
                            mass_transfer='closed')
 
-Now to run a simple autoignition simulation and plot the temperature history along with several species mass fractions::
+To run a simple autoignition simulation and plot the temperature history along with several species mass fractions::
 
     r.integrate_to_steady_after_ignition(plot=['H2', 'O2', 'H2O', 'OH', 'H'])
 
 Adding the ``plot`` argument shows the temperature evolution in the top panel and species mass fractions in the bottom panel, as in Figure :numref:`figure_simple_example_easyplot`.
 The occurence of ignition at around 0.05 milliseconds can be seen in the sudden temperature spike, consumption of hydrogen and oxygen, and production of water.
-Observe that the hydrogen radical, H, a major chain carrying species, is produced prior to ignition and consumed afterwards, with its mass fraction peaking just at the onset of the temperature spike.
+Observe that the hydrogen radical, H, a major chain carrying species, is rapidly produced prior to ignition and consumed afterwards, with its mass fraction peaking just at the onset of the temperature spike.
 The ignition delay may be printed with the following command, ``print('Ignition delay: {:.1f} us'.format(r.ignition_delay() * 1.e6))``.
-The precise number is 51.7 microseconds, matching our estimate of 0.05 milliseconds from the plot.
+The precise number is 51.7 microseconds, matching our rough estimate from the plot.
 This simple tutorial can be run in total with the demonstration script, ``spitfire_demo/reactors/simple_ignition_plot.py``.
 This script is reproduced here as a summary::
 
@@ -202,31 +200,18 @@ This script is reproduced here as a summary::
 
 In-situ processing and analysis
 _______________________________
-In the previous example we constructed a reactor and observed its evolution, quickly obtaining a plot of temperature and species mass fraction evolution.
-To do more detailed analysis, we'll need to save state variables such as temperature and mass fractions for later use.
-Start this next example in the same way, blending fuel and air streams and then using the mixture to construct a homogeneous reactor::
-
-    from spitfire import ChemicalMechanismSpec, HomogeneousReactor
-
-    sm = ChemicalMechanismSpec(cantera_xml='mechanisms/h2-burke.xml', group_name='h2-burke')
-
-    h2 = sm.stream('X', 'H2:1')
-    air = sm.stream(stp_air=True)
-
-    mix = sm.mix_for_equivalence_ratio(1.0, h2, air)
-    mix.TP = 1200, 101325
+In the previous example we constructed a reactor and observed its evolution, simply obtaining a plot of temperature and species mass fractions over time.
+To do more detailed analysis, we'll need to save state variables into arrays for later use.
+To accomplish this, before integrating the reactor to a steady state, we will tell Spitfire to save data.
+We will save the temperature, mass fractions, and species net mass production rates.
+This is done with the ``insitu_process_quantity`` method, which allows us to tell Spitfire to compute thermochemical quantities during the simulation.
+After integration, we can obtain the saved quantities with the ``trajectory_data`` method.
+To plot quantities over simulation time, we can obtain the array of times with ``t = r.solution_times``::
 
     r = HomogeneousReactor(sm, mix,
                            configuration='isobaric',
                            heat_transfer='adiabatic',
                            mass_transfer='closed')
-
-This time, before integrating the reactor to a steady state, we will tell Spitfire to save data.
-We will save the temperature, mass fractions, and species net production rates.
-This is done with the ``insitu_process_quantity`` method, which allows us to tell Spitfire to compute thermochemical quantities *in situ* during the simulation.
-After integration, we can obtain the saved quantities with the ``trajectory_data`` method.
-To plot quantities over simulation time, we can use ``t = r.solution_times``::
-
     r.insitu_process_quantity(['temperature', 'mass fractions', 'production rates'])
 
     r.integrate_to_steady_after_ignition()
@@ -237,8 +222,7 @@ To plot quantities over simulation time, we can use ``t = r.solution_times``::
     wH = r.trajectory_data('production rate H')
 
 Importing ``import matplotlib.pyplot as plt``, we can then plot, for example, the production rate of the hydrogen radical over the reactor temperature.
-This produces Figure :numref:`figure_simple_example_prodrate_over_T`.
-This figure shows that the peak production rate of hydrogen radical occurs at around 200 K above the initial temperature::
+This produces Figure :numref:`figure_simple_example_prodrate_over_T`, which shows how the peak production rate of hydrogen radical occurs at around 200 K above the initial temperature::
 
     plt.plot(T, wH)
     plt.grid()
@@ -255,8 +239,9 @@ This figure shows that the peak production rate of hydrogen radical occurs at ar
 
     Net production rate of hydrogen radical over the reactor temperature in an isobaric, adiabatic, closed autoignition simulation.
 
-    A number of quantities may be computed *in situ* with the ``insitu_process_quantity`` method using either cantera or Griffon.
-    These are listed below.
+
+A number of quantities may be computed *in situ* with the ``insitu_process_quantity`` method using either Cantera or Griffon.
+These are listed below.
 
 - ``'temperature'``: the reactor temperature
 - ``'pressure'``: the reactor pressure
@@ -277,8 +262,8 @@ For instance, ``r.insitu_process_cantera_method('cp_mass')`` will save the resul
 Any label may be specified as in ``r.insitu_process_cantera_method(label='cpm', method='cp_mass')``.
 This triggers calculation of ``cp_mass`` at every step and saves the data to the label, ``'cpm'``.
 In addition to simple scalar methods such as ``cp_mass``, one can compute particular elements of vector quantities such as elementary reaction rates.
-The line, ``r.insitu_process_cantera_method(label='qCB', method='net_rates_of_progress', index=0)`` will save the zeroth (first...) element of the vector computed by the ``net_rates_of_progress`` cantera method, and label it ``qCB``.
-For vectors of species quantities, the ``index`` argument can be the species' name, such as in ``r.insitu_process_cantera_method(label='cH', method='concentrations', index='H')``, which computes the molar concentration of species H.
+The line, ``r.insitu_process_cantera_method(label='qCB', method='net_rates_of_progress', index=0)`` will save the first element of the vector computed by the ``net_rates_of_progress`` cantera method, and label it ``qCB``.
+For vectors of species quantities, the ``index`` argument can be the species name, such as in ``r.insitu_process_cantera_method(label='cH', method='concentrations', index='H')``, which computes the molar concentration of species H.
 Here are all four examples of general cantera-based processing::
 
     r.insitu_process_cantera_method('cp_mass')
@@ -310,8 +295,8 @@ See the demonstration script, ``spitfire_demo/reactors/detailed_ignition_plot.py
 
 Ignition delay calculations
 ___________________________
-A common task of combustion codes is to compute the ignition delay - how long it takes a mixture to ignite.
-Spitfire's reactor class makes this straightforward with the ``compute_ignition_delay()`` method.
+A common task of reactor simulation is to compute ignition delay - precisely how long it takes a mixture to ignite.
+Spitfire's reactor class facilitates this with the ``compute_ignition_delay()`` method.
 See the demonstration script, ``ignition_delay_profiles_DME_NTC.py,`` in the ``spitfire_demo/reactors/`` directory.
 This demonstrates negative temperature coefficient (NTC) behavior of dimethyl ether (DME) mixtures and the dependency of NTC strength on pressure, as in Figure :numref:`figure_dme_ntc_curves`
 
@@ -371,8 +356,15 @@ The convection coefficient oscillates in time to force periodic ignition and ext
 
 Non-premixed Flamelets
 ++++++++++++++++++++++
-Spitfire provides a convenient Python API for solving the nonpremixed flamelet equations,
+
+
+
+Spitfire provides a Python API for solving the nonpremixed flamelet equations,
 a critical piece of building tabulated chemistry models for simulation of reactive flow systems.
+
+
+
+
 An API is provided for directly building a range of tabulated chemistry models; it is discussed later.
 Here we show several examples of solving the steady and unsteady nonpremixed flamelet equations, including both ignition and extinction phenomena.
 
@@ -444,12 +436,6 @@ shown here in Figure :numref:`figure_steady_adiabatic_h2_flamelet_contours`.
 
 
 This documentation is in progress... TODO:
-
-- steady, nonadiabatic demo (quasi steady heat loss)
-- make a nonadiabiatic demo with the transient heat loss formulation
-- unsteady, adiabatic with cema demo
-- steady coal flamelet demo
-- jupyter demos - clean up necessary
 
 
 Flamelet Models for Tabulated Chemistry
@@ -591,23 +577,18 @@ The unsteady flamelet equations describe the evolution of mass fractions :math:`
 in a Lagrangian time :math:`t` and the mixture fraction :math:`\mathcal{Z}`.
 Equations :eq:`adiabatic_flamelet_Yi_eqn` and :eq:`adiabatic_flamelet_T_eqn` govern adiabatic flamelets,
 which evolve due to diffusion (with strength proportional the scalar dissipation rate :math:`\chi`) and chemistry.
-These equations do not account for differential diffusion, which is currently not supported in Spitfire.
-The term in the temperature equation with single derivatives in :math:`\mathcal{Z}` is not seen in all flamelet
-equations as it requires careful derivation.
-This term models enthalpy diffusion and is optional in Spitfire (specify ``include_enthalpy_flux=True`` when building a flamelet object).
-Steady flamelets are derived from these equations by simply removing the time term, which leaves the steady flamelet equations
-that define the diffusive-reactive balance presumed in the ensemble of thin laminar flames in a turbulent flame (in the flamelet modeling approach).
-
-todo: update for the variable cp term
-
-todo: update the diffusive flux definition
+These equations include variable heat capacity effects and the full form of the heat flux including the enthalpy flux, but do not account for differential diffusion
+(although this is in plans).
+The variable heat capacity term (the term, not the thermodynamics of individual species) and enthalpy flux terms are optional in Spitfire
+(specify ``include_variable_cp=True`` and ``include_enthalpy_flux=True`` when building a flamelet object).
+Steady flamelet equations are derived by simply removing the time term.
 
 .. math::
     \frac{\partial Y_i}{\partial t} = \frac{\chi}{2}\frac{\partial^2 Y_i}{\partial \mathcal{Z}^2} + \frac{\omega_i}{\rho},
     :label: adiabatic_flamelet_Yi_eqn
 
 .. math::
-    \frac{\partial T}{\partial t} = \frac{\chi}{2}\left(\frac{\partial^2 T}{\partial \mathcal{Z}^2} + \frac{\partial T}{\partial \mathcal{Z}}\sum_{i=1}^{n}\frac{c_{p,i}}{c_p}\frac{\partial Y_i}{\partial \mathcal{Z}}\right) - \frac{1}{\rho c_p}\sum_{i=1}^{n}\omega_i h_i.
+    \frac{\partial T}{\partial t} = \frac{\chi}{2}\left(\frac{\partial^2 T}{\partial \mathcal{Z}^2} + \frac{\partial T}{\partial \mathcal{Z}}\sum_{i=1}^{n}\frac{c_{p,i}}{c_p}\frac{\partial Y_i}{\partial \mathcal{Z}} + \frac{1}{c_p}\frac{\partial c_p}{\partial \mathcal{Z}}\frac{\partial T}{\partial \mathcal{Z}}\right) - \frac{1}{\rho c_p}\sum_{i=1}^{n}\omega_i h_i.
     :label: adiabatic_flamelet_T_eqn
 
 These equations are supplemented by boundary conditions defined by the oxidizer and fuel states,
@@ -641,11 +622,6 @@ A special option for building transient heat loss flamelet libraries involves th
 
 where :math:`\mathcal{Z}_{\mathrm{st}}` is the stoichiometric mixture fraction and
 :math:`h'` is an arbitrary parameter of order :math:`10^7` to drive a flamelet to extinction due to heat loss.
-
-
-Flamelet Tabulation Techniques
-++++++++++++++++++++++++++++++
-
 
 
 Chemical Kinetic Models
