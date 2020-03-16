@@ -5,7 +5,7 @@ import matplotlib.animation as manimation
 from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as a3
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.chemistry.flamelet2d import Flamelet2D
+from spitfire.chemistry.flamelet2d import _Flamelet2D
 
 FFMpegWriter = manimation.writers['ffmpeg']
 metadata = dict(title='Movie Test', artist='Matplotlib',
@@ -56,7 +56,7 @@ fuel1.TP = 485., pressure
 fuel1_name = 'C7'
 fuel2_name = 'SG'
 
-f = Flamelet2D(m, 'equilibrium', pressure, air, fuel1, fuel2, 10., 10., grid_1=x_range, grid_2=y_range)
+f = _Flamelet2D(m, 'equilibrium', pressure, air, fuel1, fuel2, 10., 10., grid_1=x_range, grid_2=y_range)
 
 iq = 0 if variable == 'T' else m.species_index(variable) + 1
 # if nt == 1:

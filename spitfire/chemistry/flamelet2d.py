@@ -1,9 +1,22 @@
+"""
+This module contains the _Flamelet2D class that provides a high-level interface for nonpremixed three-stream flamelets.
+This is unsupported at the moment but it's pretty close to being useful...
+"""
+
+# Spitfire - a Python-C++ library for building tabulated chemistry models and solving differential equations
+# Copyright 2019 National Technology & Engineering Solutions of Sandia, LLC (NTESS).
+#
+# You should have received a copy of the 3-clause BSD License
+# along with this program.  If not, see <https://opensource.org/licenses/BSD-3-Clause>.
+#
+# Questions? Contact Mike Hansen (mahanse@sandia.gov)
+
 import numpy as np
 from scipy.special import erfinv
 from scipy.sparse.linalg import LinearOperator, bicgstab
 
 
-class Flamelet2D(object):
+class _Flamelet2D(object):
     _initializations = ['unreacted', 'equilibrium', 'linear-TY']
     _grid_types = ['uniform', 'clustered']
     _rates_sensitivity_option_dict = {'exact': 0, 'no-TBAF': 1}

@@ -1,4 +1,4 @@
-from spitfire.chemistry.flamelet2d import Flamelet2D
+from spitfire.chemistry.flamelet2d import _Flamelet2D
 from spitfire.chemistry.flamelet import Flamelet
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 from spitfire.time.governor import Governor, NumberOfTimeSteps, FinalTime, Steady, SaveAllDataToList
@@ -81,7 +81,7 @@ ny = nx
 x_range, y_range = make_clustered_grid(nx, ny, x_cp, y_cp, x_cc, y_cc)
 x_grid, y_grid = np.meshgrid(x_range, y_range)
 
-f = Flamelet2D(m, 'equilibrium', pressure, air, fuel1, fuel2, 10., 10., grid_1=x_range, grid_2=y_range)
+f = _Flamelet2D(m, 'equilibrium', pressure, air, fuel1, fuel2, 10., 10., grid_1=x_range, grid_2=y_range)
 
 # air_hot = m.copy_stream(air)
 # air_hot.TP = 1400., pressure
@@ -378,7 +378,7 @@ for iq in range(nq):
     spl = RectBivariateSpline(x_range3, y_range3, phi2d_3, kx=1, ky=1)
     phi1d_4[iq::nq] = spl.ev(x_grid.ravel(), y_grid.ravel())
 
-f = Flamelet2D(m, phi1d_4, pressure, air, fuel1, fuel2, 10., 10., grid_1=x_range, grid_2=y_range)
+f = _Flamelet2D(m, phi1d_4, pressure, air, fuel1, fuel2, 10., 10., grid_1=x_range, grid_2=y_range)
 
 # air_hot = m.copy_stream(air)
 # air_hot.TP = 1400., pressure

@@ -1,4 +1,4 @@
-from spitfire.chemistry.flamelet2d import Flamelet2D
+from spitfire.chemistry.flamelet2d import _Flamelet2D
 from spitfire.chemistry.flamelet import Flamelet
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 from spitfire.time.governor import Governor, NumberOfTimeSteps, FinalTime, Steady, SaveAllDataToList
@@ -60,7 +60,7 @@ x_grid, y_grid = np.meshgrid(x_range, y_range)
 chi11_max = 1.
 chi22_max = 1.
 
-f = Flamelet2D(m, 'unreacted', pressure, air, fuel1, fuel2, chi11_max, chi22_max, grid_1=x_range, grid_2=y_range)
+f = _Flamelet2D(m, 'unreacted', pressure, air, fuel1, fuel2, chi11_max, chi22_max, grid_1=x_range, grid_2=y_range)
 nq = f._n_equations
 
 phi0 = np.copy(f._initial_state)
