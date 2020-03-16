@@ -21,9 +21,9 @@ class Test(unittest.TestCase):
             for key in output:
                 t, T, Y = output[key]
                 gold_t, gold_T, gold_Y = gold_output[key]
-                self.assertIsNone(assert_allclose(t, gold_t, atol=1.e-8))
-                self.assertIsNone(assert_allclose(T, gold_T, atol=1.e-8))
-                self.assertIsNone(assert_allclose(Y, gold_Y, atol=1.e-8))
+                self.assertIsNone(assert_allclose(t, gold_t, atol=1.e-8, rtol=1.e-4))
+                self.assertIsNone(assert_allclose(T, gold_T, atol=1.e-8, rtol=1.e-4))
+                self.assertIsNone(assert_allclose(Y, gold_Y, atol=1.e-8, rtol=1.e-4))
 
 
 if __name__ == '__main__':
