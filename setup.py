@@ -74,12 +74,10 @@ setup(name='Spitfire',
 html_path = os.path.join(os.getcwd(), 'spitfire_docs', 'build', 'html', 'index.html')
 
 print('- done installing Spitfire!')
-unit_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/unit'
-regr_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/regression -v'
+unit_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/'
 docs_line = 'cd spitfire_docs; make html; make latexpdf; cd ..'
 docs_html = f'open in a browser: file://{html_path}'
 
-print(f'- Run the unit tests         : {unit_test_line}')
-print(f'- Run the regression tests   : {regr_test_line}')
+print(f'- Run the tests              : {unit_test_line}')
 print(f'- Build the documentation    : {docs_line}')
 print(f'- View the html documentation: {docs_html}\n')

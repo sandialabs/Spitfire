@@ -83,14 +83,9 @@ python3 setup.py install --griffon-build-dir=griffon_build
 ```
 
 # Testing
-Spitfire has unit tests that verify correctness of many parts of the code,
-and regression tests that simply run higher-level capabilities that do not admit easy correctness testing but are important to maintain.
-
-To run the unit tests, go to the base repo directory and enter 
-`python3 -m unittest discover -s spitfire_test/unit`.
-
-To run the regression tests, go to the base repo directory and enter 
-`python3 -m unittest discover -s spitfire_test/regression -v`. If you observe a `_bootstrap.py` warning that's expected...
+Spitfire has many tests that verify correctness or regression of the code.
+To run the tests, go to the base repo directory and enter 
+`python3 -m unittest discover -s spitfire_test/`.
 
 # Examples
 Some demonstrations can be found in the `demo` directory.
