@@ -34,12 +34,12 @@ class SaveAllDataToList(object):
 
     Parameters
     ----------
-    initial_time : float
-        the initial time (default: 0.)
     initial_solution : np.ndarray
         the initial solution
+    initial_time : float
+        the initial time (default: 0.)
     save_frequency : int
-        how many steps are taken between solution data and times being saved (default: 1.)
+        how many steps are taken between solution data and times being saved (default: 1)
     file_prefix : str
         file prefix where solution times and solution data will be dumped (to numpy binary) during the simulation
     file_first_and_last_only : bool
@@ -73,8 +73,6 @@ class SaveAllDataToList(object):
         self._save_count += 1
         if self._save_count == self._save_frequency:
             self._save_count = 0
-            self._t_list.append(t)
-            self._solution_list.append(numpy_copy(solution))
             if len(self.t_list) > 1 and self._save_first_and_last_only:
                 self._t_list[-1] = t
                 self._solution_list[-1] = numpy_copy(solution)
@@ -188,7 +186,9 @@ class Governor(object):
         whether or not to clip solution values to be nonnegative after each time step (default: False)
     custom_post_process_step : callable
         method of the form f(current_time, state) that is called after each time step is complete (default: None)
-
+    show_solver_stats_in_situ : bool
+        whether or not to include the number of nonlinear iterations per step, linear iterations per nonlinear iteration,
+        number of time steps per Jacobian evaluation (projector setup) in the logged output (default: False)
     """
 
     def __init__(self):
@@ -218,6 +218,7 @@ class Governor(object):
         self._projector_setup_count = 0
         self.time_step_increase_factor_to_force_jacobian = 1.05
         self.time_step_decrease_factor_to_force_jacobian = 0.9
+        self.show_solver_stats_in_situ = False
 
         # logger
         self.do_logging = True
@@ -360,65 +361,47 @@ class Governor(object):
                    number_projector_setup,
                    cputime):
         self._log_count += 1
+        sim_time_lines = [
+            (f'{"number of":<10}', f'{"time steps":<10}', f' {number_of_time_steps:<9}'),
+            (f'{"simulation":<10}', f'{"time (s)":<10}', f'{current_time:<10.2e}'),
+            (f'{"time step":<10}', f'{"size (s)":<10}', f'{time_step_size:<10.2e}'), ]
+        if number_nonlinear_iter == 'n/a':
+            nni_over_nts = 'n/a'
+            nli_over_nni = 'n/a'
+            nts_over_nps = 'n/a'
+            advanced_lines = [
+                (f'{"nlin. iter":<10}', f'{"per step":<10}', f'{nni_over_nts:<10}'),
+                (f'{"lin. iter":<10}', f'{"per nlin.":<10}', f'{nli_over_nni:<10}'),
+                (f'{"steps":<10}', f'{"per Jac.":<10}', f'{nts_over_nps:<10}')]
+        else:
+            nni_over_nts = number_nonlinear_iter / number_of_time_steps
+            nli_over_nni = number_linear_iter / number_nonlinear_iter
+            nts_over_nps = number_of_time_steps / number_projector_setup
+            advanced_lines = [
+                (f'{"nlin. iter":<10}', f'{"per step":<10}', f'{nni_over_nts:<10.2f}'),
+                (f'{"lin. iter":<10}', f'{"per nlin.":<10}', f'{nli_over_nni:<10.2f}'),
+                (f'{"steps":<10}', f'{"per Jac.":<10}', f'{nts_over_nps:<10.2f}')]
+        cput_over_nts = 1.e3 * cputime / float(number_of_time_steps)
+        residual_line = [(f'{"diff. eqn.":<10}', f'{"|residual|":<10}', f'{residual:<10.2e}')]
+        cpu_time_lines = [
+            (f'{"total cpu":<10}', f'{"time (s)":<10}', f'{cputime:<10.2e}'),
+            (f'{"cput per":<10}', f'{"step (ms)":<10}', f'{cput_over_nts:<10.2e}')]
         if self.do_logging:
-            fmt_str = '{:<10}  {:<10}  {:<10} | {:<10} | {:<10}  {:<10} |' \
-                      ' {:<10}  {:<10}  {:<12} | {:<10}  {:<10} | {:<10}  {:<10}  |'
-            fmt_args = ['number of', 'simulation', 'time step', '', 'nonlinear', 'nl. iter.', 'linear', 'l. iter',
-                        'l. iter per', 'Jacobian', 'time steps', 'total cpu', 'cput per']
-            title_line_1 = fmt_str.format(*fmt_args)
-            fmt_str = '{:<10}  {:<10}  {:<10} | {:<10} | {:<10}  {:<10} |' \
-                      ' {:<10}  {:<10}  {:<12} | {:<10}  {:<10} | {:<10}  {:<10}  |'
-            fmt_args = ['time steps', 'time (s)', 'size (s)', 'residual', 'iterations', 'per step', 'iterations',
-                        'per step', 'nonlin. iter', 'evals', 'per Jac.', 'time (s)', 'step (ms)']
-            title_line_2 = fmt_str.format(*fmt_args)
+            log_lines = sim_time_lines
+            if self.show_solver_stats_in_situ:
+                log_lines += advanced_lines
+            log_lines += residual_line
+            log_lines += cpu_time_lines
 
-            if self.extra_logger_title_line1 is not None:
-                title_line_1 += self.extra_logger_title_line1
+            extra_title_line1 = '' if self.extra_logger_title_line1 is None else self.extra_logger_title_line1
+            extra_title_line2 = '' if self.extra_logger_title_line2 is None else self.extra_logger_title_line2
 
-            if self.extra_logger_title_line2 is not None:
-                title_line_2 += self.extra_logger_title_line2
-
-            if number_nonlinear_iter == 'n/a':
-                nnli_per_step = 'n/a'
-                ps_fmt = '{:>10}'
-                ps_fmt12 = '{:>12}'
-            else:
-                nnli_per_step = number_nonlinear_iter / number_of_time_steps
-                ps_fmt = '{:>10.2f}'
-                ps_fmt12 = '{:>12.2f}'
-
-            if number_linear_iter == 'n/a':
-                nli_per_step = 'n/a'
-                nli_per_nnli = 'n/a'
-            else:
-                nli_per_step = number_linear_iter / number_of_time_steps
-                nli_per_nnli = number_linear_iter / number_nonlinear_iter
-
-            if number_projector_setup == 0:
-                step_per_projector_setup = 'n/a'
-            else:
-                step_per_projector_setup = number_of_time_steps / number_projector_setup
+            title_line_1 = '|' + ' | '.join([a for (a, b, c) in log_lines])[:-1] + '|' + extra_title_line1
+            title_line_2 = '|' + ' | '.join([b for (a, b, c) in log_lines])[:-1] + '|' + extra_title_line2
+            log_str = '|' + ' | '.join([c for (a, b, c) in log_lines])[:-1] + '|'
 
             line_of_dashes = '-' * (len(title_line_2) - 1)
             log_title_str = '\n' + title_line_1 + '\n' + title_line_2 + '\n' + line_of_dashes + '|'
-
-            fmt_str = '{:>10}  {:>10.2e}  {:>10.2e} | {:>10.2e} | {:>10}  ' + ps_fmt + \
-                      ' | {:>10}  ' + ps_fmt + '  ' + ps_fmt12 + \
-                      ' | {:>10}  ' + ps_fmt + ' | {:>10.2f}  {:>10.2e}  |'
-            fmt_args = [number_of_time_steps,
-                        current_time,
-                        time_step_size,
-                        residual,
-                        number_nonlinear_iter,
-                        nnli_per_step,
-                        number_linear_iter,
-                        nli_per_step,
-                        nli_per_nnli,
-                        number_projector_setup,
-                        step_per_projector_setup,
-                        cputime,
-                        1.e3 * cputime / float(number_of_time_steps)]
-            log_str = fmt_str.format(*fmt_args)
 
             if self.extra_logger_log is not None:
                 log_str += self.extra_logger_log(state,

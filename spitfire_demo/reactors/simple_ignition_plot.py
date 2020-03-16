@@ -10,7 +10,7 @@ mix = sm.mix_for_equivalence_ratio(1.0, h2, air)
 mix.TP = 1200, 101325
 
 r = HomogeneousReactor(sm, mix,
-                       configuration='isobaric',
+                       configuration='isochoric',
                        heat_transfer='adiabatic',
                        mass_transfer='closed')
 

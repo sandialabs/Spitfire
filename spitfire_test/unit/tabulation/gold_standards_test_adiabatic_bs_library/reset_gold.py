@@ -1,5 +1,6 @@
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 from spitfire.chemistry.tabulation import build_adiabatic_bs_library
+import spitfire.chemistry.analysis as sca
 
 m = ChemicalMechanismSpec(cantera_xml='h2-burke.xml', group_name='h2-burke')
 pressure = 101325.
@@ -11,8 +12,7 @@ flamelet_specs = {'mech_spec': m, 'pressure': pressure,
                   'oxy_stream': air, 'fuel_stream': fuel,
                   'grid_points': 34}
 
-quantities = ['enthalpy', 'temperature', 'mass fraction OH']
-
-l = build_adiabatic_bs_library(flamelet_specs, quantities, verbose=False)
+l = build_adiabatic_bs_library(flamelet_specs, verbose=False)
+l = sca.compute_specific_enthalpy(m, l)
 
 l.save_to_file('library_gold.pkl')

@@ -1,6 +1,8 @@
 import unittest
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.chemistry.tabulation import build_adiabatic_bs_library, Library
+from spitfire.chemistry.library import Library
+from spitfire.chemistry.tabulation import build_adiabatic_bs_library
+import spitfire.chemistry.analysis as sca
 from numpy.testing import assert_allclose
 from os.path import join, abspath
 
@@ -18,9 +20,8 @@ class AdiabaticBurkeSchumannLibrary(unittest.TestCase):
                           'oxy_stream': air, 'fuel_stream': fuel,
                           'grid_points': 34}
 
-        quantities = ['enthalpy', 'temperature', 'mass fraction OH']
-
-        l1 = build_adiabatic_bs_library(flamelet_specs, quantities, verbose=False)
+        l1 = build_adiabatic_bs_library(flamelet_specs, verbose=False)
+        l1 = sca.compute_specific_enthalpy(m, l1)
 
         file_name = abspath(join('spitfire_test',
                                  'unit',
@@ -29,7 +30,7 @@ class AdiabaticBurkeSchumannLibrary(unittest.TestCase):
                                  'library_gold.pkl'))
         l2 = Library.load_from_file(file_name)
 
-        for prop in l1.props:
+        for prop in l2.props:
             self.assertIsNone(assert_allclose(l2[prop], l1[prop], atol=1.e-14))
 
 

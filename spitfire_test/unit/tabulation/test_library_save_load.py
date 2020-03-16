@@ -1,5 +1,5 @@
 import unittest
-from spitfire.chemistry.tabulation import Library, Dimension
+from spitfire.chemistry.library import Library, Dimension
 import numpy as np
 from os import remove
 from os.path import isfile

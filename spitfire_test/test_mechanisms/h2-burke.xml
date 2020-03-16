@@ -6,8 +6,7 @@
   <phase dim="3" id="h2-burke">
     <elementArray datasrc="elements.xml">H  O  N  Ar  He  C </elementArray>
     <speciesArray datasrc="#species_data">
-      H  H2  O  OH  H2O  O2  HO2  H2O2  N2  AR 
-      HE </speciesArray>
+      H  H2  O  OH  H2O  O2  HO2  H2O2 AR HE N2 </speciesArray>
     <reactionArray datasrc="#reaction_data"/>
     <state>
       <temperature units="K">300.0</temperature>

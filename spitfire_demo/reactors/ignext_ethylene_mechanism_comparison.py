@@ -52,8 +52,8 @@ for mech, marker in mech_marker_dict:
                                feed_temperature=feed.T,
                                feed_mass_fractions=feed.Y)
         r.integrate_to_steady(steady_tolerance=1.e-8, transient_tolerance=1.e-10)
-        T_ignition_branch[idx] = r.final_temperature
-        mix.TPY = r.final_temperature, r.final_pressure, r.final_mass_fractions
+        T_ignition_branch[idx] = r.current_temperature
+        mix.TPY = r.current_temperature, r.current_pressure, r.current_mass_fractions
         print(f'{idx} ', end='', flush=True)
 
     print(f'\nmech: {mech} extinction branch point: ', end='', flush=True)
@@ -66,8 +66,8 @@ for mech, marker in mech_marker_dict:
                                feed_temperature=feed.T,
                                feed_mass_fractions=feed.Y)
         r.integrate_to_steady(steady_tolerance=1.e-8, transient_tolerance=1.e-10)
-        T_extinction_branch[idx] = r.final_temperature
-        mix.TPY = r.final_temperature, r.final_pressure, r.final_mass_fractions
+        T_extinction_branch[idx] = r.current_temperature
+        mix.TPY = r.current_temperature, r.current_pressure, r.current_mass_fractions
         print(f'{idx} ', end='', flush=True)
 
     label_result_dict[label] = (marker, np.copy(T_ignition_branch), np.copy(T_extinction_branch))

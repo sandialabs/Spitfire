@@ -11,20 +11,18 @@ namely setting up models and solving both unsteady and steady flamelets
 #                    
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
-from spitfire.time.governor import Governor, Steady, FinalTime, CustomTermination
+from spitfire.time.governor import Governor, Steady, FinalTime, CustomTermination, SaveAllDataToList
 from spitfire.time.methods import ESDIRK64
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
+from spitfire.chemistry.library import Dimension, Library
 import numpy as np
-from numpy import array, hstack, sum
+from numpy import array
 from numpy import any, logical_or, isinf, isnan
 from scipy.special import erfinv
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import splu as superlu_factor
-from cantera import gas_constant
 from numpy.linalg import norm
-from scipy.linalg import eig, eigvals
-from scipy.interpolate import interp1d
 from spitfire.griffon.griffon import py_btddod_full_factorize, py_btddod_full_solve, \
     py_btddod_scale_and_add_diagonal
 
@@ -89,6 +87,8 @@ class Flamelet(object):
         especially for mechanisms of more than 300 species.
     sensitivity_transform_type : str
         how the Jacobian is transformed, currently only 'exact' is supported
+    initial_time : float
+        the starting time point (in seconds) of the reactor, default to 0.0
     """
 
     _heat_transfers = ['adiabatic', 'nonadiabatic']
@@ -227,7 +227,8 @@ class Flamelet(object):
                  sensitivity_transform_type='exact',
                  include_enthalpy_flux=False,
                  include_variable_cp=False,
-                 use_scaled_heat_loss=False):
+                 use_scaled_heat_loss=False,
+                 initial_time=0.):
 
         self._constructor_arguments = locals()
         del self._constructor_arguments['self']
@@ -456,9 +457,11 @@ class Flamelet(object):
                   '                         must be either another Flamelet instance or a string\n' + \
                   '                         allowable strings: ' + str(self._initializations)
             raise ValueError(msg)
-        self._final_state = np.zeros_like(self._initial_state)
+        self._current_state = np.copy(self._initial_state)
 
-        # set up the numerics
+        self._initial_time = np.copy(initial_time)
+        self._current_time = np.copy(initial_time)
+
         self._griffon = self._mechanism.griffon
         self._include_enthalpy_flux = include_enthalpy_flux
         self._include_variable_cp = include_variable_cp
@@ -488,355 +491,7 @@ class Flamelet(object):
         self._block_thomas_l_values = np.zeros(self._n_equations * self._n_equations * self._nz_interior)
         self._block_thomas_d_pivots = np.zeros(self._jac_nelements_griffon, dtype=np.int32)
 
-        # cema and in situ processing setup
-        self._V_stoich = self._gas.product_stoich_coeffs() - self._gas.reactant_stoich_coeffs()
-        self._cema_Vmod = np.zeros((self._n_equations, self._n_reactions))
-        self._cema_Vmod[1:, :] = np.copy(self._V_stoich[:-1, :])
-        self._cema_Vmod[0, :] = \
-            (self._gas.standard_enthalpies_RT * gas_constant * 298.).T.dot(self._V_stoich)
-
-        self._cema_eigenvalue = False
-        self._cema_explosion_indices = False
-        self._cema_participation_indices = False
-        self._cema_secondary_mode = False
-
-        self._insitu_process_rates = False
-        self._insitu_process_mass_fractions = False
-        self._insitu_process_mole_fractions = False
-
-        self._enabled_insitu_processors = set()
-        self._enabled_cantera_insitu_processors = set()
-        self._insitu_processed_data = dict()
-        self._no_insitu_processors_enabled = True
-
-        # some other setup
-        self._delta_temperature_ignition = 400.
         self._iteration_count = None
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # insitu processing methods
-    # ------------------------------------------------------------------------------------------------------------------
-    def insitu_process_cantera_method(self, label, method=None, index=None):
-        """Add a general cantera function as an in situ processor
-
-        Parameters
-        ----------
-        label : str
-            the label of the computed result (also the cantera method to compute if the method parameter is not given)
-        method : str
-            the cantera method to evaluate
-        index : str or int
-            the integer index or species name of the vector element of interest, if the cantera function returns a vector
-        """
-        method = label if method is None else method
-        self._enabled_cantera_insitu_processors.add((label, method, index))
-
-    def insitu_process_cema(self,
-                            explosion_indices=False,
-                            participation_indices=False,
-                            secondary_mode=False):
-        """Turn on chemical explosive mode analysis, at least computing the explosive eigenvalue
-
-        Parameters
-        ----------
-        explosion_indices : bool
-            whether or not to compute variable explosion indices
-        participation_indices : bool
-            whether or not to compute reaction participation indices
-        secondary_mode : bool
-            whether or not to compute the secondary explosive eigenvalue and (if specified already) its associated explosion/participation indices
-        """
-        self._cema_eigenvalue = True
-        self._cema_explosion_indices = explosion_indices
-        self._cema_participation_indices = participation_indices
-        self._cema_secondary_mode = secondary_mode
-
-        self._enabled_insitu_processors.add('cema-lexp1')
-        if secondary_mode:
-            self._enabled_insitu_processors.add('cema-lexp2')
-        if explosion_indices:
-            for species in ['T'] + self._gas.species_names[:-1]:
-                self._enabled_insitu_processors.add('cema-ei1 ' + species)
-                if secondary_mode:
-                    self._enabled_insitu_processors.add('cema-ei2 ' + species)
-        if participation_indices:
-            for i in range(self._gas.n_reactions):
-                self._enabled_insitu_processors.add('cema-pi1 ' + str(i))
-                if secondary_mode:
-                    self._enabled_insitu_processors.add('cema-pi2 ' + str(i))
-
-    def insitu_process_quantity(self, key):
-        """Specify that a quantity be processed in situ.
-
-            Available keys: 'temperature', 'density', 'pressure', 'energy', 'enthalpy', 'heat capacity cv', 'heat capacity cp',
-            'mass fractions', 'mole fractions', 'production rates', 'heat release rate'
-
-            If a key is not in this list then cantera will be used.
-            This will cause a failure if cantera can not compute the requested quantity.
-
-        Parameters
-        ----------
-        key : str
-            the quantity to process
-        """
-        if isinstance(key, list):
-            for key1 in key:
-                self.insitu_process_quantity(key1)
-        else:
-            if key in ['heat capacity cv', 'heat capacity cp',
-                       'pressure', 'density', 'temperature',
-                       'enthalpy', 'energy', 'heat release rate']:
-                self._enabled_insitu_processors.add(key)
-            elif key == 'mass fractions' or 'mass fraction' in key:
-                self._insitu_process_mass_fractions = True
-                for species in self._gas.species_names:
-                    self._enabled_insitu_processors.add('mass fraction ' + species)
-            elif key == 'mole fractions' or 'mole fraction' in key:
-                self._insitu_process_mole_fractions = True
-                for species in self._gas.species_names:
-                    self._enabled_insitu_processors.add('mole fraction ' + species)
-            elif key == 'production rates':
-                self._insitu_process_rates = True
-                for species in self._gas.species_names:
-                    self._enabled_insitu_processors.add('production rate ' + species)
-            else:
-                self.insitu_process_cantera_method(key)
-
-    def _do_cema_on_one_state(self, state):
-        lexp1, lexp2, ei1, ei2, pi1, pi2 = None, None, None, None, None, None
-
-        # get an appropriate Jacobian
-        jac = np.zeros(self._n_equations * self._n_equations)
-        k = np.zeros(self._n_equations)
-        self._griffon.reactor_jac_isobaric(state, self._pressure,
-                                           0, np.ndarray(1), 0, 0, 0, 0, 0, 0, 0, False, 0, 0, k, jac)
-        jac = jac.reshape((self._n_equations, self._n_equations), order='F')
-
-        # do cema with the Jacobian
-        if self._cema_explosion_indices or self._cema_participation_indices:
-            w, vl, vr = eig(jac, left=True, right=True)
-        else:
-            w = eigvals(jac)
-
-        realparts = np.real(w)
-        threshold = 1.e-4
-        realparts[(realparts > -threshold) & (realparts < threshold)] = -np.inf
-        exp_idx1 = np.argmax(realparts)
-        real_parts_without_1 = np.delete(realparts, exp_idx1)
-        exp_idx2 = np.argmax(real_parts_without_1)
-        lexp1 = realparts[exp_idx1]
-        lexp2 = realparts[exp_idx2]
-
-        if self._cema_explosion_indices or self._cema_participation_indices:
-            exp_rvec1 = vr[:, exp_idx1]
-            exp_lvec1 = vl[:, exp_idx1]
-            exp_rvec2 = vr[:, exp_idx2]
-            exp_lvec2 = vl[:, exp_idx2]
-            ep_list1 = np.abs(np.real(exp_lvec1) * np.real(exp_rvec1))
-            ei1 = ep_list1 / np.sum(np.abs(ep_list1))
-            ep_list2 = np.abs(np.real(exp_lvec2) * np.real(exp_rvec2))
-            ei2 = ep_list2 / np.sum(np.abs(ep_list2))
-
-        if self._cema_participation_indices:
-            ynm1 = state[1:]
-            self._gas.TPY = state[0], self._pressure, hstack((ynm1, 1. - sum(ynm1)))
-            qnet = self._gas.net_rates_of_progress
-            pi1 = np.abs(exp_lvec1.dot(self._cema_Vmod) * qnet)
-            pi1 /= np.sum(np.abs(pi1))
-            pi2 = np.abs(exp_lvec2.dot(self._cema_Vmod) * qnet)
-            pi2 /= np.sum(np.abs(pi2))
-
-        return lexp1, lexp2, ei1, ei2, pi1, pi2
-
-    def _do_insitu_processing(self, t, state, data_dict=None, *args, **kwargs):
-        saving_trajectory_data = data_dict is None or data_dict == self._insitu_processed_data
-        if saving_trajectory_data:
-            data_dict = self._insitu_processed_data
-            state = self._state_2d_with_bcs(state).flatten()
-        if self._no_insitu_processors_enabled and saving_trajectory_data:
-            self._solution_times.append(t)
-            return
-        else:
-            if saving_trajectory_data:
-                self._solution_times.append(t)
-
-            # set state
-            p = self._pressure
-
-            neq = self._n_equations
-            nzi = state.size // neq
-            ndof = neq * nzi
-
-            T = state[::neq]
-            ylist = np.zeros((nzi, neq))
-            for i in range(1, neq):
-                ylist[:, i - 1] = state[i::neq]
-            ylist[:, -1] = 1. - np.sum(ylist[:, :-1], axis=1)
-
-            if self._insitu_process_mass_fractions:
-                for i in range(self._n_species):
-                    data_dict['mass fraction ' + self._gas.species_names[i]].append(ylist[:, i])
-
-            if self._insitu_process_mole_fractions:
-                x = np.zeros(ndof)
-                self._griffon.flamelet_process_mole_fractions(state, nzi, x)
-                for i in range(self._n_species):
-                    data_dict['mole fraction ' + self._gas.species_names[i]].append(x[i::neq])
-
-            if 'temperature' in self._enabled_insitu_processors:
-                data_dict['temperature'].append(np.copy(T))
-
-            if 'density' in self._enabled_insitu_processors:
-                rho = np.zeros(nzi)
-                self._griffon.flamelet_process_density(state, p, nzi, rho)
-                if np.min(rho) < 1.e-14:
-                    raise ValueError('density < 1.e-14 detected!')
-                data_dict['density'].append(np.copy(rho))
-
-            if 'heat release rate' in self._enabled_insitu_processors or self._insitu_process_rates:
-                if 'density' not in self._enabled_insitu_processors:
-                    rho = np.zeros(nzi)
-                    self._griffon.flamelet_process_density(state, p, nzi, rho)
-                rates = np.zeros(ndof)
-                self._griffon.flamelet_process_isobaric_reactor_rhs(state, p, nzi, rates)
-                data_dict['heat release rate'].append(np.copy(rates[::neq]))
-                wn = np.zeros(nzi)
-                for i in range(self._n_species - 1):
-                    name = 'production rate ' + self._gas.species_names[i]
-                    if name in data_dict:
-                        data_dict[name].append(rho * rates[i + 1::neq])
-                        wn -= rho * rates[i + 1::neq]
-                name = 'production rate ' + self._gas.species_names[self._n_species - 1]
-                if name in data_dict:
-                    data_dict[name].append(np.copy(wn))
-
-            if 'heat capacity cv' in self._enabled_insitu_processors:
-                cv = np.zeros(nzi)
-                self._griffon.flamelet_process_cv(state, nzi, cv)
-                data_dict['heat capacity cv'].append(np.copy(cv))
-
-            if 'heat capacity cp' in self._enabled_insitu_processors:
-                cp = np.zeros(nzi)
-                self._griffon.flamelet_process_cp(state, nzi, cp)
-                data_dict['heat capacity cp'].append(np.copy(cp))
-
-            if 'enthalpy' in self._enabled_insitu_processors:
-                h = np.zeros(nzi)
-                self._griffon.flamelet_process_enthalpy(state, nzi, h)
-                data_dict['enthalpy'].append(np.copy(h))
-
-            if 'energy' in self._enabled_insitu_processors:
-                e = np.zeros(nzi)
-                self._griffon.flamelet_process_energy(state, nzi, e)
-                data_dict['energy'].append(np.copy(e))
-
-            # handle general cantera processors
-            if len(self._enabled_cantera_insitu_processors):
-                datadict = {}
-                for label, _, _ in self._enabled_cantera_insitu_processors:
-                    datadict[label] = np.zeros(nzi)
-                for i in range(nzi):
-                    self._gas.TPY = T[i], p, ylist[i, :]
-                    for label, method, index in self._enabled_cantera_insitu_processors:
-                        if index is None:
-                            datadict[label][i] = getattr(self._gas, method)
-                        else:
-                            if isinstance(index, str):
-                                datadict[label][i] = getattr(self._gas, method)[self._gas.species_index(index)]
-                            else:
-                                datadict[label][i] = getattr(self._gas, method)[index]
-                for label, _, _ in self._enabled_cantera_insitu_processors:
-                    data_dict[label].append(datadict[label])
-
-            # handle chemical explosive mode analysis
-            if self._cema_eigenvalue:
-                lexp1 = np.zeros(nzi)
-                lexp2 = np.zeros(nzi)
-                ei1 = np.zeros((nzi, neq))
-                ei2 = np.zeros((nzi, neq))
-                nr = self._gas.n_reactions
-                pi1 = np.zeros((nzi, nr))
-                pi2 = np.zeros((nzi, nr))
-                for i in range(nzi):
-                    lexp1[i], lexp2[i], ei1[i], ei2[i], pi1[i], pi2[i] = self._do_cema_on_one_state(
-                        state[i * neq:(i + 1) * neq])
-                data_dict['cema-lexp1'].append(lexp1)
-                if self._cema_explosion_indices:
-                    for idx, name in enumerate(['T'] + self._gas.species_names[:-1]):
-                        data_dict['cema-ei1 ' + name].append(np.copy(ei1[:, idx]))
-                if self._cema_participation_indices:
-                    for rxn_index in range(self._gas.n_reactions):
-                        data_dict['cema-pi1 ' + str(rxn_index)].append(np.copy(pi1[:, rxn_index]))
-
-                if self._cema_secondary_mode:
-                    data_dict['cema-lexp2'].append(lexp2)
-                    if self._cema_explosion_indices:
-                        for idx, name in enumerate(['T'] + self._gas.species_names[:-1]):
-                            data_dict['cema-ei2 ' + name].append(np.copy(ei2[:, idx]))
-                    if self._cema_participation_indices:
-                        for rxn_index in range(self._gas.n_reactions):
-                            data_dict['cema-pi2 ' + str(rxn_index)].append(np.copy(pi2[:, rxn_index]))
-
-    def _initialize_insitu_processing(self):
-        if not len(self._enabled_insitu_processors) and not len(self._enabled_cantera_insitu_processors):
-            self._no_insitu_processors_enabled = True
-            self._do_insitu_processing(0., self.initial_interior_state, self._insitu_processed_data)
-        else:
-            self._no_insitu_processors_enabled = False
-            for pp in self._enabled_insitu_processors:
-                self._insitu_processed_data[pp] = []
-            for label, method, index in self._enabled_cantera_insitu_processors:
-                self._insitu_processed_data[label] = []
-
-            self._do_insitu_processing(0., self.initial_interior_state, self._insitu_processed_data)
-
-    def process_quantities_on_state(self, state, quantities=None):
-        """Compute the specified in situ quantities on a given flamelet state.
-        This will return a dictionary that maps each quantity's name to its computed values for the state.
-
-        Parameters
-        ----------
-        state : np.ndarray
-            the flamelet state - get this from a Flamelet object
-        """
-        self._no_insitu_processors_enabled = False
-        if quantities is not None:
-            self.insitu_process_quantity(quantities)
-        data_dict = dict()
-        for pp in self._enabled_insitu_processors:
-            data_dict[pp] = []
-        for label, method, index in self._enabled_cantera_insitu_processors:
-            data_dict[label] = []
-        self._do_insitu_processing(0., state, data_dict)
-        for key in data_dict:
-            data_dict[key] = array(data_dict[key])
-        return data_dict
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def check_ignition_delay(self, state):
-        ne = self._n_equations
-        has_ignited = np.max(state[::ne] - self._initial_state[::ne]) > self._delta_temperature_ignition
-        return has_ignited
-
-    def _stop_at_ignition(self, state, t, nt, residual):
-        has_ignited = self.check_ignition_delay(state)
-        is_not_steady = residual > self._minimum_allowable_residual_for_ignition
-        if is_not_steady:
-            return not has_ignited
-        else:
-            return False
-
-    def _stop_at_steady_after_ignition(self, state, t, nt, residual):
-        has_ignited = self.check_ignition_delay(state)
-        is_steady = residual < self._steady_tolerance
-        return not (has_ignited and is_steady)
-
-    def _stop_at_linear_temperature_or_steady(self, state, t, nt, residual):
-        T_bc_max = max([self._oxy_stream.T, self._fuel_stream.T])
-        is_linear_enough = np.max(state) < (1. + self._temperature_tolerance) * T_bc_max
-        is_steady = residual < self._steady_tolerance
-        return not (is_linear_enough or is_steady)
 
     # ------------------------------------------------------------------------------------------------------------------
     # adiabatic methods
@@ -1190,23 +845,23 @@ class Flamelet(object):
         return self._get_mass_fraction_with_bcs(key, self._state_2d_with_bcs(self._initial_state))
 
     @property
-    def final_interior_state(self):
-        """Obtain the final interior (no boundary states) state vector of the flamelet, useful for initializing another flamelet object"""
-        return self._final_state
+    def current_interior_state(self):
+        """Obtain the current interior (no boundary states) state vector of the flamelet, useful for initializing another flamelet object"""
+        return self._current_state
 
     @property
-    def final_state(self):
+    def current_state(self):
         """Obtain the initial full (interior + boundaries) state vector of the flamelet"""
-        return self._state_2d_with_bcs(self._final_state)
+        return self._state_2d_with_bcs(self._current_state)
 
     @property
-    def final_temperature(self):
+    def current_temperature(self):
         """Obtain the np.ndarray of values of the temperature after solving the steady/unsteady flamelet"""
-        return np.hstack((self._state_oxy[0], self._final_state[::self._n_equations], self._state_fuel[0]))
+        return np.hstack((self._state_oxy[0], self._current_state[::self._n_equations], self._state_fuel[0]))
 
-    def final_mass_fraction(self, key):
+    def current_mass_fraction(self, key):
         """Obtain the np.ndarray of values of a particular mass fraction after solving the steady/unsteady flamelet"""
-        return self._get_mass_fraction_with_bcs(key, self._state_2d_with_bcs(self._final_state))
+        return self._get_mass_fraction_with_bcs(key, self._state_2d_with_bcs(self._current_state))
 
     @property
     def solution_times(self):
@@ -1226,7 +881,10 @@ class Flamelet(object):
     def _fuel_state(self):
         return self._state_fuel
 
-    # ------------------------------------------------------------------------------------------------------------------
+    def _check_ignition_delay(self, state, delta_temperature_ignition):
+        ne = self._n_equations
+        has_ignited = np.max(state[::ne] - self._initial_state[::ne]) > delta_temperature_ignition
+        return has_ignited
 
     # ------------------------------------------------------------------------------------------------------------------
     # time integration, nonlinear solvers, etc.
@@ -1248,7 +906,9 @@ class Flamelet(object):
                   extra_governor_args=dict(),
                   extra_stepper_args=dict(),
                   extra_nlsolver_args=dict(),
-                  extra_stepcontrol_args=dict()):
+                  extra_stepcontrol_args=dict(),
+                  save_frequency=1,
+                  save_first_and_last_only=False):
         """Base method for flamelet integration
 
         Parameters
@@ -1260,7 +920,7 @@ class Flamelet(object):
         max_time_step : float
             The maximum time step allowed by the integrator
         minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
+            The minimum number of time steps to run, (default: 40) (helpful for slowly evolving simulations, for instance those with low starting temperatures)
         transient_tolerance : float
             the target temporal error for transient integration
         write_log : bool
@@ -1287,11 +947,17 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
+        save_frequency : int
+            how many steps are taken between solution data and times being saved (default: 1)
+        save_first_and_last_only : bool
+            whether or not to retain all data (False, default) or only the first and last solutions
         """
 
-        self._initialize_insitu_processing()
+        data_holder = SaveAllDataToList(self._current_state,
+                                        self._current_time,
+                                        save_frequency=save_frequency,
+                                        save_first_and_last_only=save_first_and_last_only)
 
-        # build the integration governor and set attributes
         governor = Governor()
         governor.termination_criteria = termination
         governor.minimum_time_step_count = minimum_time_step_count
@@ -1300,7 +966,7 @@ class Flamelet(object):
         governor.log_rate = log_rate
         governor.clip_to_positive = True
         governor.norm_weighting = 1. / self._variable_scales
-        governor.custom_post_process_step = self._do_insitu_processing
+        governor.custom_post_process_step = data_holder.save_data
         for a in extra_governor_args:
             setattr(governor, a, extra_governor_args[a])
 
@@ -1334,12 +1000,36 @@ class Flamelet(object):
         else:
             raise ValueError('linear solver ' + linear_solver + ' is invalid, must be ''superlu'' or ''block thomas''')
 
-        self._final_state = governor.integrate(right_hand_side=rhs_method,
-                                               projector_setup=setup_method,
-                                               projector_solve=solve_method,
-                                               initial_condition=self._initial_state,
-                                               controller=step_controller,
-                                               method=stepper)[1]
+        _, current_state, time, _ = governor.integrate(right_hand_side=rhs_method,
+                                                       projector_setup=setup_method,
+                                                       projector_solve=solve_method,
+                                                       initial_condition=self._current_state,
+                                                       controller=step_controller,
+                                                       method=stepper)
+        self._current_state = np.copy(current_state)
+        self._current_time = np.copy(time)
+
+        time_dimension = Dimension('time', data_holder.t_list)
+        mixfrac_dimension = Dimension('mixture_fraction', self._z)
+        output_library = Library(time_dimension, mixfrac_dimension)
+
+        output_library['temperature'] = output_library.get_empty_dataset()
+        output_library['temperature'][:, 0] = self.oxy_stream.T
+        output_library['temperature'][:, 1:-1] = data_holder.solution_list[:, ::self._n_equations]
+        output_library['temperature'][:, -1] = self.fuel_stream.T
+
+        output_library['pressure'] = np.zeros_like(output_library['temperature']) + self._pressure
+
+        species_names = self._mechanism.species_names
+        output_library['mass fraction ' + species_names[-1]] = np.ones_like(output_library['temperature'])
+        for i, s in enumerate(species_names[:-1]):
+            output_library['mass fraction ' + s] = output_library.get_empty_dataset()
+            output_library['mass fraction ' + s][:, 0] = self.oxy_stream.Y[i]
+            output_library['mass fraction ' + s][:, 1:-1] = data_holder.solution_list[:, 1 + i::self._n_equations]
+            output_library['mass fraction ' + s][:, -1] = self.fuel_stream.Y[i]
+            output_library['mass fraction ' + species_names[-1]] -= output_library['mass fraction ' + s]
+
+        return output_library
 
     def integrate_to_steady(self, steady_tolerance=1.e-4, **kwargs):
         """Integrate a flamelet until steady state is reached
@@ -1381,9 +1071,7 @@ class Flamelet(object):
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
         """
-
-        self._steady_tolerance = steady_tolerance
-        self.integrate(Steady(steady_tolerance), **kwargs)
+        return self.integrate(Steady(steady_tolerance), **kwargs)
 
     def integrate_to_time(self, final_time, **kwargs):
         """Integrate a flamelet until it reaches a specified simulation time
@@ -1425,9 +1113,7 @@ class Flamelet(object):
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
         """
-
-        self.final_time = final_time
-        self.integrate(FinalTime(final_time), **kwargs)
+        return self.integrate(FinalTime(final_time), **kwargs)
 
     def integrate_to_steady_after_ignition(self,
                                            steady_tolerance=1.e-4,
@@ -1476,9 +1162,12 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.StepControl object
         """
 
-        self._delta_temperature_ignition = delta_temperature_ignition
-        self._steady_tolerance = steady_tolerance
-        self.integrate(CustomTermination(self._stop_at_steady_after_ignition), **kwargs)
+        def stop_at_steady_after_ignition(state, t, nt, residual):
+            has_ignited = self._check_ignition_delay(state, delta_temperature_ignition)
+            is_steady = residual < steady_tolerance
+            return not (has_ignited and is_steady)
+
+        return self.integrate(CustomTermination(stop_at_steady_after_ignition), **kwargs)
 
     def integrate_for_heat_loss(self, temperature_tolerance=0.05, steady_tolerance=1.e-4, **kwargs):
         """Integrate a flamelet until the temperature profile is sufficiently linear.
@@ -1527,13 +1216,18 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.StepControl object
         """
 
-        self._steady_tolerance = steady_tolerance
-        self._temperature_tolerance = temperature_tolerance
-        self.integrate(CustomTermination(self._stop_at_linear_temperature_or_steady), **kwargs)
+        def stop_at_linear_temperature_or_steady(state, t, nt, residual):
+            T_bc_max = max([self._oxy_stream.T, self._fuel_stream.T])
+            is_linear_enough = np.max(state) < (1. + temperature_tolerance) * T_bc_max
+            is_steady = residual < steady_tolerance
+            return not (is_linear_enough or is_steady)
+
+        return self.integrate(CustomTermination(stop_at_linear_temperature_or_steady), **kwargs)
 
     def compute_ignition_delay(self,
-                               delta_temperature_ignition=None,
+                               delta_temperature_ignition=400.,
                                minimum_allowable_residual=1.e-12,
+                               return_solution=False,
                                **kwargs):
         """Integrate in time until ignition (exceeding a specified threshold of the increase in temperature)
 
@@ -1543,6 +1237,8 @@ class Flamelet(object):
             how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
         minimum_allowable_residual : float
             how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
+        return_solution : bool
+            whether or not to return the solution trajectory in addition to the ignition delay, as a tuple, (t, library)
         first_time_step : float
             The time step size initially used by the time integrator
         max_time_step : float
@@ -1581,13 +1277,49 @@ class Flamelet(object):
             the ignition delay of the reactor, in seconds
         """
 
-        if delta_temperature_ignition is not None:
-            self._delta_temperature_ignition = delta_temperature_ignition
-        self._minimum_allowable_residual_for_ignition = minimum_allowable_residual
-        self._no_insitu_processors_enabled = True
-        self.integrate(CustomTermination(self._stop_at_ignition), **kwargs)
-        has_ignited = self.check_ignition_delay(self._final_state)
-        return self._solution_times[-1] if has_ignited else np.Inf
+        def stop_at_ignition(state, t, nt, residual):
+            has_ignited = self._check_ignition_delay(state, delta_temperature_ignition)
+            is_not_steady = residual > minimum_allowable_residual
+            if is_not_steady:
+                return not has_ignited
+            else:
+                error_msg = f'From compute_ignition_delay(): '
+                f'residual < minimum allowable value ({minimum_allowable_residual}),'
+                f' suggesting that the reactor will not ignite.'
+                f'\nNote that you can set this value with the "minimum_allowable_residual" argument.'
+                f'\nIt is advised that you also pass write_log=True to observe progress of the simulation '
+                f'in case it is running perpetually.'
+                raise ValueError(error_msg)
+
+        self.integrate(CustomTermination(stop_at_ignition), **kwargs)
+
+        output_library = self.integrate(CustomTermination(stop_at_ignition), **kwargs)
+        tau_ignition = output_library.time_values[-1]
+        if return_solution:
+            return tau_ignition, output_library
+        else:
+            return tau_ignition
+
+    def _make_library_from_interior_state(self, state_in):
+        mixfrac_dimension = Dimension('mixture_fraction', self._z)
+        output_library = Library(mixfrac_dimension)
+
+        output_library['temperature'] = output_library.get_empty_dataset()
+        output_library['temperature'][0] = self.oxy_stream.T
+        output_library['temperature'][1:-1] = state_in[::self._n_equations]
+        output_library['temperature'][-1] = self.fuel_stream.T
+
+        output_library['pressure'] = np.zeros_like(output_library['temperature']) + self._pressure
+
+        species_names = self._mechanism.species_names
+        output_library['mass fraction ' + species_names[-1]] = np.ones_like(output_library['temperature'])
+        for i, s in enumerate(species_names[:-1]):
+            output_library['mass fraction ' + s] = output_library.get_empty_dataset()
+            output_library['mass fraction ' + s][0] = self.oxy_stream.Y[i]
+            output_library['mass fraction ' + s][1:-1] = state_in[1 + i::self._n_equations]
+            output_library['mass fraction ' + s][-1] = self.fuel_stream.Y[i]
+            output_library['mass fraction ' + species_names[-1]] -= output_library['mass fraction ' + s]
+        return output_library
 
     def steady_solve_newton(self,
                             initial_guess=None,
@@ -1668,7 +1400,7 @@ class Flamelet(object):
 
             if any(logical_or(isinf(dstate), isnan(dstate))):
                 verbose_print('nan/inf detected in state update!')
-                return False
+                return None, None, False
 
             norm_rhs_old = norm(rhs * inv_dofscales, ord=norm_order)
             alpha = 1.
@@ -1676,7 +1408,7 @@ class Flamelet(object):
 
             if any(logical_or(isinf(rhs), isnan(rhs))):
                 verbose_print('nan/inf detected in state update!')
-                return False
+                return None, None, False
 
             while norm(rhs * inv_dofscales, ord=norm_order) > max_factor_line_search * norm_rhs_old and alpha > 0.001:
                 alpha *= 0.5
@@ -1692,29 +1424,31 @@ class Flamelet(object):
                 message = 'Convergence failure! Residual of {:.2e} detected, ' \
                           'exceeds the maximum allowable value of {:.2e}.'.format(res, max_allowed_residual)
                 verbose_print(message)
-                return False
+                return None, None, False
 
             if np.min(state) < min_allowable_state_var:
                 message = 'Convergence failure! ' \
                           'Mass fraction or temperature < ' \
                           'min_allowable_state_var detected.'.format(res, max_allowed_residual)
                 verbose_print(message)
-                return False
+                return None, None, False
 
             if out_count == log_rate and verbose:
                 out_count = 0
                 maxT = np.max(state)
                 print('   - iter {:4}, |residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, res, maxT))
 
-        self._final_state = np.copy(state)
+        self._current_state = np.copy(state)
+
+        output_library = self._make_library_from_interior_state(state)
+
         if iteration_count > max_iterations or res > tolerance:
             message = 'Convergence failure! ' \
                       'Too many iterations required, more than allowable {:}.'.format(max_iterations)
             verbose_print(message)
-            return False
+            return None, None, False
         else:
-            self._iteration_count = iteration_count
-            return True
+            return output_library, iteration_count, True
 
     def steady_solve_psitc(self,
                            initial_guess=None,
@@ -1849,7 +1583,7 @@ class Flamelet(object):
                 if _recursion_depth > max_recursion_depth or not adaptive_restart:
                     verbose_print('nan/inf detected in state update and solver has already restarted more than'
                                   ' max_recursion_depth number of times!')
-                    return False, np.min(ds)
+                    return None, None, False, np.min(ds)
                 else:
                     if adaptive_restart:
                         verbose_print('NaN/Inf detected in steady_state_solve_psitc! Restarting...')
@@ -1866,7 +1600,7 @@ class Flamelet(object):
                     if verbose:
                         print('nan/inf detected in state update and solver has already restarted more than'
                               ' max_recursion_depth number of times!')
-                    return False, np.min(ds)
+                    return None, None, False, np.min(ds)
                 else:
                     if adaptive_restart:
                         verbose_print('NaN/Inf detected in steady_state_solve_psitc! Restarting...')
@@ -1889,7 +1623,7 @@ class Flamelet(object):
                 if _recursion_depth > max_recursion_depth or not adaptive_restart:
                     verbose_print(message + ' Solver has already restarted more than' \
                                             ' max_recursion_depth number of times!')
-                    return False, np.min(ds)
+                    return None, None, False, np.min(ds)
                 else:
                     if adaptive_restart:
                         verbose_print(message + ' Restarting...')
@@ -1904,7 +1638,7 @@ class Flamelet(object):
                 if _recursion_depth > max_recursion_depth or not adaptive_restart:
                     verbose_print(message + ' Solver has already restarted more than' \
                                             ' max_recursion_depth number of times!')
-                    return False, np.min(ds)
+                    return None, None, False, np.min(ds)
                 else:
                     if adaptive_restart:
                         verbose_print(message + ' Restarting...')
@@ -1917,19 +1651,22 @@ class Flamelet(object):
                 print('   - iter {:4}, max L_exp = {:7.2e}, min(ds) = {:7.2e}, '
                       '|residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, np.max(expeig), np.min(ds),
                                                                       res, np.max(state)))
+
+        output_library = self._make_library_from_interior_state(state)
+
         if iteration_count > max_iterations or res > tolerance:
-            return False, np.min(ds)
+            return None, None, False, np.min(ds)
         else:
             self._iteration_count = iteration_count
-            self._final_state = np.copy(state)
-            return True, np.min(ds)
+            self._current_state = np.copy(state)
+            return output_library, iteration_count, True, np.min(ds)
 
     def compute_steady_state(self, tolerance=1.e-6, verbose=False, use_psitc=True):
         """Solve for the steady state of this flamelet, using a number of numerical algorithms
 
         This will first try Newton's method, which is fast if it manages to converge.
         If Newton's method fails, the pseudo-transient continuation (psitc) method is used.
-        The psitc solver will attempt several restarts with consecutively more conservative solver settings.
+        The psitc solver will attempt several restarts with increasingly conservative solver settings.
         Finally, if both Newton's method and psitc fail, ESDIRK64 time integration with adaptive stepping is attempted.
 
         This is meant to be a convenient interface for common usage.
@@ -1949,12 +1686,32 @@ class Flamelet(object):
             whether or not to use the psitc method when Newton's method fails (if False, tries ESDIRK time stepping next)
         """
 
-        if not self.steady_solve_newton(tolerance=tolerance, log_rate=1, verbose=verbose, max_iterations=32):
+        output_library, iteration_count, conv = self.steady_solve_newton(tolerance=tolerance,
+                                                                         log_rate=1,
+                                                                         verbose=verbose,
+                                                                         max_iterations=38)
+        if conv:
+            return output_library
+        else:
             conv = False
             mds = 1.e-6
             if use_psitc:
-                conv, mds = self.steady_solve_psitc(tolerance=tolerance, log_rate=1, max_iterations=200, verbose=verbose)
-            if not conv:
-                self.integrate_to_steady(steady_tolerance=tolerance, transient_tolerance=1.e-8, max_time_step=1.e4,
-                                         write_log=verbose, log_rate=1, first_time_step=1.e-2 * mds,
-                                         maximum_steps_per_jacobian=10)
+                output_library, iteration_count, conv, mds = self.steady_solve_psitc(tolerance=tolerance,
+                                                                                     log_rate=1,
+                                                                                     max_iterations=200,
+                                                                                     verbose=verbose)
+            if conv:
+                return output_library
+            else:
+                transient_library = self.integrate_to_steady(steady_tolerance=tolerance,
+                                                             transient_tolerance=1.e-8,
+                                                             max_time_step=1.e4,
+                                                             write_log=verbose,
+                                                             log_rate=1,
+                                                             first_time_step=1.e-2 * mds,
+                                                             maximum_steps_per_jacobian=10,
+                                                             save_first_and_last_only=True)
+                steady_library = Library(transient_library.dim('mixture_fraction'))
+                for p in transient_library.props:
+                    steady_library[p] = transient_library[p][-1, :].ravel()
+                return steady_library

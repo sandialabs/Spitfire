@@ -11,8 +11,6 @@ flamelet_specs = {'mech_spec': m, 'pressure': pressure,
                   'oxy_stream': air, 'fuel_stream': fuel,
                   'grid_points': 34}
 
-quantities = ['enthalpy', 'temperature', 'mass fraction OH']
-
-l = build_nonadiabatic_defect_bs_library(flamelet_specs, quantities, verbose=False)
+l = build_nonadiabatic_defect_bs_library(flamelet_specs, verbose=False)
 
 l.save_to_file('library_gold.pkl')

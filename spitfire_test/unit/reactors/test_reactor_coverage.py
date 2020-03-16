@@ -4,6 +4,7 @@ from os.path import join, abspath
 import cantera as ct
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec as Mechanism
 from spitfire.chemistry.reactors import HomogeneousReactor
+import spitfire.chemistry.analysis as sca
 
 xml = abspath(join('spitfire_test', 'test_mechanisms', 'hydrogen_one_step.xml'))
 sol = ct.Solution(thermo='IdealGas',
@@ -131,9 +132,9 @@ def integrate_steady(configuration, mass_transfer, heat_transfer, shape):
                                      heat_transfer=heat_transfer,
                                      mass_transfer=mass_transfer,
                                      **extra_args)
-        reactor.integrate_to_steady(steady_tolerance=1.e-4,
-                                    transient_tolerance=1.e-8)
-        num_time_steps = reactor.solution_times.size
+        output = reactor.integrate_to_steady(steady_tolerance=1.e-4,
+                                             transient_tolerance=1.e-8)
+        num_time_steps = output.time_npts
         return 20 < num_time_steps < 300
     except:
         return False
@@ -143,18 +144,23 @@ def adiabatic_closed_ignition_delay(configuration):
     air = mechanism.stream(stp_air=True)
     fuel = mechanism.stream('X', 'H2:1')
 
-    mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
-    mix.TP = 1200., 101325.
-
     try:
+        mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+        mix.TP = 1200., 101325.
         reactor = HomogeneousReactor(mechanism, mix,
                                      configuration=configuration,
                                      heat_transfer='adiabatic',
                                      mass_transfer='closed')
-        t_ignition_1 = reactor.compute_ignition_delay(transient_tolerance=1.e-8)
-        t_ignition_2 = reactor.compute_ignition_delay(transient_tolerance=1.e-10)
-        err_pct = (t_ignition_1 - t_ignition_2) / t_ignition_2
-        return err_pct < 0.05
+        t_ignition_1 = reactor.compute_ignition_delay(transient_tolerance=1.e-8, return_solution=False)
+        mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
+        mix.TP = 1200., 101325.
+        reactor = HomogeneousReactor(mechanism, mix,
+                                     configuration=configuration,
+                                     heat_transfer='adiabatic',
+                                     mass_transfer='closed')
+        t_ignition_2 = reactor.compute_ignition_delay(transient_tolerance=1.e-10, return_solution=False)
+
+        return (t_ignition_1 - t_ignition_2) / t_ignition_2 < 0.05
     except:
         return False
 
@@ -177,7 +183,7 @@ def adiabatic_closed_steady_after_ignition(configuration):
         return False
 
 
-def insitu_processing(configuration, mass_transfer, heat_transfer):
+def post_processing(configuration, mass_transfer, heat_transfer):
     air = mechanism.stream(stp_air=True)
     fuel = mechanism.stream('X', 'H2:1')
 
@@ -212,34 +218,26 @@ def insitu_processing(configuration, mass_transfer, heat_transfer):
                                      heat_transfer=heat_transfer,
                                      mass_transfer=mass_transfer,
                                      **extra_args)
-        reactor.insitu_process_cantera_method('enthalpy_mass')
-        reactor.insitu_process_quantity(
-            ['temperature', 'density', 'pressure', 'energy', 'enthalpy', 'heat capacity cv', 'heat capacity cp',
-             'mass fractions', 'mole fractions', 'production rates', 'heat release rate', 'eigenvalues'])
-        reactor.insitu_process_cema(True, True, True)
 
         tol = np.sqrt(np.finfo(float).eps)
         test_success = True
 
-        # specify a state vector
-        data_dict = reactor.process_quantities_on_state(reactor.initial_state)
-        test_success = test_success and np.abs(mix.T - data_dict['temperature'][0]) / mix.T < tol
-        test_success = test_success and np.abs(mix.P - data_dict['pressure'][0]) / mix.P < tol
-        test_success = test_success and np.abs(mix.density - data_dict['density'][0]) / mix.density < tol
-        test_success = test_success and np.abs(mix.enthalpy - data_dict['enthalpy'][0]) / mix.enthalpy_mass < tol
-        test_success = test_success and np.abs(mix.int_energy - data_dict['energy'][0]) / mix.int_energy_mass < tol
-        test_success = test_success and np.abs(mix.cv_mass - data_dict['heat capacity cv'][0]) / mix.cv_mass < tol
-        test_success = test_success and np.abs(mix.cp_mass - data_dict['heat capacity cp'][0]) / mix.cp_mass < tol
+        output_library = reactor.integrate_to_time(1e-16, minimum_time_step_count=0)
+        output_library = sca.compute_specific_enthalpy(mechanism, output_library)
+        output_library = sca.compute_density(mechanism, output_library)
+        output_library = sca.compute_pressure(mechanism, output_library)
+        output_library = sca.compute_isobaric_specific_heat(mechanism, output_library)
+        output_library = sca.compute_isochoric_specific_heat(mechanism, output_library)
+        output_library = sca.explosive_mode_analysis(mechanism, output_library,
+                                                     configuration, heat_transfer,
+                                                     True, True, True)
 
-        # specify a stream
-        data_dict = reactor.process_quantities_on_state(mix)
-        test_success = test_success and np.abs(mix.T - data_dict['temperature'][0]) / mix.T < tol
-        test_success = test_success and np.abs(mix.P - data_dict['pressure'][0]) / mix.P < tol
-        test_success = test_success and np.abs(mix.density - data_dict['density'][0]) / mix.density < tol
-        test_success = test_success and np.abs(mix.enthalpy - data_dict['enthalpy'][0]) / mix.enthalpy_mass < tol
-        test_success = test_success and np.abs(mix.int_energy - data_dict['energy'][0]) / mix.int_energy_mass < tol
-        test_success = test_success and np.abs(mix.cv_mass - data_dict['heat capacity cv'][0]) / mix.cv_mass < tol
-        test_success = test_success and np.abs(mix.cp_mass - data_dict['heat capacity cp'][0]) / mix.cp_mass < tol
+        test_success = test_success and np.abs(mix.T - output_library['temperature'][-1]) / mix.T < tol
+        test_success = test_success and np.abs(mix.P - output_library['pressure'][-1]) / mix.P < tol
+        test_success = test_success and np.abs(mix.density - output_library['density'][-1]) / mix.density < tol
+        test_success = test_success and np.abs(mix.enthalpy - output_library['enthalpy'][-1]) / mix.enthalpy_mass < tol
+        test_success = test_success and np.abs(mix.cv_mass - output_library['heat capacity cv'][-1]) / mix.cv_mass < tol
+        test_success = test_success and np.abs(mix.cp_mass - output_library['heat capacity cp'][-1]) / mix.cp_mass < tol
 
         return test_success
     except:
@@ -262,9 +260,9 @@ def create_test(test_method, c, m=None, h=None, s=None):
     elif test_method == 'steady_after_ignition':
         def test(self):
             self.assertTrue(adiabatic_closed_steady_after_ignition(c))
-    elif test_method == 'insitu_processing_coverage':
+    elif test_method == 'post_processing_coverage':
         def test(self):
-            self.assertTrue(insitu_processing(c, m, h))
+            self.assertTrue(post_processing(c, m, h))
 
     return test
 
@@ -305,9 +303,9 @@ for configuration in ['isobaric', 'isochoric']:
                                                         heat_transfer,
                                                         'cube'))
 
-            testname = 'test_insitu_processing_coverage_' + configuration + '_' + mass_transfer + '_' + heat_transfer
+            testname = 'test_post_processing_coverage_' + configuration + '_' + mass_transfer + '_' + heat_transfer
             setattr(Construction, testname,
-                    create_test('insitu_processing_coverage', configuration, mass_transfer, heat_transfer))
+                    create_test('post_processing_coverage', configuration, mass_transfer, heat_transfer))
 
     testname = 'test_compute_ignition_delay_adiabatic_closed_' + configuration
     setattr(Construction, testname, create_test('ignition_delay', configuration))

@@ -22,12 +22,11 @@ reactor = HomogeneousReactor(mechanism, mix,
                              feed_temperature=feed_temperature_fxn,
                              feed_mass_fractions=feed.Y)
 
-reactor.insitu_process_quantity('temperature')
-reactor.integrate_to_time(0.2, transient_tolerance=1.e-10, write_log=True, log_rate=200)
+output = reactor.integrate_to_time(0.2, transient_tolerance=1.e-10, write_log=True, log_rate=200)
 
-times = reactor.solution_times
+times = output.time_values
 
-plt.plot(times * 1.e3, reactor.trajectory_data('temperature'), '-', label='reactor')
+plt.plot(times * 1.e3, output['temperature'], '-', label='reactor')
 plt.plot(times * 1.e3, feed_temperature_fxn(times), '--', label='feed')
 
 plt.ylabel('T (K)')

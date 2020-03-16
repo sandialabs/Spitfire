@@ -1,7 +1,8 @@
 import unittest
-import numpy as np
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.chemistry.tabulation import build_nonadiabatic_defect_eq_library, Library, PostProcessor
+from spitfire.chemistry.tabulation import build_nonadiabatic_defect_eq_library
+from spitfire.chemistry.library import Library
+import spitfire.chemistry.analysis as sca
 from numpy.testing import assert_allclose
 from os.path import join, abspath
 
@@ -19,9 +20,7 @@ class NonadiabaticDefectEquilibriumLibrary(unittest.TestCase):
                           'oxy_stream': air, 'fuel_stream': fuel,
                           'grid_points': 34}
 
-        quantities = ['enthalpy', 'temperature', 'mass fraction OH']
-
-        l1 = build_nonadiabatic_defect_eq_library(flamelet_specs, quantities, verbose=False)
+        l1 = build_nonadiabatic_defect_eq_library(flamelet_specs, verbose=False)
 
         file_name = abspath(join('spitfire_test',
                                  'unit',

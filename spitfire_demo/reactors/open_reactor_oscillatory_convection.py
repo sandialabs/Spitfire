@@ -30,13 +30,12 @@ reactor = HomogeneousReactor(mechanism, mix,
                              radiative_emissivity=0.0,
                              shape_dimension_dict={'shape': 'tetrahedron', 'char. length': 1.e-3})
 
-reactor.insitu_process_quantity('temperature')
-reactor.integrate_to_time(0.4, write_log=True, log_rate=50)
+output = reactor.integrate_to_time(0.4, write_log=True, log_rate=50)
 
-times = reactor.solution_times
+times = output.time_values
 
 plt.subplot(211)
-plt.plot(times * 1.e3, reactor.trajectory_data('temperature'), label='reactor')
+plt.plot(times * 1.e3, output['temperature'], label='reactor')
 plt.plot(times * 1.e3, times * 0. + feed.T, '--', label='feed')
 plt.plot(times * 1.e3, times * 0. + external_temperature, '--', label='convection fluid')
 plt.ylabel('T (K)')

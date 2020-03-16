@@ -37,15 +37,14 @@ r = HomogeneousReactor(mech_spec=mech,
                        configuration='isobaric',
                        heat_transfer='adiabatic',
                        mass_transfer='closed')
-r.insitu_process_quantity(['temperature', 'mass fractions'])
-r.integrate_to_time(0.1)
+output = r.integrate_to_time(0.1)
 
-t = r.solution_times * 1.e3
-T = r.trajectory_data('temperature')
-yH = r.trajectory_data('mass fraction NXC7H16')
-yO = r.trajectory_data('mass fraction O2')
-yC = r.trajectory_data('mass fraction CO2')
-yW = r.trajectory_data('mass fraction H2O')
+t = output.time_values * 1.e3
+T = output['temperature']
+yH = output['mass fraction NXC7H16']
+yO = output['mass fraction O2']
+yC = output['mass fraction CO2']
+yW = output['mass fraction H2O']
 
 fig, axY = plt.subplots()
 
