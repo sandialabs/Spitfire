@@ -500,6 +500,9 @@ class HomogeneousReactor(object):
             how many steps are taken between solution data and times being saved (default: 1)
         save_first_and_last_only : bool
             whether or not to retain all data (False, default) or only the first and last solutions
+        Returns
+        -------
+            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
 
         data_holder = SaveAllDataToList(self._current_state,
@@ -668,9 +671,11 @@ class HomogeneousReactor(object):
         ----------
         steady_tolerance : float
             residual tolerance below which steady state is defined
-
         **kwargs
             Arbitrary keyword arguments - see the integrate() method documentation
+        Returns
+        -------
+            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         return self.integrate(Steady(steady_tolerance), **kwargs)
 
@@ -681,9 +686,11 @@ class HomogeneousReactor(object):
         ----------
         final_time : float
             time at which integration ceases
-
         **kwargs
             Arbitrary keyword arguments - see the integrate() method documentation
+        Returns
+        -------
+            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         return self.integrate(FinalTime(final_time), **kwargs)
 
@@ -698,12 +705,13 @@ class HomogeneousReactor(object):
         ----------
         steady_tolerance : float
             residual tolerance below which steady state is defined
-
         delta_temperature_ignition : float
             how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-
         **kwargs
             Arbitrary keyword arguments - see the integrate() method documentation
+        Returns
+        -------
+            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         if self._heat_transfer == 'isothermal':
             raise ValueError(
@@ -730,19 +738,15 @@ class HomogeneousReactor(object):
         ----------
         delta_temperature_ignition : float
             how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-
         minimum_allowable_residual : float
             how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
-
         return_solution : bool
             whether or not to return the solution trajectory in addition to the ignition delay, as a tuple, (t, library)
-
         **kwargs
             Arbitrary keyword arguments - see the integrate() method documentation
-
         Returns
         -------
-            the ignition delay of the reactor, in seconds
+            the ignition delay of the reactor, in seconds, and optionally a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         if self._heat_transfer == 'isothermal':
             raise ValueError(

@@ -78,10 +78,10 @@ A corresponding approximate linear operator :math:`\widetilde{\mathrm{A}}` is re
  :label: eqn: simple lin
 
 where the prefactor :math:`\bar{p}=ph` consists of the temporal discretization coefficient :math:`p` and time step size :math:`h`, the identity operator :math:`\mathcal{I}`, and identity matrix :math:`\mathrm{I}`, and the :math:`\widetilde{\boldsymbol{\mathcal{N}}_{\boldsymbol{q}}}` operator, an approximation of the Jacobian matrix :math:`\boldsymbol{\mathcal{N}}_{\boldsymbol{q}}`.
-Nonlinear solution procedures typically require the repeated action of the inverse of the :math:`\mathrm{A}` operator, which can often be optimized by breaking it up into a costly setup phase (*e.g.*, factorization, preconditioner computation) and cheaper solve phase (*e.g.*, back-solution after factorization) so that the setup is called once per solve while setup is called many times.
+Nonlinear solution procedures typically require the repeated action of the inverse of the :math:`\mathrm{A}` operator, which can often be optimized by breaking it up into a costly setup phase (*e.g.*, factorization, preconditioner computation) and cheaper solve phase (*e.g.*, back-solution after factorization) so that the setup is called once per solve while solve is called many times.
 The linear problem is a subset of the nonlinear problem, which itself is a subset of each single time step (:math:`t^n\to t^{n+1}`), which is a subset of a time integration loop with possibly adaptive time stepping (varying :math:`h` in time).
 These five pieces form the backbone of time integration with implicit methods - this is referred to as the 'solver stack.'
-In Spitfire the stack consists of the ``Governor`` (time loop), ``StepController`` (:math:`h` adaptation), ``TimeStepper`` (single step method), ``NonlinearSolver`` (solve :math:`\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}`), and finally the ``setup`` and ``solve`` procedures for the linear solve (build the approximate linear operator's inverse and repeatedly apply it, respectively).
+In Spitfire the stack consists of the ``Governor`` (time loop), ``StepController`` (:math:`h` adaptation), ``TimeStepper`` (single step method), ``NonlinearSolver`` (solve :math:`\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}`), and finally the ``setup`` and ``solve`` procedures for the linear solve (building the inverse of the approximate linear operator and repeatedly applying it, respectively).
 
 Using Explicit Methods
 ++++++++++++++++++++++
@@ -90,64 +90,15 @@ Note that when explicit methods are used to solve :eq:`general_explicit_ode`, th
 The use of explicit methods is demonstrated by several scripts in the ``spitfire_demo/time_integration/explicit`` folder.
 The simplest demonstration script, ``exp_decay_explicit.py``, solves an exponential decay problem, :math:`\partial y/\partial t = k y`,
 with the Forward Euler method and the classical fourth-order Runge-Kutta method.
-The script is reproduced and annotated below::
 
-    # package imports
-    from spitfire.time.governor import Governor, FinalTime, SaveAllDataToList
-    from spitfire.time.methods import ForwardEuler, ExplicitRungeKutta4Classical
-    import matplotlib.pyplot as plt
-    from numpy import array, exp
-
-    # make a governor object, tell it to stop integration when the time reaches t = 2
-    governor = Governor()
-    governor.termination_criteria = FinalTime(2)
-
-    # set the time step, rate constant, initial condition, and rhs method
-    dt = 0.02
-    k = -10.
-    y0 = array([1.])
-    rhs = lambda t, y: k * y
-
-    # make an object that will save data after each time step
-    data = SaveAllDataToList(initial_solution=y0)
-    governor.custom_post_process_step = data.save_data
-
-    # use the governor to integrate the problem with the Forward Euler method
-    governor.integrate(right_hand_side=rhs,
-                       initial_condition=y0,
-                       controller=dt,
-                       method=ForwardEuler())
-    plt.plot(data.t_list, data.solution_list, '--', label='Forward Euler')
-
-    # use the governor to integrate the problem with the classical RK4 method
-    # note that we don't have to make a second data-storage object, we can just reset it
-    # now that we've already plotted the Forward Euler solution
-    data.reset_data(initial_solution=y0)
-    governor.integrate(right_hand_side=rhs,
-                       initial_condition=y0,
-                       controller=dt,
-                       method=ExplicitRungeKutta4Classical())
-    plt.plot(data.t_list, data.solution_list, '-', label='Runge Kutta 4')
-
-    # plot the exact solution for comparison
-    plt.plot(data.t_list, y0 * exp(k * data.t_list), '-.', label='exact')
-    plt.xlabel('t')
-    plt.ylabel('y')
-    plt.legend(loc='best')
-    plt.grid()
-    plt.show()
-
-
-In another demonstration, ``ballistics.py``, a trajectory of a cannonball launched from the ground is determined.
-Trajectories are compared for several values of the drag coefficient.
-As it is challenging to select a single value for the time step,
-fourth-order, automatic error-controlled time stepping is used (with a PI controller).
+In another demonstration, ``ballistics.py`` in the same folder, a trajectory of a cannonball launched from the ground is determined for several values of the drag coefficient.
+As it is challenging to select a single value for the time step in this problem, fourth-order automatic error-controlled time stepping is used (with a PI controller).
 A key distinction of this demonstration is the use of a custom, user-defined termination rule.
 As we want to integrate only until the cannonball has landed,
 we write a method ``object_has_landed(state, *args, **kwargs)`` that is ``True`` when time integration should stop.
-It simply checks that the object's center is less than its radius off of the ground and is falling to the ground
+It simply checks that the object's center is lower than its radius off of the ground and that it currently is falling to the ground
 (otherwise the laungh point would be caught immediately).
-This is wrapped by a ``CustomTermination`` class and provided to the ``Governor`` object::
+This is wrapped by a ``CustomTermination`` class and provided to the ``Governor`` object as shown here::
 
     def object_has_landed(state, *args, **kwargs):
         vel_y = state[1]
@@ -170,6 +121,11 @@ As a final note, many of the step controllers and time steppers can be built wit
 optional parameters (*e.g.* the desired target error for the step controller or the first time step).
 In many cases the default values are acceptable.
 See the module documentation to learn about available parameters.
+
+Another example of explicit time integration is the ``exp_decay_rk_study.py`` script,
+which uses Spitfire's general-purpose explicit Runge-Kutta solver for the exponential decay problem.
+Several Runge-Kutta methods including an eigth-order scheme are created from scratch in the script and
+then plugged in to a ``Governor`` object as if they were provided by Spitfire in the first place.
 
 
 Using Implicit Methods
@@ -217,7 +173,7 @@ These methods are fed to the ``Governor``'s integrate method as the ``projector_
 This demonstration shows how to use the LAPACK method as well as a simple diagonal approximation of the Jacobian,
 which is a common simple preconditioner for Krylov methods.
 Careful inspection of Spitfire's output for those cases shows that using the diagonal approximation increases the required
-nonlinear iteration count from 170 (LU of the full Jacobian) to 276, over a 60% increase (the linear solve does not provide a good direction for the Newton update).
-A final integration is performed with the GMRES method using the diagonal matrix as a preconditioner, which is not a great preconditioner for this problem.
-However, preconditioned GMRES does outperform the direct use of the diagonal approximation, requiring only 213 nonlinear iterations in this case.
+nonlinear iteration count from 170 (LU of the full Jacobian) to 276, over a 60% increase due to the fact that the inexact linear solver does not provide as accurate of a direction for the nonlinear update.
+A final integration is performed with the GMRES method using the diagonal matrix as a preconditioner (although it is not a great preconditioner for this problem).
+Preconditioned GMRES does outperform direct use of the diagonal approximation, requiring only 213 nonlinear iterations in this case.
 Note that this demonstration also shows how to obtain solver diagnostics from the integration call.

@@ -198,99 +198,38 @@ This script is reproduced here as a summary::
 
     Example figure produced by ``r.integrate_to_steady_after_ignition(plot=['H2', 'O2', 'H2O', 'OH', 'H'])``.
 
-In-situ processing and analysis
-_______________________________
+Analysis
+________
 In the previous example we constructed a reactor and observed its evolution, simply obtaining a plot of temperature and species mass fractions over time.
 To do more detailed analysis, we'll need to save state variables into arrays for later use.
-To accomplish this, before integrating the reactor to a steady state, we will tell Spitfire to save data.
-We will save the temperature, mass fractions, and species net mass production rates.
-This is done with the ``insitu_process_quantity`` method, which allows us to tell Spitfire to compute thermochemical quantities during the simulation.
-After integration, we can obtain the saved quantities with the ``trajectory_data`` method.
-To plot quantities over simulation time, we can obtain the array of times with ``t = r.solution_times``::
+Spitfire facilitates this by returning the temperature, mass fractions, and density (for isochoric reactors) or pressure (for isobaric reactors) over time.
+This is done with a Spitfire ``Library`` class which is essentially a dictionary of NumPy arrays defined over grids.
+The ``Library`` instances from reactor integration methods are defined over a one-dimensional grid, namely the simulation time.
+Obtaining data then follows as such::
 
     r = HomogeneousReactor(sm, mix,
                            configuration='isobaric',
                            heat_transfer='adiabatic',
                            mass_transfer='closed')
-    r.insitu_process_quantity(['temperature', 'mass fractions', 'production rates'])
 
-    r.integrate_to_steady_after_ignition()
+    output_library = r.integrate_to_steady_after_ignition()
 
-    t = r.solution_times * 1.e6  # scale to microseconds
-    T = r.trajectory_data('temperature')
-    yH = r.trajectory_data('mass fraction H')
-    wH = r.trajectory_data('production rate H')
+    t = output_library.time_values
+    T = output_library['temperature']
+    yH = output_library['mass fraction H']
 
-Importing ``import matplotlib.pyplot as plt``, we can then plot, for example, the production rate of the hydrogen radical over the reactor temperature.
-This produces Figure :numref:`figure_simple_example_prodrate_over_T`, which shows how the peak production rate of hydrogen radical occurs at around 200 K above the initial temperature::
-
-    plt.plot(T, wH)
-    plt.grid()
-    plt.xlabel('T (K)')
-    plt.ylabel('prod. rate H (kg/m3/s)')
-    plt.show()
-
-.. _figure_simple_example_prodrate_over_T:
-.. figure:: images/simple_example_isobaric_adiabatic_closed_wHoverT.png
-    :width: 640px
-    :align: center
-    :height: 480px
-    :figclass: align-center
-
-    Net production rate of hydrogen radical over the reactor temperature in an isobaric, adiabatic, closed autoignition simulation.
-
-
-A number of quantities may be computed *in situ* with the ``insitu_process_quantity`` method using either Cantera or Griffon.
-These are listed below.
-
-- ``'temperature'``: the reactor temperature
-- ``'pressure'``: the reactor pressure
-- ``'density'``: the mass density of the mixture
-- ``'mass fractions'``: species mass fractions - obtain a particular species value with ``'mass fraction A'``
-- ``'mole fractions'``: species mole fractions - obtain a particular species value with ``'mole fraction A'``
-- ``'energy'``: the specific energy of the mixture
-- ``'enthalpy'``: the specific enthalpy of the mixture
-- ``'heat capacity cv'``: the specific constant-volume heat capacity of the mixture
-- ``'heat capacity cp'``: the specific constant-pressure heat capacity of the mixture
-- ``'production rates'``: species net mass production rates - obtain a particular species value with ``'production rate A'``
-- ``'heat release rate'``: chemical right-hand side component of the temperature equation. Energy-based for isochoric reactors, enthalpy-based for isobaric. Scaled by the appropriate volumetric heat capacity.
-- ``'eigenvalues'``: the full set of eigenvalues of the Jacobian matrix of the chemical source terms
-
-There are two other types of quantities that can be processed *in situ*.
-First, one may calculate any quantity computable by the cantera gas phase - see `Cantera documentation for options`_.
-For instance, ``r.insitu_process_cantera_method('cp_mass')`` will save the result of the ``cp_mass`` method (which computes the specific heat capacity at constant pressure) at each state to the ``'cp_mass'`` label.
-Any label may be specified as in ``r.insitu_process_cantera_method(label='cpm', method='cp_mass')``.
-This triggers calculation of ``cp_mass`` at every step and saves the data to the label, ``'cpm'``.
-In addition to simple scalar methods such as ``cp_mass``, one can compute particular elements of vector quantities such as elementary reaction rates.
-The line, ``r.insitu_process_cantera_method(label='qCB', method='net_rates_of_progress', index=0)`` will save the first element of the vector computed by the ``net_rates_of_progress`` cantera method, and label it ``qCB``.
-For vectors of species quantities, the ``index`` argument can be the species name, such as in ``r.insitu_process_cantera_method(label='cH', method='concentrations', index='H')``, which computes the molar concentration of species H.
-Here are all four examples of general cantera-based processing::
-
-    r.insitu_process_cantera_method('cp_mass')
-    r.insitu_process_cantera_method(label='cpm', method='cp_mass')
-    r.insitu_process_cantera_method(label='qCB', method='net_rates_of_progress', index=0)
-    r.insitu_process_cantera_method(label='cH', method='concentrations', index='H')
-
-And this code plots the rate of the chain-branching reaction, ``H + O2 <-> O + OH``, over time along with temperature in two panels.::
-
-    plt.subplot(211)
-    plt.semilogx(t, qCB)
-    plt.grid()
-    plt.ylabel('net rate (mol/m3/s)')
-    plt.title('H + O2 <-> O + OH')
-    plt.subplot(212)
-    plt.semilogx(t, T)
-    plt.grid()
-    plt.xlabel('t (us)')
-    plt.ylabel('T (K)')
-    plt.show()
-
-The final type of *in situ* processing available is chemical explosive mode analysis (CEMA).
-To trigger CEMA, call ``r.insitu_process_cema()``.
-There are several additional arguments that enable advanced analysis but we do not cover them here.
-Calling ``r.insitu_process_cema()`` without any arguments triggers only the most basic technique of CEMA, which is to compute the 'explosive eigenvalue'.
-The explosive eigenvalue may be retrieved with ''r.trajectory_data('cema-lexp1')''.
-See the demonstration script, ``spitfire_demo/reactors/detailed_ignition_plot.py``, for more.
+To compute reaction rates, species production rates, thermodynamic quantities, transport quantities, and more,
+one can implement hand-written expressions using the NumPy arrays or leverage Cantera.
+In the ``spitfire.chemistry.analysis`` module, Spitfire provides the ``sol_array, lib_shape = get_ct_solution_array(mechanism, library)`` method to obtain a Cantera ``SolutionArray`` object from a Spitfire ``ChemicalMechanismSpec`` and ``Library``.
+The ``Library`` must have temperature, mass fractions, and either density or pressure for this to be possible.
+The ``sol_array`` object may then be used as any ``Cantera`` object to compute all kinds of quantities,
+and the ``lib_shape`` argument is provided so that the resultant data can be reshaped for re-insertion into the library, if desired.
+Spitfire provides a few methods in the module for quantities such as density and specific total enthalpy for convenience.
+Also available for general libraries in the ``spitfire.chemistry.analysis`` module is chemical explosive mode analysis (CEMA).
+The ``explosive_mode_analysis`` method takes in a ``Library`` instance and returns a modified version with requested CEMA quantities computed.
+Note that all of these analysis tools apply for ``Library`` objects of arbitrary dimension,
+from 1-D transient reactor results to 4-D nonpremixed flamelet tables discussed later,
+provided the library contains temperature, mass fractions, and density/pressure fields so that thermochemical states may be reconstructed.
 
 
 Ignition delay calculations
@@ -357,90 +296,17 @@ The convection coefficient oscillates in time to force periodic ignition and ext
 Non-premixed Flamelets
 ++++++++++++++++++++++
 
-
-
-Spitfire provides a Python API for solving the nonpremixed flamelet equations,
-a critical piece of building tabulated chemistry models for simulation of reactive flow systems.
-
-
-
-
-An API is provided for directly building a range of tabulated chemistry models; it is discussed later.
-Here we show several examples of solving the steady and unsteady nonpremixed flamelet equations, including both ignition and extinction phenomena.
-
-
-
-
-
-Spitfire provides a number of convenient methods of solving steady and unsteady nonpremixed flamelets, both adiabatic and nonadiabatic.
-
-
-A special method is provided for building adiabatic steady flamelet libraries, a common task required for large eddy simulation and flow-resolved direct numerical simulation of combustion systems.
-The first demonstration discussed here, in ``spitfire/demo/flamelet/adiabatic-table-generation.py``, uses this method to build an adiabiatic flamelet library for a hydrogen-air system.
-With the ``build_adiabatic_slfm_table`` method, we first build a dictionary with a mechanism wrapper, oxidizer and fuel streams (as discussed in prior demonstrations), and specify a pressure and number of grid points to discretize mixture fraction space.::
-
-    flamelet_specs = {'mech_spec': m,
-                      'pressure': pressure,
-                      'oxy_stream': air,
-                      'fuel_stream': fuel,
-                      'grid_points': 34}
-
-Next we specify the thermochemical quantities and transport properties to compute on the table.
-A common set required for flame simulation, which typically requires at least density and viscosity, is::
-
-    quantities = ['temperature', 'density', 'mass fraction OH', 'viscosity']
-
-As in the Python script, we then use the table builder method as follows::
-
-    table_coarse = build_adiabatic_slfm_table(flamelet_specs,
-                                              quantities,
-                                              lower_chimax=1.e-1,
-                                              upper_chimax=1.e4,
-                                              n_chimax=6)
-
-This particular call specifies the flamelet specifications, tabulated quantities, bounds of the dissipation rate, and the number of dissipation rates to save.
-Only six are saved here for the demonstration, while a call shortly afterwards builds a finer table with forty dissipation rates.
-The following matplotlib commands in the Python script produce the plots below,
-one showing the profiles of each quantity in mixture fraction and the other showing contours on the mixture fraction and dissipation rate space.
-
-.. _figure_steady_adiabatic_h2_flamelet_profiles:
-.. figure:: images/steady_adiabatic_h2_flamelet_profiles.png
-    :width: 660px
-    :align: center
-    :figclass: align-center
-
-    Selected profiles of several quantities over mixture fraction space for steady, adiabatic hydrogen flamelets
-
-.. _figure_steady_adiabatic_h2_flamelet_contours:
-.. figure:: images/steady_adiabatic_h2_flamelet_contours.png
-    :width: 660px
-    :align: center
-    :figclass: align-center
-
-    Contours of several quantities over mixture fraction and dissipation rate space for steady, adiabatic hydrogen flamelets
-
-The ``build_adiabatic_slfm_table`` method is the simplest option for building adiabatic, steady flamelet libraries.
-In the ``spitfire/demo/flamelet/steady-adiabatic-with-enthalpy-flux.py`` script, we use this function to build two libraries,
-computed with or without the consistent enthalpy flux discussed in the theory section.
-To enable the flux or not, we simply build the ``flamelet_specs`` object differently.
-This allows a simple observation of the impact of the consistent enthalpy flux formulation on flamelet temperature profiles,
-shown here in Figure :numref:`figure_steady_adiabatic_h2_flamelet_contours`.
-
-.. _figure_steady_adiabatic_h2_flamelet_profiles_enthalpy_flux:
-.. figure:: images/steady_adiabatic_h2_flamelet_profiles_enthalpy_flux.png
-    :width: 660px
-    :align: center
-    :figclass: align-center
-
-    Comparison of temperature profiles of steady, adiabiatic hydrogen flamelets for several dissipation rates with and without the consistent enthalpy flux
-
-
-This documentation is in progress... TODO:
+This section is unfortunately empty at the moment.
+The demonstration scripts and Jupyter notebooks are meant to act as some form of documentation.
+Please don't hesitate to ask the developers questions about this on the public git repository.
 
 
 Flamelet Models for Tabulated Chemistry
 +++++++++++++++++++++++++++++++++++++++
 
+This section is unfortunately empty at the moment.
+The demonstration scripts and Jupyter notebooks are meant to act as some form of documentation.
+Please don't hesitate to ask the developers questions about this on the public git repository.
 
 
 Combustion Theory

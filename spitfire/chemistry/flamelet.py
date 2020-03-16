@@ -951,6 +951,9 @@ class Flamelet(object):
             how many steps are taken between solution data and times being saved (default: 1)
         save_first_and_last_only : bool
             whether or not to retain all data (False, default) or only the first and last solutions
+        Returns
+        -------
+            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
 
         data_holder = SaveAllDataToList(self._current_state,
@@ -1070,6 +1073,9 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
+        Returns
+        -------
+            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
         return self.integrate(Steady(steady_tolerance), **kwargs)
 
@@ -1112,6 +1118,9 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
+        Returns
+        -------
+            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
         return self.integrate(FinalTime(final_time), **kwargs)
 
@@ -1160,6 +1169,9 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
+        Returns
+        -------
+            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
 
         def stop_at_steady_after_ignition(state, t, nt, residual):
@@ -1214,6 +1226,9 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
+        Returns
+        -------
+            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
 
         def stop_at_linear_temperature_or_steady(state, t, nt, residual):
@@ -1271,10 +1286,9 @@ class Flamelet(object):
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
-
         Returns
         -------
-            the ignition delay of the reactor, in seconds
+            the ignition delay and, optionally, a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
 
         def stop_at_ignition(state, t, nt, residual):
@@ -1354,6 +1368,11 @@ class Flamelet(object):
             how often a message about the solution status is written
         verbose : bool
             whether to write out the solver status (log messages) or write out failure descriptions
+        Returns
+        -------
+            a tuple of a library containing temperature, mass fractions, and pressure over mixture fraction,
+            and the required iteration count, and whether or not the system converged,
+            although if convergence is not obtained, then the library and iteration count output will both be None
         """
 
         def verbose_print(message):
@@ -1510,6 +1529,11 @@ class Flamelet(object):
             how often a message about the solution status is written
         verbose : bool
             whether to write out the solver status (log messages) or write out failure descriptions
+        Returns
+        -------
+            a tuple of a library containing temperature, mass fractions, and pressure over mixture fraction,
+            and the required iteration count, whether or not the system converged, and the final minimum dual time step value,
+            although if convergence is not obtained, then the library and iteration count output will both be None
         """
         original_args = locals()
         del original_args['self']
@@ -1684,6 +1708,9 @@ class Flamelet(object):
             whether or not to write out status and failure messages
         use_psitc : bool
             whether or not to use the psitc method when Newton's method fails (if False, tries ESDIRK time stepping next)
+        Returns
+        -------
+            a library containing temperature, mass fractions, and pressure over mixture fraction
         """
 
         output_library, iteration_count, conv = self.steady_solve_newton(tolerance=tolerance,
