@@ -351,9 +351,20 @@ def _expand_enthalpy_defect_dimension(args):
     if input_integration_args is not None:
         integration_args.update(input_integration_args)
 
-    fnonad = Flamelet(**fsnad)
+    if 'transient_tolerance' not in integration_args:
+      integration_args['transient_tolerance'] = 1.e-8
+
     cput0000 = perf_counter()
-    transient_lib = fnonad.integrate_for_heat_loss(**integration_args)
+    running = True
+    while running and integration_args['transient_tolerance'] > 1.e-15:
+      try:
+        fnonad = Flamelet(**fsnad)
+        transient_lib = fnonad.integrate_for_heat_loss(**integration_args)
+        running = False
+      except:
+        if solver_verbose:
+          print(f'Transient heat loss calculation failed with tolerance of {integration_args["transient_tolerance"]:.1e}, retrying with 100x lower...')
+        integration_args.update(dict({'transient_tolerance': integration_args['transient_tolerance'] * 1.e-2}))
     indices = [0]
     z = fnonad.mixfrac_grid
     z_st = fnonad.mechanism.stoich_mixture_fraction(fnonad.fuel_stream, fnonad.oxy_stream)

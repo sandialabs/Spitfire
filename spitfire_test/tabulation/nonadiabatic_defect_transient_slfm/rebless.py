@@ -19,7 +19,8 @@ def run():
                       'grid_points': 34}
 
     l = build_nonadiabatic_defect_transient_slfm_library(flamelet_specs, verbose=False,
-                                                         diss_rate_values=np.logspace(0, 1, 4))
+                                                         diss_rate_values=np.logspace(0, 1, 4),
+                                                         integration_args={'transient_tolerance': 1e-10})
     l = sca.compute_specific_enthalpy(m, l)
     l = sca.compute_isochoric_specific_heat(m, l)
     l = sca.compute_isobaric_specific_heat(m, l)
