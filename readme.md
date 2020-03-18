@@ -13,6 +13,8 @@ Spitfire requires Python3 (developed and tested with version 3.6) and the follow
 - `sphinx-rtd-theme`
 - `NumPydoc`
 
+We also highly recommend installing `jupyter` and `dash`.
+
 ## C++ Dependencies
 Spitfire's C++ internals are built with CMake, and we require at least version 3.7 of CMake.
 CMake is often readily available on many systems, but if not you may install it following instructions at the [CMake webpage](https://cmake.org/) or with the Conda package manager (see below).
