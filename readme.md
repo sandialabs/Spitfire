@@ -47,7 +47,7 @@ pip3.6 install --upgrade numpydoc
 # Spitfire Installation
 After installing the Python dependencies above, clone the Spitfire repository and `cd` to the `spitfire` directory.
 ```
-git clone https://github.com/sandialabs/Spitfire
+git clone https://github.com/sandialabs/Spitfire.git
 cd Spitfire
 ```
 
@@ -88,9 +88,10 @@ To run the tests, go to the base repo directory and enter
 `python3 -m unittest discover -s spitfire_test/`.
 
 # Examples
-Some demonstrations can be found in the `demo` directory.
+Some demonstrations can be found in the `spitfire_demo` directory.
 The regression tests also serve as demonstrations (just ignore the `unittest` code within).
 
 # Documentation
-To build HTML documentation, navigate to the `docs` directory and run `make html`.
-Open `docs/build/html/index.html` in your favorite web browser (e.g., on Mac run `open docs/build/html/index.html` or on Linux, `firefox docs/build/html/index.html`).
+To build HTML documentation, navigate to the `spitfire_docs` directory and run `make html`.
+Open `spitfire_docs/build/html/index.html` in your favorite web browser (e.g., on Mac run `open spitfire_docs/build/html/index.html` or on Linux, `firefox spitfire_docs/build/html/index.html`).
+As always, documentation is in progress and don't hesitate to make issues on the GitHub page to ask questions.
