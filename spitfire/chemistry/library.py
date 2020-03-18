@@ -13,6 +13,8 @@ This module defines containers for tabulated chemistry libraries and solution tr
 
 import numpy as np
 import pickle as pickle
+import shutil
+import os
 
 
 class Dimension(object):
@@ -165,6 +167,55 @@ class Library(object):
              'properties': self._props})
         with open(file_name, 'wb') as file_output:
             pickle.dump(instance_dict, file_output)
+
+    def save_to_text_directory(self, output_directory, ravel_order='F'):
+        """
+        Dump the contents of a library to a set of easy-to-process text files in a directory.
+        Note that file names of property bulk data files will have spaces replaced by underscores.
+        Note that the preferred method of saving data for later use with Spitfire is the save_to_file method,
+        which dumps compressed data with pickle, Python's native serialization tool. The Library.load_from_file method
+        can then be used to reload data into Python, which is significantly faster than loading from text files.
+        This method of dumping data does not natively support reloading data from the text files,
+        and is simply meant to provide data that is easy to load in other codes (e.g., C++, Fortran, or Matlab codes).
+
+        :param output_directory: where to save the files (a new directory will be made, removed with permission if already exists)
+        :param ravel_order: row-major ('C') or column-major ('F') flattening of multidimensional property arrays, default is 'F' for column-major,
+            which flattens the first dimension first, second dimension second, and so on
+        """
+        out_dir_exists = os.path.isdir(output_directory)
+        proceed = input(
+            f'Library.save_to_text_directory(): remove existing directory {output_directory}? (y/any=no) ') if out_dir_exists else 'y'
+
+        if proceed != 'y':
+            print('Library.save_to_text_directory(): cannot override existing output directory, aborting!')
+            return
+
+        if out_dir_exists:
+            shutil.rmtree(output_directory)
+
+        os.mkdir(output_directory)
+
+        md_iv_file_name = os.path.join(output_directory, 'metadata_independent_variables.txt')
+        md_dv_file_name = os.path.join(output_directory, 'metadata_dependent_variables.txt')
+        bd_prefix = 'bulkdata'
+
+        prop_names_underscored = dict({p: p.replace(' ', '_') for p in self.props})
+
+        with open(md_iv_file_name, 'w') as f:
+            for d in self.dims:
+                f.write(d.name + '\n')
+
+        with open(md_dv_file_name, 'w') as f:
+            for p in self.props:
+                f.write(prop_names_underscored[p] + '\n')
+
+        for d in self.dims:
+            np.savetxt(os.path.join(output_directory, f'{bd_prefix}_{d.name}.txt'),
+                       d.values)
+
+        for p in self.props:
+            np.savetxt(os.path.join(output_directory, f'{bd_prefix}_{prop_names_underscored[p]}.txt'),
+                       self[p].ravel(order=ravel_order))
 
     @classmethod
     def load_from_file(cls, file_name):
