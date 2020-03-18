@@ -27,25 +27,16 @@ After activating it, run the following commands.
 conda install numpy scipy matplotlib Cython sphinx numpydoc
 conda install -c anaconda cmake
 conda install -c cantera cantera
-conda install -c anaconda sphinx_rtd_theme
+conda install -c anaconda sphinx_rtd_theme jupyter
+conda install -c conda-forge dash
 ```
 
-## Prerequisite installation using pip
-The pip package manager may also be used, although this is more challenging because you'll have to install the Cantera Python interface yourself.
-We use the latest version of Cantera on their [GitHub repository](https://github.com/Cantera/cantera).
-Before installing Cantera, run the following commands.
-```
-pip3.6 install --upgrade numpy
-pip3.6 install --upgrade scipy
-pip3.6 install --upgrade matplotlib
-pip3.6 install --upgrade Cython
-pip3.6 install --upgrade sphinx
-pip3.6 install --upgrade sphinx-rtd-theme
-pip3.6 install --upgrade numpydoc
-```
+## Prerequisite installation without Conda
+The pip package manager may also be used, as can direct installs, although this is discouraged because you'll have to install the Cantera Python interface yourself (see their [GitHub repository](https://github.com/Cantera/cantera) for guidance).
+Before installing Cantera, install the packages noted above, most of which can be done with `pip3`.
 
 # Spitfire Installation
-After installing the Python dependencies above, clone the Spitfire repository and `cd` to the `spitfire` directory.
+After installing the prerequisites, clone the Spitfire repository and `cd` to the `Spitfire` directory.
 ```
 git clone https://github.com/sandialabs/Spitfire.git
 cd Spitfire
