@@ -47,8 +47,8 @@ pip3.6 install --upgrade numpydoc
 # Spitfire Installation
 After installing the Python dependencies above, clone the Spitfire repository and `cd` to the `spitfire` directory.
 ```
-git clone https://cee-gitlab.sandia.gov/spitfirecodes/spitfire
-cd spitfire
+git clone https://github.com/sandialabs/Spitfire
+cd Spitfire
 ```
 
 First, we will build Griffon, a C++ code inside Spitfire.
@@ -61,7 +61,7 @@ mkdir griffon_build
 cd griffon_build
 ```
 
-2. Now we run CMake from the build directory and point it to the `spitfire/griffon` directory (relative to the `spitfire` directory we made when cloning the repo).
+2. Now we run CMake from the build directory and point it to the `spitfire/griffon` directory (relative to the `Spitfire` directory we made when cloning the repo).
 ```
 cmake ../spitfire/griffon
 ```
