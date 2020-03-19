@@ -24,7 +24,16 @@ Spitfire also requires a C++11-compliant compiler and the BLAS/LAPACK libraries.
 Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface.
 It is probably best to make an environment for Spitfire.
 At the moment, stick to Python 3.6, as it is unclear if Spitfire and its dependencies run properly on Python 3.7.
-After activating it, run the following commands.
+To make an environment named `spitfire` which will use Python 3.6, enter
+```
+conda create -n spitfire python=3.6
+```
+and then to activate it:
+```
+conda activate spitfire
+```
+
+After activating your environment, run the following commands to install the prerequisites.
 ```
 conda install numpy scipy matplotlib Cython sphinx numpydoc
 conda install -c anaconda cmake
@@ -48,28 +57,30 @@ First, we will build Griffon, a C++ code inside Spitfire.
 This requires us to make a build directory, say `griffon_build`, and configure, compile, and install Griffon.
 Fortunately CMake handles most of this for us.
 
-1. Make a build directory (it can be anywhere, and you'll need to know the path again soon):
+If you're using Conda and created a new environment for Spitfire, be sure to have it activated at this point.
+
+1. Make a build directory and navigate to it:
 ```
 mkdir griffon_build
 cd griffon_build
 ```
 
-2. Now we run CMake from the build directory and point it to the `spitfire/griffon` directory (relative to the `Spitfire` directory we made when cloning the repo).
+2. Next, run CMake from the build directory and point it to the `spitfire/griffon` directory (relative to the `Spitfire` directory we made when cloning the repo).
 ```
 cmake ../spitfire/griffon
 ```
 
-3.Now simply run the following command to compile and install Griffon.
+3. Next, run the following command to compile and install Griffon.
 ```
 make -j4 install
 ```
 
-Now navigate back to the root directory (in our case simply up one directory).
+4. Now navigate back to the root directory (in our case simply up one directory).
 ```
 cd ..
 ```
 
-Now run the following commands to 'Cythonize' the Griffon C++ code and install Spitfire for use in Python.
+5. Run the following commands to 'Cythonize' the Griffon C++ code and install Spitfire for use in Python.
 ```
 python3 setup.py build_ext --inplace --griffon-build-dir=griffon_build
 python3 setup.py install --griffon-build-dir=griffon_build
@@ -77,8 +88,7 @@ python3 setup.py install --griffon-build-dir=griffon_build
 
 # Testing
 Spitfire has many tests that verify correctness or regression of the code.
-To run the tests, go to the base repo directory and enter 
-`python3 -m unittest discover -s spitfire_test/`.
+To run the tests, go to the base repo directory and enter `python3 -m unittest discover -s spitfire_test/`.
 
 # Examples
 Some demonstrations can be found in the `spitfire_demo` directory.

@@ -18,7 +18,7 @@ class Test(unittest.TestCase):
         gold_library = Library.load_from_file(gold_file)
 
         for prop in gold_library.props:
-            self.assertIsNone(assert_allclose(gold_library[prop], output_library[prop], rtol=1.e-4, atol=1.e-4))
+            self.assertIsNone(assert_allclose(gold_library[prop], output_library[prop], rtol=2.e-4, atol=1.e-4))
 
 
 if __name__ == '__main__':
