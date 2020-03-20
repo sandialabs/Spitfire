@@ -55,6 +55,14 @@ class Dimension(object):
                 raise ValueError(f'Error in building structured dimension "{name}"'
                                  ', duplicate values identified!')
 
+    def __str__(self):
+        s = 'Structured' if self._structured else 'Unstructured'
+        return f'{s} dimension "{self._name}" spanning [{self._min}, {self._max}] with {self._npts} points'
+
+    def __repr__(self):
+        s = 'Structured' if self._structured else 'Unstructured'
+        return f'Spitfire Dimension(name="{self._name}", min={self._min}, max={self._max}, npts={self._npts}, {s})'
+
     @property
     def name(self):
         """Obtain the name of the independent variable"""
@@ -104,6 +112,10 @@ class Dimension(object):
 
     def _get_dict_for_file_save(self):
         return {'name': self._name, 'values': self._values, 'structured': self._structured}
+
+
+class LibraryIndexError(IndexError):
+    pass
 
 
 class Library(object):
@@ -159,12 +171,23 @@ class Library(object):
                 if a is not '_library_owned':
                     self.__dict__[self._dims[d].name + a] = self._dims[d].__dict__[a]
 
+        self._extra_attributes = dict()
+
+    @property
+    def extra_attributes(self):
+        """Get the extra attributes dictionary of this Library,
+            which will be saved in the instance and in any pickle or text files.
+            Use this to retain any random information that you might like later,
+            such as authorship notes, dates, recommendations for use, etc."""
+        return self._extra_attributes
+
     def save_to_file(self, file_name):
         """Save a library to a specified file using pickle"""
         instance_dict = dict(
             {'dimensions': {d: self._dims[d]._get_dict_for_file_save() for d in self._dims},
              'dim_ordering': self._dims_ordering,
-             'properties': self._props})
+             'properties': self._props,
+             'extra_attributes': self._extra_attributes})
         with open(file_name, 'wb') as file_output:
             pickle.dump(instance_dict, file_output)
 
@@ -197,6 +220,7 @@ class Library(object):
 
         md_iv_file_name = os.path.join(output_directory, 'metadata_independent_variables.txt')
         md_dv_file_name = os.path.join(output_directory, 'metadata_dependent_variables.txt')
+        md_ea_file_name = os.path.join(output_directory, 'metadata_user_defined_attributes.txt')
         bd_prefix = 'bulkdata'
 
         prop_names_underscored = dict({p: p.replace(' ', '_') for p in self.props})
@@ -208,6 +232,9 @@ class Library(object):
         with open(md_dv_file_name, 'w') as f:
             for p in self.props:
                 f.write(prop_names_underscored[p] + '\n')
+
+        with open(md_ea_file_name, 'w') as f:
+            f.write(str(self._extra_attributes))
 
         for d in self.dims:
             np.savetxt(os.path.join(output_directory, f'{bd_prefix}_{d.name}.txt'),
@@ -230,6 +257,9 @@ class Library(object):
             l = Library(*ordered_dims)
             for prop in instance_dict['properties']:
                 l[prop] = instance_dict['properties'][prop]
+            ea = instance_dict['extra_attributes']
+            for p in ea:
+                l.extra_attributes[p] = ea[p]
             return l
 
     def __setitem__(self, quantity: str, values: np.ndarray):
@@ -240,12 +270,54 @@ class Library(object):
                              f'Given shape = {values.shape}, grid shape = {self._grid_shape}')
         self._props[quantity] = np.copy(values)
 
-    def __getitem__(self, quantity: str):
-        """Use the bracket operator, as in lib['myprop'], to obtain the value array of a property"""
-        return self._props[quantity]
+    def __getitem__(self, *slices):
+        """Either return the data for a property, as in lib['myprop'], when a single string is provided,
+            or obtain an entirely new library that is sliced according to the arguments, as in lib[:, 1:-1, 0, :]."""
+        arg1 = slices[0]
+        if isinstance(arg1, str):
+            if len(slices) == 1:
+                return self._props[arg1]
+            else:
+                raise LibraryIndexError(f'Library[...] can either take a single string or slices, '
+                                        f'you provided it {slices}')
+        else:
+            if not self.dims[0].structured:
+                raise LibraryIndexError('Library[...] slicing is currently not supported for unstructured Libraries')
+            slices = slices if isinstance(slices[0], slice) else slices[0]
+            if len(slices) != len(self.dims):
+                raise LibraryIndexError(
+                    f'Library[...] slicing must be given the same number of arguments as there are dimensions, '
+                    f'you provided {len(slices)} slices to a Library of dimension {len(self.dims)}')
+            new_dimensions = []
+            for d, s in zip(self.dims, slices):
+                new_d = Dimension(d.name, d.values[s], d.structured)
+                new_dimensions.append(new_d)
+            new_library = Library(*new_dimensions)
+            for p in self.props:
+                new_library[p] = self._props[p][slices]
+            return new_library
 
     def __contains__(self, prop):
         return prop in self._props
+
+    def __str__(self):
+        return f'Library with {len(self.dims)} dimensions and {len(list(self._props.keys()))} properties\n' + \
+               '------------------------------------------\n' + \
+               '\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
+               f'\nProperties: [{", ".join(list(self._props.keys()))}]'
+
+    def __repr__(self):
+        return f'Spitfire Library(ndim={len(self.dims)}, nproperties={len(list(self._props.keys()))})\n' + \
+               '\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
+               f'\nProperties: [{", ".join(list(self._props.keys()))}]'
+
+    @property
+    def size(self):
+        return self.dims[0].grid.size
+
+    @property
+    def shape(self):
+        return self.dims[0].grid.shape
 
     @property
     def props(self):
@@ -254,7 +326,7 @@ class Library(object):
 
     @property
     def dims(self):
-        """Obtain a list of the Dimension objects associated with the library"""
+        """Obtain the ordered list of the Dimension objects associated with the library"""
         dims = []
         for d in self._dims_ordering:
             dims.append(self._dims[self._dims_ordering[d]])

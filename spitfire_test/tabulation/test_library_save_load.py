@@ -6,6 +6,7 @@ from os.path import isfile
 
 machine_epsilon = np.finfo(float).eps
 
+
 class SaveAndLoad(unittest.TestCase):
     def test_save_and_load_1d(self):
         file_name = 'l1test.pkl'
@@ -15,6 +16,7 @@ class SaveAndLoad(unittest.TestCase):
         l1 = Library(Dimension('x', np.linspace(0, 1, 16)))
         l1['f'] = l1.x_grid
         l1['g'] = np.exp(l1.x_grid)
+        l1.extra_attributes['name'] = 'my_library_name'
 
         l1.save_to_file(file_name)
         l2 = Library.load_from_file(file_name)
@@ -22,6 +24,7 @@ class SaveAndLoad(unittest.TestCase):
 
         self.assertTrue(np.all(np.abs(l1['f'] - l2['f']) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(l1['g'] - l2['g']) < 10. * machine_epsilon))
+        self.assertTrue(l1.extra_attributes['name'] == l2.extra_attributes['name'])
 
     def test_save_and_load_2d(self):
         file_name = 'l1test.pkl'
@@ -32,6 +35,7 @@ class SaveAndLoad(unittest.TestCase):
                      Dimension('y', np.linspace(1, 2, 8)))
         l1['f'] = l1.x_grid + l1.y_grid
         l1['g'] = np.exp(l1.x_grid) * np.cos(np.pi * 2. * l1.y_grid)
+        l1.extra_attributes['name'] = 'my_library_name'
 
         l1.save_to_file(file_name)
         l2 = Library.load_from_file(file_name)
@@ -39,6 +43,7 @@ class SaveAndLoad(unittest.TestCase):
 
         self.assertTrue(np.all(np.abs(l1['f'] - l2['f']) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(l1['g'] - l2['g']) < 10. * machine_epsilon))
+        self.assertTrue(l1.extra_attributes['name'] == l2.extra_attributes['name'])
 
     def test_save_and_load_3d(self):
         file_name = 'l1test.pkl'
@@ -50,6 +55,7 @@ class SaveAndLoad(unittest.TestCase):
                      Dimension('z', np.linspace(2, 3, 4)))
         l1['f'] = l1.x_grid + l1.y_grid + l1.z_grid
         l1['g'] = np.exp(l1.x_grid) * np.cos(np.pi * 2. * l1.y_grid) * l1.z_grid
+        l1.extra_attributes['name'] = 'my_library_name'
 
         l1.save_to_file(file_name)
         l2 = Library.load_from_file(file_name)
@@ -57,6 +63,7 @@ class SaveAndLoad(unittest.TestCase):
 
         self.assertTrue(np.all(np.abs(l1['f'] - l2['f']) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(l1['g'] - l2['g']) < 10. * machine_epsilon))
+        self.assertTrue(l1.extra_attributes['name'] == l2.extra_attributes['name'])
 
 
 if __name__ == '__main__':
