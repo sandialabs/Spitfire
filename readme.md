@@ -30,7 +30,7 @@ Spitfire has been used by researchers at Sandia National Laboratories and the Un
   * [Building and Installing Spitfire](#building-and-installing-spitfire)
   * [Running the Tests](#running-the-tests)
   * [Building the Documentation](#building-the-documentation)
-- [Running Spitfire](#running-spitfire)
+- [Using Spitfire](#using-spitfire)
   * [General-Purpose Time Integration](#general-purpose-time-integration)
   * [Homogeneous Reactors](#homogeneous-reactors)
   * [Non-premixed Flamelets and Tabulated Chemistry](#non-premixed-flamelets-and-tabulated-chemistry)
