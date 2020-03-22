@@ -257,7 +257,7 @@ class Library(object):
             l = Library(*ordered_dims)
             for prop in instance_dict['properties']:
                 l[prop] = instance_dict['properties'][prop]
-            ea = instance_dict['extra_attributes']
+            ea = dict() if 'extra_attributes' not in instance_dict else instance_dict['extra_attributes']
             for p in ea:
                 l.extra_attributes[p] = ea[p]
             return l

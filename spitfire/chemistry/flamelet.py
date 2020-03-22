@@ -41,9 +41,9 @@ class Flamelet(object):
         or the interior state vector from another flamelet (obtained with Flamelet.*_interior_state properties)
     pressure : float
         the thermodynamic pressure
-    oxy_stream : Cantera.Quantity (a Spitfire stream) or Cantera.gas object
+    oxy_stream : Cantera.Quantity (a Spitfire stream) or Cantera.Solution object
         the oxidizer stream
-    fuel_stream : Cantera.Quantity (a Spitfire stream) or Cantera.gas object
+    fuel_stream : Cantera.Quantity (a Spitfire stream) or Cantera.Solution object
         the fuel stream
     max_dissipation_rate : float
         the maximum dissipation rate (cannot be specified alongside stoich_dissipation_rate or dissipation_rate)
@@ -234,13 +234,12 @@ class Flamelet(object):
         del self._constructor_arguments['self']
 
         # process the mechanism
-        self._gas = mech_spec.copy_stream(oxy_stream)
         self._oxy_stream = oxy_stream
         self._fuel_stream = fuel_stream
         self._pressure = pressure
         self._mechanism = mech_spec
-        self._n_species = self._gas.n_species
-        self._n_reactions = self._gas.n_reactions
+        self._n_species = self._mechanism.n_species
+        self._n_reactions = self._mechanism.n_reactions
         self._n_equations = self._n_species
         self._state_fuel = np.hstack([fuel_stream.T, fuel_stream.Y[:-1]])
         self._state_oxy = np.hstack([oxy_stream.T, oxy_stream.Y[:-1]])
@@ -772,7 +771,7 @@ class Flamelet(object):
 
     def _get_mass_fraction_with_bcs(self, key, state):
         if isinstance(key, str):
-            key = self._gas.species_index(key)
+            key = self._mechanism.species_index(key)
         if key == self._n_species - 1:
             yn = np.ones(self._nz_interior + 2)
             for i in range(1, self._n_equations):

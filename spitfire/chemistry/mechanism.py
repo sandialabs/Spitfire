@@ -11,7 +11,7 @@ This module facilitates loading chemical reaction mechanisms in Cantera format a
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 import cantera as ct
-from numpy import sum
+from numpy import sum, array
 from spitfire.griffon.griffon import PyCombustionKernels
 
 
@@ -285,19 +285,23 @@ class ChemicalMechanismSpec(object):
         """Obtain the index of a particular species"""
         return self._cantera_wrapper.solution.species_index(name)
 
-    def molecular_weight(self, id):
+    @property
+    def molecular_weights(self):
+        return array([self._cantera_wrapper.solution.molecular_weights[ni] for ni in range(self.n_species)])
+
+    def molecular_weight(self, ni):
         """
         Obtain the molecular weight of a single species
 
-        :param id: either the name or integer index of the species
+        :param ni: either the name or integer index of the species
         :return: molecular weight of the given species
         """
-        if isinstance(id, str):
-            return self._cantera_wrapper.solution.molecular_weights[self._cantera_wrapper.solution.species_index(id)]
-        elif isinstance(id, int):
-            return self._cantera_wrapper.solution.molecular_weights[id]
+        if isinstance(ni, str):
+            return self._cantera_wrapper.solution.molecular_weights[self._cantera_wrapper.solution.species_index(ni)]
+        elif isinstance(ni, int):
+            return self._cantera_wrapper.solution.molecular_weights[ni]
         else:
-            raise TypeError('ChemicalMechanismSpec.molecular_weight(id) takes a string or integer, given ' + str(id))
+            raise TypeError('ChemicalMechanismSpec.molecular_weight(ni) takes a string or integer, given ' + str(ni))
 
     def stream(self, properties=None, values=None, stp_air=False):
         """

@@ -33,7 +33,7 @@ class HomogeneousReactor(object):
     ----------
     mech_spec : spitfire.chemistry.mechanism.ChemicalMechanismSpec instance
         the mechanism
-    initial_mixture : Cantera.Quantity (a Spitfire stream) or Cantera.gas object
+    initial_mixture : Cantera.Quantity (a Spitfire stream) or Cantera.Solution object
         the initial mixture of the reactor
     configuration : str
         whether the reactor is constant-volume (isochoric) or constant-pressure (isobaric)
@@ -286,7 +286,6 @@ class HomogeneousReactor(object):
         self._is_open = self._mass_transfer == 'open'
         self._heat_transfer_option = {'adiabatic': 0, 'isothermal': 1, 'diathermal': 2}[self._heat_transfer]
 
-        self._gas = mech_spec.copy_stream(initial_mixture)
         self._mechanism = mech_spec
         self._griffon = self._mechanism.griffon
 
@@ -302,8 +301,8 @@ class HomogeneousReactor(object):
         self._initial_time = np.copy(initial_time)
         self._current_time = np.copy(self._initial_time)
 
-        self._n_species = self._gas.n_species
-        self._n_reactions = self._gas.n_reactions
+        self._n_species = self._mechanism.n_species
+        self._n_reactions = self._mechanism.n_reactions
         self._n_equations = self._n_species if self._configuration == 'isobaric' else self._n_species + 1
 
         self._initial_state = zeros(self._n_equations)
@@ -413,11 +412,6 @@ class HomogeneousReactor(object):
     def current_time(self):
         """Obtain this reactor's current mass fractions"""
         return self._current_time
-
-    @property
-    def gas(self):
-        """Obtain a cantera gas object for the mechanism in this reactor"""
-        return self._gas
 
     @property
     def n_species(self):
@@ -626,8 +620,9 @@ class HomogeneousReactor(object):
         elif self._configuration == 'isochoric':
             ynm1 = current_state[2:]
             self._current_mass_fractions = hstack((ynm1, 1. - sum(ynm1)))
-            self._gas.TDY = current_state[1], current_state[0], self._current_mass_fractions
-            self._current_pressure = self._gas.P
+            self._current_pressure = current_state[0] * current_state[1] / sum(
+                [yi / Mi for (yi, Mi) in zip(self._current_mass_fractions.tolist(),
+                                             self._mechanism.molecular_weights.tolist())])
             self._current_temperature = current_state[1]
             output_library['density'] = data_holder.solution_list[:, 0]
             output_library['temperature'] = data_holder.solution_list[:, 1]
