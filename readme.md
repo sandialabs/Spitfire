@@ -142,7 +142,7 @@ Then point your favorite web browser to the `spitfire_docs/build/html/index.html
 For Mac OS X you can simply run `open build/html/index.html` and on Linux you could run `firefox build/html/index.html`
 
 
-# Running Spitfire
+# Using Spitfire
 
 ## General-Purpose Time Integration
 - Explicit methods
