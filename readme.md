@@ -146,13 +146,13 @@ For Mac OS X you can simply run `open build/html/index.html` and on Linux you co
 
 ## General-Purpose Time Integration
 - Explicit methods
-    - [Basics of using explicit methods](./spitfire_demo/time_integration/explicit/explicit_exponential_decay_simple.html)
-    - [User-defined time-stepping methods](./spitfire_demo/time_integration/explicit/explicit_exponential_decay_custom_methods.html)
-    - [Adaptive time stepping and custom termination rules for cannonball trajectories](./spitfire_demo/time_integration/explicit/adaptive_stepping_and_custom_termination.html)
-    - [Customized adaptive time-stepping methods](./spitfire_demo/time_integration/explicit/customized_adaptive_stepping.html)
+    - [Basics of using explicit methods](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/explicit/explicit_exponential_decay_simple.html)
+    - [User-defined time-stepping methods](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/explicit/explicit_exponential_decay_custom_methods.html)
+    - [Adaptive time stepping and custom termination rules for cannonball trajectories](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/explicit/adaptive_stepping_and_custom_termination.html)
+    - [Customized adaptive time-stepping methods](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/explicit/customized_adaptive_stepping.html)
 - Implicit methods
-    - [Basics of using implicit methods](./spitfire_demo/time_integration/implicit/implicit_exponential_decay_simple.html)
-    - [Advanced linear solvers for advection-diffusion](./spitfire_demo/time_integration/implicit/implicit_advection_diffusion_linear_solvers_advanced.html)
+    - [Basics of using implicit methods](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/implicit/implicit_exponential_decay_simple.html)
+    - [Advanced linear solvers for advection-diffusion](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/implicit/implicit_advection_diffusion_linear_solvers_advanced.html)
 
 ## Homogeneous Reactors 
   - in progress... see the scripts and notebooks in the spitfire_demo/reactors directory
