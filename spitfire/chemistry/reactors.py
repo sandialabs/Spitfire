@@ -286,7 +286,7 @@ class HomogeneousReactor(object):
         self._is_open = self._mass_transfer == 'open'
         self._heat_transfer_option = {'adiabatic': 0, 'isothermal': 1, 'diathermal': 2}[self._heat_transfer]
 
-        self._gas = initial_mixture
+        self._gas = mech_spec.copy_stream(initial_mixture)
         self._mechanism = mech_spec
         self._griffon = self._mechanism.griffon
 
@@ -606,6 +606,7 @@ class HomogeneousReactor(object):
                                                        projector_setup=setup_method,
                                                        projector_solve=solve_method,
                                                        initial_condition=self._current_state,
+                                                       initial_time=self._current_time,
                                                        controller=step_controller,
                                                        method=stepper)
         self._current_state = np.copy(current_state)

@@ -1007,6 +1007,7 @@ class Flamelet(object):
                                                        projector_setup=setup_method,
                                                        projector_solve=solve_method,
                                                        initial_condition=self._current_state,
+                                                       initial_time=self._current_time,
                                                        controller=step_controller,
                                                        method=stepper)
         self._current_state = np.copy(current_state)

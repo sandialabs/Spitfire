@@ -50,8 +50,8 @@ class SaveAllDataToList(object):
 
     def __init__(self, initial_solution, initial_time=0., save_frequency=1, file_prefix=None,
                  file_first_and_last_only=False, save_first_and_last_only=False):
-        self._t_list = [initial_time]
-        self._solution_list = [initial_solution]
+        self._t_list = [numpy_copy(initial_time)]
+        self._solution_list = [numpy_copy(initial_solution)]
         self._save_count = 0
         self._save_frequency = save_frequency
         self._file_prefix = file_prefix
@@ -74,10 +74,10 @@ class SaveAllDataToList(object):
         if self._save_count == self._save_frequency:
             self._save_count = 0
             if len(self.t_list) > 1 and self._save_first_and_last_only:
-                self._t_list[-1] = t
+                self._t_list[-1] = numpy_copy(t)
                 self._solution_list[-1] = numpy_copy(solution)
             else:
-                self._t_list.append(t)
+                self._t_list.append(numpy_copy(t))
                 self._solution_list.append(numpy_copy(solution))
             if self._file_prefix is not None:
                 if self._file_first_and_last_only:
@@ -89,8 +89,8 @@ class SaveAllDataToList(object):
 
     def reset_data(self, initial_solution, initial_time=0.):
         """Reset the data on a SaveAllDataToList object"""
-        self._t_list = [initial_time]
-        self._solution_list = [initial_solution]
+        self._t_list = [numpy_copy(initial_time)]
+        self._solution_list = [numpy_copy(initial_solution)]
 
 
 class FinalTime(object):
@@ -477,6 +477,10 @@ class Governor(object):
         :return: a tuple of time integration statistics (dictionary), final state, final time, and final time step size
         """
 
+        if self._stop_stepping_at_final_time and (initial_time > self.final_time):
+            raise ValueError(f'Error in Governor.integrate - the initial time of {initial_time} exceeds '
+                             f'the specified final time of {self.final_time}')
+
         method_is_implicit = isinstance(method, ImplicitTimeStepper)
         use_finite_difference_jacobian = method_is_implicit and projector_setup is None
         build_projector_in_governor = (method_is_implicit and method.nonlinear_solver.setup_projector_in_governor) or \
@@ -490,7 +494,7 @@ class Governor(object):
         self._log_header(method.name)
 
         state = numpy_copy(initial_condition)
-        current_time = initial_time
+        current_time = numpy_copy(initial_time)
         number_of_time_steps = 0
         smallest_step_size = 1.e305
         largest_step_size = 0.
