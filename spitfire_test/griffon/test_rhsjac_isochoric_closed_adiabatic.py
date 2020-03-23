@@ -132,9 +132,10 @@ for mech in mechs:
         for pressure in pressure_dict:
             rhsname = 'test_rhs_' + mech + '_' + temperature + '_' + pressure
             jacname = 'test_jac_' + mech + '_' + temperature + '_' + pressure
+            jsdname = 'test_jac_sparse_vs_dense_' + mech + '_' + temperature + '_' + pressure
             setattr(Accuracy, rhsname, create_test(mech, temperature_dict[temperature], pressure_dict[pressure],
                                                    test_rhs=True, test_jac=False))
-            if 'methane' not in mech:  # skip methane in the finite difference Jacobian spitfire_test
+            if 'methane' not in mech:  # skip methane in the finite difference Jacobian test
                 setattr(Accuracy, jacname, create_test(mech, temperature_dict[temperature], pressure_dict[pressure],
                                                        test_rhs=False, test_jac=True))
 

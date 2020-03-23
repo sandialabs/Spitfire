@@ -538,10 +538,26 @@ namespace griffon
           }
         }
 
-        is_dense = false;
+        is_dense = (type == RateType::THIRD_BODY or
+                    type == RateType::LINDEMANN or
+                    type == RateType::TROE);
         for (int i = 0; i < n_net; ++i)
         {
           if (net_indices[i] == pd.nSpecies - 1)
+          {
+            is_dense = true;
+          }
+        }
+        for (int i = 0; i < n_reactants; ++i)
+        {
+          if (reactant_indices[i] == pd.nSpecies - 1)
+          {
+            is_dense = true;
+          }
+        }
+        for (int i = 0; i < n_products; ++i)
+        {
+          if (product_indices[i] == pd.nSpecies - 1)
           {
             is_dense = true;
           }
@@ -559,7 +575,7 @@ namespace griffon
           for (int i = 0; i < n_reactants; ++i)
           {
             const int idx = reactant_indices[i];
-            if (std::find (sens_indices.end (), sens_indices.end (), idx) == sens_indices.end ())
+            if (std::find (sens_indices.begin (), sens_indices.end (), idx) == sens_indices.end ())
             {
               sens_indices.push_back (idx);
               n_sens++;
@@ -568,7 +584,7 @@ namespace griffon
           for (int i = 0; i < n_products; ++i)
           {
             const int idx = product_indices[i];
-            if (std::find (sens_indices.end (), sens_indices.end (), idx) == sens_indices.end ())
+            if (std::find (sens_indices.begin (), sens_indices.end (), idx) == sens_indices.end ())
             {
               sens_indices.push_back (idx);
               n_sens++;
@@ -577,7 +593,7 @@ namespace griffon
           for (int i = 0; i < n_tb; ++i)
           {
             const int idx = tb_indices[i];
-            if (std::find (sens_indices.end (), sens_indices.end (), idx) == sens_indices.end ())
+            if (std::find (sens_indices.begin (), sens_indices.end (), idx) == sens_indices.end ())
             {
               sens_indices.push_back (idx);
               n_sens++;

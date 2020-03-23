@@ -58,7 +58,7 @@ def verify_sensitivities_mechanism(ctsol: ct.Solution):
             rho = ctsol.density_mass
 
             jacGR = np.zeros((ns + 1) * (ns + 1))
-            mech.griffon.prod_rates_primitive_sensitivities(rho, T, ctsol.Y, jacGR)
+            mech.griffon.prod_rates_primitive_sensitivities(rho, T, ctsol.Y, 0, jacGR)
             jacGR = jacGR.reshape((ns + 1, ns + 1), order='F')[:-1, :]
 
             jacFD = np.zeros_like(jacGR)

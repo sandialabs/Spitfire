@@ -378,7 +378,7 @@ namespace griffon
     production_rates (const double &temperature, const double &density, const double *y, double *out_prodrates) const;
     void
     prod_rates_primitive_sensitivities (const double &density, const double &temperature, const double *y,
-                                        double *out_prodratessens) const;
+                                        int rates_sensitivity_option, double *out_prodratessens) const;
 
     /*
      * reactor RHS and Jacobian methods
@@ -435,21 +435,6 @@ namespace griffon
                        double *out_ncoeff) const;
     void
     flamelet_jac_indices (const int &nzi, int *out_row_indices, int *out_col_indices) const;
-    void
-    flamelet_process_density (const double *state, const double pressure, const int nzi, double *out_density) const;
-    void
-    flamelet_process_enthalpy (const double *state, const int nzi, double *out_enthalpy) const;
-    void
-    flamelet_process_energy (const double *state, const int nzi, double *out_energy) const;
-    void
-    flamelet_process_cp (const double *state, const int nzi, double *out_cp) const;
-    void
-    flamelet_process_cv (const double *state, const int nzi, double *out_cv) const;
-    void
-    flamelet_process_mole_fractions (const double *state, const int nzi, double *out_molefracs) const;
-    void
-    flamelet_process_isobaric_reactor_rhs (const double *state, const double pressure, const int nzi,
-                                           double *out_rates) const;
 
     /*
      * 2d flamelet methods (preliminary, serial implementation for block-Jacobi PBiCGStab)

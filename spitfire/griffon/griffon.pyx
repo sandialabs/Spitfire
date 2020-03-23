@@ -140,7 +140,7 @@ cdef extern from "combustion_kernels.h" namespace "griffon":
 
     # kinetics methods
     void production_rates(const double T, const double rho, const double* y, double *prodrates)
-    void prod_rates_primitive_sensitivities(const double T, const double rho, const double* y, double* sens)
+    void prod_rates_primitive_sensitivities(const double T, const double rho, const double* y, int rates_sensitivity_option, double* sens)
 
     # isobaric reactor methods
     void reactor_rhs_isobaric(const double* state, const double p, const double Tin, const double* yin, const double tau, const double Tinfty, const double Tsurf, const double hConv, const double epsRad, const double SoV, const int heatTransferOption, const bool open, double* rhs)
@@ -150,14 +150,7 @@ cdef extern from "combustion_kernels.h" namespace "griffon":
 
     # flamelet methods
     void flamelet_stencils(const double *dz, const int nzi, const double *dissipationRate, const double *invLewisNumbers, double *out_cmajor, double *out_csub, double *out_csup, double *out_mcoeff, double *out_ncoeff)
-    void flamelet_process_density(const double *state, const double pressure, const int nzi, double *out_density)
-    void flamelet_process_enthalpy(const double *state, const int nzi, double *out_enthalpy)
-    void flamelet_process_energy(const double *state, const int nzi, double *out_energy)
-    void flamelet_process_cp(const double *state, const int nzi, double *out_cp)
-    void flamelet_process_cv(const double *state, const int nzi, double *out_cv)
-    void flamelet_process_mole_fractions(const double *state, const int nzi, double *out_molefracs)
     void flamelet_jac_indices(const int nzi, int *out_row_indices, int *out_col_indices)
-    void flamelet_process_isobaric_reactor_rhs(const double *state, const double pressure, const int nzi, double* out_rates)
     void flamelet_rhs(const double *state, const double pressure, const double *oxyState, const double *fuelState, const bool adiabatic, const double *T_convection, const double *h_convection, const double *T_radiation, const double *h_radiation, const int nzi, const double *cmajor, const double *csub, const double *csup, const double *mcoeff, const double *ncoeff, const double *chi, const bool include_enthalpy_flux, const bool include_variable_cp, const bool use_scaled_heat_loss, double *out_rhs)
     void flamelet_jacobian(const double *state, const double &pressure, const double *oxyState, const double *fuelState, const bool adiabatic, const double *T_convection, const double *h_convection, const double *T_radiation, const double *h_radiation, const int &nzi, const double *cmajor, const double *csub, const double *csup, const double *mcoeff, const double *ncoeff, const double *chi, const bool compute_eigenvalues, const double diffterm, const bool scale_and_offset, const double prefactor, const int &rates_sensitivity_option, const int &sensitivity_transform_option, const bool include_enthalpy_flux, const bool include_variable_cp, const bool use_scaled_heat_loss, double *out_expeig, double *out_jac )
 
@@ -541,76 +534,11 @@ cdef class PyCombustionKernels:
     @cython.nonecheck(False)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def flamelet_process_density(self,
-        np.ndarray[np.double_t, ndim=1] state,
-        np.float_t pressure,
-        int nzi,
-        np.ndarray[np.double_t, ndim=1] out_density):
-      self.c_calculator.flamelet_process_density(&state[0], pressure, nzi, &out_density[0])
-
-    @cython.nonecheck(False)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def flamelet_process_enthalpy(self,
-        np.ndarray[np.double_t, ndim=1] state,
-        int nzi,
-        np.ndarray[np.double_t, ndim=1] out_enthalpy):
-      self.c_calculator.flamelet_process_enthalpy(&state[0], nzi, &out_enthalpy[0])
-
-    @cython.nonecheck(False)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def flamelet_process_energy(self,
-        np.ndarray[np.double_t, ndim=1] state,
-        int nzi,
-        np.ndarray[np.double_t, ndim=1] out_energy):
-      self.c_calculator.flamelet_process_energy(&state[0], nzi, &out_energy[0])
-
-    @cython.nonecheck(False)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def flamelet_process_cp(self,
-        np.ndarray[np.double_t, ndim=1] state,
-        int nzi,
-        np.ndarray[np.double_t, ndim=1] out_cp):
-      self.c_calculator.flamelet_process_cp(&state[0], nzi, &out_cp[0])
-
-    @cython.nonecheck(False)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def flamelet_process_cv(self,
-        np.ndarray[np.double_t, ndim=1] state,
-        int nzi,
-        np.ndarray[np.double_t, ndim=1] out_cv):
-      self.c_calculator.flamelet_process_cv(&state[0], nzi, &out_cv[0])
-
-    @cython.nonecheck(False)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def flamelet_process_mole_fractions(self,
-        np.ndarray[np.double_t, ndim=1] state,
-        int nzi,
-        np.ndarray[np.double_t, ndim=1] out_molefracs):
-      self.c_calculator.flamelet_process_mole_fractions(&state[0], nzi, &out_molefracs[0])
-
-    @cython.nonecheck(False)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def flamelet_jac_indices(self,
         int nzi,
         np.ndarray[int, ndim=1] out_row_indices,
         np.ndarray[int, ndim=1] out_col_indices):
       self.c_calculator.flamelet_jac_indices(nzi, &out_row_indices[0], &out_col_indices[0])
-
-    @cython.nonecheck(False)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def flamelet_process_isobaric_reactor_rhs(self,
-        np.ndarray[np.double_t, ndim=1] state,
-        np.float_t pressure,
-        int nzi,
-        np.ndarray[np.double_t, ndim=1] out_rates):
-      self.c_calculator.flamelet_process_isobaric_reactor_rhs(&state[0], pressure, nzi, &out_rates[0])
 
     @cython.nonecheck(False)
     @cython.boundscheck(False)
@@ -805,8 +733,13 @@ cdef class PyCombustionKernels:
         np.double_t density,
         np.double_t temperature,
         np.ndarray[np.double_t, ndim=1] mass_fractions,
+        int rates_sensitivity_option,
         np.ndarray[np.double_t, ndim=1] prod_rates_sens):
-      self.c_calculator.prod_rates_primitive_sensitivities(density, temperature, &mass_fractions[0], &prod_rates_sens[0])
+      self.c_calculator.prod_rates_primitive_sensitivities(density,
+                                                           temperature,
+                                                           &mass_fractions[0],
+                                                           rates_sensitivity_option,
+                                                           &prod_rates_sens[0])
 
     @cython.nonecheck(False)
     @cython.boundscheck(False)

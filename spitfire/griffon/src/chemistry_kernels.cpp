@@ -449,12 +449,24 @@ namespace griffon
   }
   void
   CombustionKernels::prod_rates_primitive_sensitivities (const double &density, const double &temperature,
-                                                         const double *y, double *out_prodratessens) const
+                                                         const double *y, int rates_sensitivity_option,
+                                                         double *out_prodratessens) const
   {
     const int nSpec = mechanismData.phaseData.nSpecies;
     double prod_rates[nSpec];
-    prod_rates_sens_exact (temperature, density, mixture_molecular_weight (y), y, prod_rates, out_prodratessens);
 
+    switch (rates_sensitivity_option)
+    {
+      case 1:
+        prod_rates_sens_no_tbaf (temperature, density, mixture_molecular_weight (y), y, prod_rates, out_prodratessens);
+        break;
+      case 0:
+        prod_rates_sens_exact (temperature, density, mixture_molecular_weight (y), y, prod_rates, out_prodratessens);
+        break;
+      case 2:
+        prod_rates_sens_sparse (temperature, density, mixture_molecular_weight (y), y, prod_rates, out_prodratessens);
+        break;
+    }
   }
 
 }

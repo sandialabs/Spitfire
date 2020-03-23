@@ -150,18 +150,29 @@ def adiabatic_closed_ignition_delay(configuration):
         reactor = HomogeneousReactor(mechanism, mix,
                                      configuration=configuration,
                                      heat_transfer='adiabatic',
-                                     mass_transfer='closed')
+                                     mass_transfer='closed',
+                                     rates_sensitivity_type='dense')
         t_ignition_1 = reactor.compute_ignition_delay(transient_tolerance=1.e-8, return_solution=False)
-        mix = mechanism.mix_for_equivalence_ratio(1.0, fuel, air)
-        mix.TP = 1200., 101325.
         reactor = HomogeneousReactor(mechanism, mix,
                                      configuration=configuration,
                                      heat_transfer='adiabatic',
-                                     mass_transfer='closed')
+                                     mass_transfer='closed',
+                                     rates_sensitivity_type='dense')
         t_ignition_2 = reactor.compute_ignition_delay(transient_tolerance=1.e-10, return_solution=False)
+        reactor = HomogeneousReactor(mechanism, mix,
+                                     configuration=configuration,
+                                     heat_transfer='adiabatic',
+                                     mass_transfer='closed',
+                                     rates_sensitivity_type='sparse')
+        t_ignition_3 = reactor.compute_ignition_delay(transient_tolerance=1.e-10, return_solution=False)
 
-        return (t_ignition_1 - t_ignition_2) / t_ignition_2 < 0.05
-    except:
+        success = (t_ignition_1 - t_ignition_2) / t_ignition_2 < 0.05 and \
+                  (t_ignition_3 - t_ignition_2) / t_ignition_2 < 1e-6
+        if not success:
+            print(configuration, t_ignition_1, t_ignition_2, t_ignition_3)
+        return success
+    except Exception as e:
+        print(configuration, e)
         return False
 
 

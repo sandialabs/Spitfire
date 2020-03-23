@@ -303,7 +303,19 @@ namespace griffon
     cv_mix_and_species (temperature, y, mmw, &cv, cvi);
     cv_sens_T (temperature, y, &cvsensT, cvisensT);
     species_energies (temperature, energies);
-    prod_rates_sens_exact (temperature, density, mmw, y, w, wsens);
+
+    switch (rates_sensitivity_option)
+    {
+      case 1:
+        prod_rates_sens_no_tbaf (temperature, density, mmw, y, w, wsens);
+        break;
+      case 0:
+        prod_rates_sens_exact (temperature, density, mmw, y, w, wsens);
+        break;
+      case 2:
+        prod_rates_sens_sparse (temperature, density, mmw, y, w, wsens);
+        break;
+    }
 
     chem_jacexactdense_isochoric (temperature, y, density, cv, cvi, cvsensT, energies, w, wsens, out_rhs, out_jac);
 
