@@ -78,7 +78,7 @@ def validate_on_mechanism(mech, temperature, pressure, full_Jacobian, isochoric)
             r.production_rates(T, rho, Ym, rhsGR2)
             jac_fd[:, 2 + spec_idx] = (rhsGR1 - rhsGR2) / dY * 0.5
 
-    pass_sparse_vs_dense_jac = np.linalg.norm(jac_dense.ravel() - jac_sparse.ravel(), ord=np.Inf) < 1.e-12
+    pass_sparse_vs_dense_jac = np.linalg.norm(jac_dense.ravel() - jac_sparse.ravel(), ord=np.Inf) < 1.e-10
 
     # if not pass_sparse_vs_dense_jac:
     #     print(mech)
