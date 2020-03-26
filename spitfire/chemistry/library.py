@@ -13,6 +13,7 @@ This module defines containers for tabulated chemistry libraries and solution tr
 
 import numpy as np
 import pickle as pickle
+from copy import copy, deepcopy
 import shutil
 import os
 
@@ -119,7 +120,8 @@ class LibraryIndexError(IndexError):
 
 
 class Library(object):
-    """A class for holding tabulated datasets over structured and unstructured grids
+    """A container class for tabulated datasets over structured and unstructured grids,
+        althought unstructured grid support is far less advanced.
 
     Upon constructing the Library object, the following properties are made available for each Dimension:
       library.[dimension_name]_name
@@ -151,25 +153,26 @@ class Library(object):
             raise ValueError(
                 'Error in building Library - Dimensions must be either all structured or all unstructured!')
 
-        if self._structured:
-            grid = np.meshgrid(*[self._dims[d].values for d in self._dims], indexing='ij')
-            self._grid_shape = grid[0].shape
-            for i, d in enumerate(self._dims):
-                self._dims[d].grid = grid[i]
-        else:
-            dim0 = self._dims[next(self._dims.keys())]
-            self._grid_shape = dim0.grid.shape
-            if not all([self._dims[d].grid.shape == self._grid_shape for d in self._dims]):
-                raise ValueError('Unstructured dimensions did not have the same grid shape!')
+        if len(dimensions):
+            if self._structured:
+                grid = np.meshgrid(*[self._dims[d].values for d in self._dims], indexing='ij')
+                self._grid_shape = grid[0].shape
+                for i, d in enumerate(self._dims):
+                    self._dims[d].grid = grid[i]
+            else:
+                dim0 = self._dims[next(self._dims.keys())]
+                self._grid_shape = dim0.grid.shape
+                if not all([self._dims[d].grid.shape == self._grid_shape for d in self._dims]):
+                    raise ValueError('Unstructured dimensions did not have the same grid shape!')
 
-            if not all([len(self._dims[d].grid.shape) == 1 for d in self._dims]):
-                raise ValueError('Unstructured dimensions were not given as flat arrays!')
+                if not all([len(self._dims[d].grid.shape) == 1 for d in self._dims]):
+                    raise ValueError('Unstructured dimensions were not given as flat arrays!')
 
-        for d in self._dims:
-            self.__dict__[self._dims[d].name] = d
-            for a in self._dims[d].__dict__:
-                if a is not '_library_owned':
-                    self.__dict__[self._dims[d].name + a] = self._dims[d].__dict__[a]
+            for d in self._dims:
+                setattr(self, self._dims[d].name, d)
+                for a in self._dims[d].__dict__:
+                    if a is not '_library_owned':
+                        setattr(self, self._dims[d].name + a, getattr(self._dims[d], a))
 
         self._extra_attributes = dict()
 
@@ -181,15 +184,29 @@ class Library(object):
             such as authorship notes, dates, recommendations for use, etc."""
         return self._extra_attributes
 
+    def __getstate__(self):
+        return dict(dimensions={d: self._dims[d]._get_dict_for_file_save() for d in self._dims},
+                    dim_ordering=self._dims_ordering,
+                    properties=self._props,
+                    extra_attributes=self._extra_attributes)
+
+    def __setstate__(self, instance_dict):
+        ordered_dims = list([None] * len(instance_dict['dimensions'].keys()))
+        for index in instance_dict['dim_ordering']:
+            name = instance_dict['dim_ordering'][index]
+            d = instance_dict['dimensions'][name]
+            ordered_dims[index] = Dimension(d['name'], d['values'], d['structured'])
+        self.__init__(*ordered_dims)
+        for prop in instance_dict['properties']:
+            self[prop] = instance_dict['properties'][prop]
+        ea = dict() if 'extra_attributes' not in instance_dict else instance_dict['extra_attributes']
+        for p in ea:
+            self.extra_attributes[p] = ea[p]
+
     def save_to_file(self, file_name):
         """Save a library to a specified file using pickle"""
-        instance_dict = dict(
-            {'dimensions': {d: self._dims[d]._get_dict_for_file_save() for d in self._dims},
-             'dim_ordering': self._dims_ordering,
-             'properties': self._props,
-             'extra_attributes': self._extra_attributes})
         with open(file_name, 'wb') as file_output:
-            pickle.dump(instance_dict, file_output)
+            pickle.dump(self, file_output)
 
     def save_to_text_directory(self, output_directory, ravel_order='F'):
         """
@@ -248,19 +265,65 @@ class Library(object):
     def load_from_file(cls, file_name):
         """Load a library from a specified file name with pickle (following save_to_file)"""
         with open(file_name, 'rb') as file_input:
-            instance_dict = pickle.load(file_input)
-            ordered_dims = list([None] * len(instance_dict['dimensions'].keys()))
-            for index in instance_dict['dim_ordering']:
-                name = instance_dict['dim_ordering'][index]
-                d = instance_dict['dimensions'][name]
-                ordered_dims[index] = Dimension(d['name'], d['values'], d['structured'])
-            l = Library(*ordered_dims)
-            for prop in instance_dict['properties']:
-                l[prop] = instance_dict['properties'][prop]
-            ea = dict() if 'extra_attributes' not in instance_dict else instance_dict['extra_attributes']
-            for p in ea:
-                l.extra_attributes[p] = ea[p]
-            return l
+            pickled_data = pickle.load(file_input)
+
+        if isinstance(pickled_data, dict):  # for compatibility with v1.0 outputs that were pickled as dictionaries
+            library = Library()
+            library.__setstate__(pickled_data)
+            return library
+        else:
+            return pickled_data
+
+    def __copy__(self):
+        new_dimensions = []
+        for d in self.dims:
+            new_d = Dimension(d.name, d.values, d.structured)
+            new_dimensions.append(new_d)
+        new_library = Library(*new_dimensions)
+        for p in self.props:
+            new_library[p] = self[p]
+        return new_library
+
+    def __deepcopy__(self, memodict={}):
+        new_dimensions = []
+        for d in self.dims:
+            new_d = Dimension(d.name, np.copy(d.values), d.structured)
+            new_dimensions.append(new_d)
+        new_library = Library(*new_dimensions)
+        for p in self.props:
+            new_library[p] = np.copy(self[p])
+        return new_library
+
+    @classmethod
+    def copy(cls, library):
+        """Shallow copy of a library into a new one"""
+        return copy(library)
+
+    @classmethod
+    def deepcopy(cls, library):
+        """Deep copy of a library into a new one"""
+        return deepcopy(library)
+
+    @classmethod
+    def squeeze(cls, library):
+        """Produce a new library from another by removing dimensions with only one value,
+            for instance after slicing, lib_new = Library.squeeze(library[:, 0]).
+            Note that if all dimensions are removed, for instance in Library.squeeze(library[0, 1]),
+            a dictionary of the scalar values in the following form is returned instead of a new library:
+            {'dimensions': {name1: value1, name2: value2, ...}, 'properties': {prop1: value1, ...}}"""
+        new_dimensions = []
+        for d in library.dims:
+            if d.values.size > 1:
+                new_d = Dimension(d.name, d.values, d.structured)
+                new_dimensions.append(new_d)
+        if not new_dimensions:
+            return dict({'dimensions': dict({p: np.squeeze(library[p]) for p in library.props}),
+                         'properties': dict({d.name: np.squeeze(d.values) for d in library.dims})})
+        else:
+            new_library = Library(*new_dimensions)
+            for p in library.props:
+                new_library[p] = np.squeeze(library[p])
+            return new_library
 
     def __setitem__(self, quantity: str, values: np.ndarray):
         """Use the bracket operator, as in lib['myprop'] = values, to add a property defined on the grid
@@ -272,7 +335,9 @@ class Library(object):
 
     def __getitem__(self, *slices):
         """Either return the data for a property, as in lib['myprop'], when a single string is provided,
-            or obtain an entirely new library that is sliced according to the arguments, as in lib[:, 1:-1, 0, :]."""
+            or obtain an entirely new library that is sliced according to the arguments, as in lib[:, 1:-1, 0, :].
+            Note that this will preserve the dimensionality of a library, even if a dimension has a single value.
+            Use the Library.squeeze(lib) class method to remove single-value dimensions if desired."""
         arg1 = slices[0]
         if isinstance(arg1, str):
             if len(slices) == 1:
@@ -290,24 +355,26 @@ class Library(object):
                     f'you provided {len(slices)} slices to a Library of dimension {len(self.dims)}')
             new_dimensions = []
             for d, s in zip(self.dims, slices):
-                new_d = Dimension(d.name, d.values[s], d.structured)
+                new_d = Dimension(d.name,
+                                  np.array([d.values[s]]) if isinstance(d.values[s], float) else d.values[s],
+                                  d.structured)
                 new_dimensions.append(new_d)
             new_library = Library(*new_dimensions)
             for p in self.props:
-                new_library[p] = self._props[p][slices]
+                new_library[p] = self._props[p][slices].reshape(new_library.dims[0].grid.shape)
             return new_library
 
     def __contains__(self, prop):
         return prop in self._props
 
     def __str__(self):
-        return f'Library with {len(self.dims)} dimensions and {len(list(self._props.keys()))} properties\n' + \
+        return f'\nSpitfire Library with {len(self.dims)} dimensions and {len(list(self._props.keys()))} properties\n' + \
                '------------------------------------------\n' + \
                '\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
                f'\nProperties: [{", ".join(list(self._props.keys()))}]'
 
     def __repr__(self):
-        return f'Spitfire Library(ndim={len(self.dims)}, nproperties={len(list(self._props.keys()))})\n' + \
+        return f'\nSpitfire Library(ndim={len(self.dims)}, nproperties={len(list(self._props.keys()))})\n' + \
                '\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
                f'\nProperties: [{", ".join(list(self._props.keys()))}]'
 
