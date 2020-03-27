@@ -1,5 +1,5 @@
 import unittest
-from spitfire.time.nonlinear import SimpleNewtonSolver
+from spitfire import SimpleNewtonSolver
 from numpy import abs, imag, any, Inf, zeros, array, NaN
 from numpy import copy as numpy_copy
 

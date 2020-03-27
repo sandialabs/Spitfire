@@ -1,5 +1,6 @@
 import unittest
-from spitfire.chemistry.library import Library, Dimension, LibraryIndexError
+from spitfire import Library, Dimension
+from spitfire.chemistry.library import LibraryIndexError
 import numpy as np
 from copy import copy, deepcopy
 

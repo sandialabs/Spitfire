@@ -2,8 +2,7 @@ import unittest
 import numpy as np
 from os.path import join, abspath
 import cantera as ct
-from spitfire.chemistry.mechanism import ChemicalMechanismSpec as Mechanism
-from spitfire.chemistry.reactors import HomogeneousReactor
+from spitfire import ChemicalMechanismSpec as Mechanism, HomogeneousReactor
 import spitfire.chemistry.analysis as sca
 
 xml = abspath(join('spitfire_test', 'test_mechanisms', 'hydrogen_one_step.xml'))

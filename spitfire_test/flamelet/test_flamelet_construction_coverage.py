@@ -1,8 +1,7 @@
 import unittest
 import numpy as np
 from os.path import join, abspath
-from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.chemistry.flamelet import Flamelet
+from spitfire import ChemicalMechanismSpec, Flamelet
 
 
 def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):

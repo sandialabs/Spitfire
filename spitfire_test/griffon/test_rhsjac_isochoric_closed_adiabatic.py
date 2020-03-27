@@ -2,7 +2,7 @@ import unittest
 from numpy import max, abs, ones, zeros, copy, sum, sqrt, hstack
 from cantera import Solution, one_atm, gas_constant
 import numpy as np
-from spitfire.chemistry.mechanism import ChemicalMechanismSpec
+from spitfire import ChemicalMechanismSpec
 from os.path import join, abspath
 from subprocess import getoutput
 

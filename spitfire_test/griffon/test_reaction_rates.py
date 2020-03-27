@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import cantera as ct
 from os.path import join, abspath
-from spitfire.chemistry.mechanism import ChemicalMechanismSpec as Mechanism
+from spitfire import ChemicalMechanismSpec as Mechanism
 
 T_range = [300, 1200, 1800]
 p_range = [101325, 1013250]

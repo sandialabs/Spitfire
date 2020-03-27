@@ -1457,8 +1457,7 @@ class Flamelet(object):
                 maxT = np.max(state)
                 print('   - iter {:4}, |residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, res, maxT))
 
-        self._current_state = np.copy(state)
-
+        state[state < 0] = 0.
         output_library = self._make_library_from_interior_state(state)
 
         if iteration_count > max_iterations or res > tolerance:
@@ -1467,6 +1466,7 @@ class Flamelet(object):
             verbose_print(message)
             return None, None, False
         else:
+            self._current_state = np.copy(state)
             return output_library, iteration_count, True
 
     def steady_solve_psitc(self,
@@ -1675,7 +1675,7 @@ class Flamelet(object):
                 print('   - iter {:4}, max L_exp = {:7.2e}, min(ds) = {:7.2e}, '
                       '|residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, np.max(expeig), np.min(ds),
                                                                       res, np.max(state)))
-
+        state[state < 0] = 0.
         output_library = self._make_library_from_interior_state(state)
 
         if iteration_count > max_iterations or res > tolerance:
@@ -1685,7 +1685,8 @@ class Flamelet(object):
             self._current_state = np.copy(state)
             return output_library, iteration_count, True, np.min(ds)
 
-    def compute_steady_state(self, tolerance=1.e-6, verbose=False, use_psitc=True):
+    def compute_steady_state(self, tolerance=1.e-6, verbose=False,
+                             use_psitc=True, newton_args=None, psitc_args=None, transient_args=None):
         """Solve for the steady state of this flamelet, using a number of numerical algorithms
 
         This will first try Newton's method, which is fast if it manages to converge.
@@ -1708,36 +1709,49 @@ class Flamelet(object):
             whether or not to write out status and failure messages
         use_psitc : bool
             whether or not to use the psitc method when Newton's method fails (if False, tries ESDIRK time stepping next)
+        newton_args : dict
+            extra arguments such as max_iterations to pass to the Newton solver
+        psitc_args : dict
+            extra arguments such as max_iterations to pass to the PsiTC solver
+        transient_args : dict
+            extra arguments such as max_iterations to pass to the ESDIRK solver
         Returns
         -------
             a library containing temperature, mass fractions, and pressure over mixture fraction
         """
 
-        output_library, iteration_count, conv = self.steady_solve_newton(tolerance=tolerance,
-                                                                         log_rate=1,
-                                                                         verbose=verbose,
-                                                                         max_iterations=38)
+        the_newton_args = {'tolerance': tolerance, 'log_rate': 1, 'verbose': verbose, 'max_iterations': 38}
+        if newton_args is not None:
+            the_newton_args.update(newton_args)
+        output_library, iteration_count, conv = self.steady_solve_newton(**the_newton_args)
+
         if conv:
             return output_library
         else:
             conv = False
             mds = 1.e-6
+
+            the_psitc_args = {'tolerance': tolerance, 'log_rate': 1, 'verbose': verbose, 'max_iterations': 200}
+            if psitc_args is not None:
+                the_psitc_args.update(psitc_args)
             if use_psitc:
-                output_library, iteration_count, conv, mds = self.steady_solve_psitc(tolerance=tolerance,
-                                                                                     log_rate=1,
-                                                                                     max_iterations=200,
-                                                                                     verbose=verbose)
+                output_library, iteration_count, conv, mds = self.steady_solve_psitc(**the_psitc_args)
             if conv:
                 return output_library
+
             else:
-                transient_library = self.integrate_to_steady(steady_tolerance=tolerance,
-                                                             transient_tolerance=1.e-8,
-                                                             max_time_step=1.e4,
-                                                             write_log=verbose,
-                                                             log_rate=1,
-                                                             first_time_step=1.e-2 * mds,
-                                                             maximum_steps_per_jacobian=10,
-                                                             save_first_and_last_only=True)
+                the_esdirk_args = {'steady_tolerance': tolerance,
+                                   'transient_tolerance': 1.e-8,
+                                   'max_time_step': 1e4,
+                                   'write_log': verbose,
+                                   'log_rate': 1,
+                                   'first_time_step': 1e-2 * mds,
+                                   'maximum_steps_per_jacobian': 10,
+                                   'save_first_and_last_only': True}
+                if transient_args is not None:
+                    the_esdirk_args.update(transient_args)
+
+                transient_library = self.integrate_to_steady(**the_esdirk_args)
                 steady_library = Library(transient_library.dim('mixture_fraction'))
                 for p in transient_library.props:
                     steady_library[p] = transient_library[p][-1, :].ravel()

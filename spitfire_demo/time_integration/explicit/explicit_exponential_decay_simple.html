@@ -13119,8 +13119,11 @@ $$ \frac{\mathrm{d}y}{\mathrm{d}t} = -ky $$<p>subject to initial condition $y(0)
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">spitfire.time.governor</span> <span class="kn">import</span> <span class="n">Governor</span><span class="p">,</span> <span class="n">SaveAllDataToList</span><span class="p">,</span> <span class="n">FinalTime</span> 
-<span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">ForwardEuler</span><span class="p">,</span> <span class="n">ExplicitRungeKutta4Classical</span>
+<span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="p">(</span><span class="n">Governor</span><span class="p">,</span> 
+                      <span class="n">SaveAllDataToList</span><span class="p">,</span> 
+                      <span class="n">FinalTime</span><span class="p">,</span> 
+                      <span class="n">ForwardEuler</span><span class="p">,</span> 
+                      <span class="n">ExplicitRungeKutta4Classical</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13217,41 +13220,41 @@ The use of a <code>float</code> in the <code>controller</code> input tells the g
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>
- 2020-03-20 18:29 : Spitfire running case with method: Forward Euler
+ 2020-03-26 20:10 : Spitfire running case with method: Forward Euler
 
 |number of  | simulation | time step  | diff. eqn. | total cpu  | cput per |
 |time steps | time (s)   | size (s)   | |residual| | time (s)   | step (ms)|
 ---------------------------------------------------------------------------|
-| 1         | 5.00e-02   | 5.00e-02   | 1.00e+01   | 1.24e-01   | 1.24e+02 |
-| 2         | 1.00e-01   | 5.00e-02   | 5.00e+00   | 1.25e-01   | 6.27e+01 |
-| 3         | 1.50e-01   | 5.00e-02   | 2.50e+00   | 1.26e-01   | 4.21e+01 |
-| 4         | 2.00e-01   | 5.00e-02   | 1.25e+00   | 1.27e-01   | 3.17e+01 |
-| 5         | 2.50e-01   | 5.00e-02   | 6.25e-01   | 1.28e-01   | 2.55e+01 |
-| 6         | 3.00e-01   | 5.00e-02   | 3.12e-01   | 1.28e-01   | 2.14e+01 |
-| 7         | 3.50e-01   | 5.00e-02   | 1.56e-01   | 1.29e-01   | 1.84e+01 |
-| 8         | 4.00e-01   | 5.00e-02   | 7.81e-02   | 1.30e-01   | 1.62e+01 |
-| 9         | 4.50e-01   | 5.00e-02   | 3.91e-02   | 1.31e-01   | 1.46e+01 |
+| 1         | 5.00e-02   | 5.00e-02   | 1.00e+01   | 1.64e-01   | 1.64e+02 |
+| 2         | 1.00e-01   | 5.00e-02   | 5.00e+00   | 1.65e-01   | 8.25e+01 |
+| 3         | 1.50e-01   | 5.00e-02   | 2.50e+00   | 1.66e-01   | 5.52e+01 |
+| 4         | 2.00e-01   | 5.00e-02   | 1.25e+00   | 1.67e-01   | 4.18e+01 |
+| 5         | 2.50e-01   | 5.00e-02   | 6.25e-01   | 1.68e-01   | 3.37e+01 |
+| 6         | 3.00e-01   | 5.00e-02   | 3.12e-01   | 1.69e-01   | 2.82e+01 |
+| 7         | 3.50e-01   | 5.00e-02   | 1.56e-01   | 1.70e-01   | 2.43e+01 |
+| 8         | 4.00e-01   | 5.00e-02   | 7.81e-02   | 1.72e-01   | 2.15e+01 |
+| 9         | 4.50e-01   | 5.00e-02   | 3.91e-02   | 1.73e-01   | 1.92e+01 |
 ---------------------------------------------------------------------------
 
 |number of  | simulation | time step  | diff. eqn. | total cpu  | cput per |
 |time steps | time (s)   | size (s)   | |residual| | time (s)   | step (ms)|
 ---------------------------------------------------------------------------|
-| 10        | 5.00e-01   | 5.00e-02   | 1.95e-02   | 1.32e-01   | 1.32e+01 |
-| 11        | 5.50e-01   | 5.00e-02   | 9.77e-03   | 1.32e-01   | 1.20e+01 |
-| 12        | 6.00e-01   | 5.00e-02   | 4.88e-03   | 1.33e-01   | 1.11e+01 |
-| 13        | 6.50e-01   | 5.00e-02   | 2.44e-03   | 1.34e-01   | 1.03e+01 |
-| 14        | 7.00e-01   | 5.00e-02   | 1.22e-03   | 1.34e-01   | 9.60e+00 |
-| 15        | 7.50e-01   | 5.00e-02   | 6.10e-04   | 1.36e-01   | 9.08e+00 |
-| 16        | 8.00e-01   | 5.00e-02   | 3.05e-04   | 1.37e-01   | 8.55e+00 |
-| 17        | 8.50e-01   | 5.00e-02   | 1.53e-04   | 1.37e-01   | 8.09e+00 |
-| 18        | 9.00e-01   | 5.00e-02   | 7.63e-05   | 1.39e-01   | 7.70e+00 |
-| 19        | 9.50e-01   | 5.00e-02   | 3.81e-05   | 1.39e-01   | 7.32e+00 |
+| 10        | 5.00e-01   | 5.00e-02   | 1.95e-02   | 1.73e-01   | 1.73e+01 |
+| 11        | 5.50e-01   | 5.00e-02   | 9.77e-03   | 1.74e-01   | 1.58e+01 |
+| 12        | 6.00e-01   | 5.00e-02   | 4.88e-03   | 1.75e-01   | 1.46e+01 |
+| 13        | 6.50e-01   | 5.00e-02   | 2.44e-03   | 1.77e-01   | 1.36e+01 |
+| 14        | 7.00e-01   | 5.00e-02   | 1.22e-03   | 1.77e-01   | 1.27e+01 |
+| 15        | 7.50e-01   | 5.00e-02   | 6.10e-04   | 1.79e-01   | 1.19e+01 |
+| 16        | 8.00e-01   | 5.00e-02   | 3.05e-04   | 1.79e-01   | 1.12e+01 |
+| 17        | 8.50e-01   | 5.00e-02   | 1.53e-04   | 1.80e-01   | 1.06e+01 |
+| 18        | 9.00e-01   | 5.00e-02   | 7.63e-05   | 1.81e-01   | 1.01e+01 |
+| 19        | 9.50e-01   | 5.00e-02   | 3.81e-05   | 1.82e-01   | 9.57e+00 |
 ---------------------------------------------------------------------------
 
 |number of  | simulation | time step  | diff. eqn. | total cpu  | cput per |
 |time steps | time (s)   | size (s)   | |residual| | time (s)   | step (ms)|
 ---------------------------------------------------------------------------|
-| 20        | 1.00e+00   | 5.00e-02   | 1.91e-05   | 1.40e-01   | 7.01e+00 |
+| 20        | 1.00e+00   | 5.00e-02   | 1.91e-05   | 1.83e-01   | 9.13e+00 |
 
 Integration successfully completed!
 
@@ -13263,10 +13266,10 @@ Statistics:
 - largest time step    : 0.05
 
   CPU time
-- total    (s) : 1.408557e-01
-- per step (ms): 7.042787e+00
+- total    (s) : 1.831030e-01
+- per step (ms): 9.155150e+00
 
- 2020-03-20 18:29 : Spitfire finished in 1.40855743e-01 seconds!
+ 2020-03-26 20:10 : Spitfire finished in 1.83102997e-01 seconds!
 
 </pre>
 </div>
@@ -13281,13 +13284,13 @@ Statistics:
 
 <div class="output_text output_subarea output_execute_result">
 <pre>({&#39;time steps&#39;: 20,
-  &#39;simulation time&#39;: 1.0,
+  &#39;simulation time&#39;: array(1.),
   &#39;nonlinear iter&#39;: &#39;n/a&#39;,
   &#39;linear iter&#39;: &#39;n/a&#39;,
   &#39;Jacobian setups&#39;: 0,
-  &#39;total cpu time (s)&#39;: 0.1408557430258952},
+  &#39;total cpu time (s)&#39;: 0.18310299701988697},
  array([9.53674316e-07]),
- 1.0,
+ array(1.),
  0.05)</pre>
 </div>
 
@@ -13310,7 +13313,7 @@ Statistics:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -13344,10 +13347,10 @@ Statistics:
 
 
 
-<div id="2725f4f2-7a9b-4ce5-8046-386d0ee29fcd"></div>
+<div id="1127ac31-cbb4-4e77-b950-d751edae9a96"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#2725f4f2-7a9b-4ce5-8046-386d0ee29fcd');
+var element = $('#1127ac31-cbb4-4e77-b950-d751edae9a96');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14151,7 +14154,7 @@ if (IPython.notebook.kernel != null) {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">governor</span><span class="o">.</span><span class="n">do_logging</span> <span class="o">=</span> <span class="kc">False</span>
@@ -14193,10 +14196,10 @@ if (IPython.notebook.kernel != null) {
 
 
 
-<div id="c8f609d5-4807-4115-b859-f0ea4bc1be97"></div>
+<div id="76f69b60-7848-4ab2-8fa8-4edb28ae8d7d"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#c8f609d5-4807-4115-b859-f0ea4bc1be97');
+var element = $('#76f69b60-7848-4ab2-8fa8-4edb28ae8d7d');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -15000,7 +15003,7 @@ The plot shows that peak errors between the two methods differ by several orders
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> notebook
@@ -15031,10 +15034,10 @@ The plot shows that peak errors between the two methods differ by several orders
 
 
 
-<div id="65d1de85-721d-4759-bcb3-041e3c6139ec"></div>
+<div id="9a0f17a5-5fd7-4c91-8d32-b15126584b24"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#65d1de85-721d-4759-bcb3-041e3c6139ec');
+var element = $('#9a0f17a5-5fd7-4c91-8d32-b15126584b24');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 

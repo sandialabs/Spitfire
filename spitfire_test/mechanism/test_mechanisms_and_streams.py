@@ -1,7 +1,7 @@
 import unittest
 from os.path import join, abspath
 from cantera import Solution
-from spitfire.chemistry.mechanism import ChemicalMechanismSpec
+from spitfire import ChemicalMechanismSpec
 
 
 class MechanismSpec(unittest.TestCase):

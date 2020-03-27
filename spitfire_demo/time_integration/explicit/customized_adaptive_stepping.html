@@ -13100,13 +13100,12 @@ The class is coded completely in our notebook and used with Spitfire internal ti
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[111]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">spitfire.time.governor</span> <span class="kn">import</span> <span class="n">Governor</span><span class="p">,</span> <span class="n">CustomTermination</span><span class="p">,</span> <span class="n">SaveAllDataToList</span>
-<span class="kn">from</span> <span class="nn">spitfire.time.stepcontrol</span> <span class="kn">import</span> <span class="n">PIController</span>
+<span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">Governor</span><span class="p">,</span> <span class="n">CustomTermination</span><span class="p">,</span> <span class="n">SaveAllDataToList</span><span class="p">,</span> <span class="n">PIController</span>
 
 <span class="n">g</span> <span class="o">=</span> <span class="mf">9.8</span>                           <span class="c1"># gravitational constant, m/s2</span>
 <span class="n">r</span> <span class="o">=</span> <span class="mf">4.</span> <span class="o">*</span> <span class="mf">2.54</span> <span class="o">/</span> <span class="mf">100.</span>              <span class="c1"># cannonball radius, m</span>
@@ -13157,7 +13156,7 @@ $$ y^{n+1,FE} = y^{n} + (\Delta t)^n r(t^n,y^n)$$<p>and then use the difference,
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[168]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">StepOutput</span><span class="p">,</span> <span class="n">TimeStepper</span>
@@ -13199,10 +13198,10 @@ $$ y^{n+1,FE} = y^{n} + (\Delta t)^n r(t^n,y^n)$$<p>and then use the difference,
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[169]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">AdaptiveERK21HeunEuler</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">AdaptiveERK21HeunEuler</span>
 
 <span class="n">controller</span> <span class="o">=</span> <span class="n">PIController</span><span class="p">(</span><span class="n">target_error</span><span class="o">=</span><span class="mf">1.e-2</span><span class="p">,</span> <span class="n">first_step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="mf">1.e-1</span><span class="p">)</span>
                    
@@ -13258,10 +13257,10 @@ $$ y^{n+1,FE} = y^{n} + (\Delta t)^n r(t^n,y^n)$$<p>and then use the difference,
 
 
 
-<div id="19b957f4-cd2c-4f2a-be96-f03135a2456c"></div>
+<div id="52592e85-38b7-41e6-9e08-b8af524e0daf"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#19b957f4-cd2c-4f2a-be96-f03135a2456c');
+var element = $('#52592e85-38b7-41e6-9e08-b8af524e0daf');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14063,7 +14062,7 @@ if (IPython.notebook.kernel != null) {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[189]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">class</span> <span class="nc">RK2FE_PlusHeuristic</span><span class="p">(</span><span class="n">TimeStepper</span><span class="p">):</span>
@@ -14095,14 +14094,14 @@ if (IPython.notebook.kernel != null) {
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>Using this method to compute time steps and errors for the PI stepsize controller produces the results below.
 Note that the time step drops significantly when the $y$-velocity is negative and the height is below one meter. This should improve accuracy of the method near the landing point, but it really isn't too noticeable here unless you really zoom in. Zooming in <em>does</em> show that time integration terminates at a position much closer to the impact of the cannonball on the ground.</p>
-<p>Another thing to think about is that we're using a second-order time integration scheme in this case - if we use a fourth-order scheme the time step will <em>decrease less</em> after we add the artifical error multiplier because the error changes more sharply with the time step size. In the end a better way to get more accuracy out of our time integration is to simply use a higher-order method and a smaller target error - the value of higher-order methods is precisely when an extremely accurate solution is desired. However there may be some cases where artificial error multipliers such as this could be valuable - perhaps around ignition or extinction dynamics in complex chemistry</p>
+<p>Another thing to think about is that we're using a second-order time integration scheme in this case - if we use a fourth-order scheme the time step will <em>decrease less</em> after we add the artifical error multiplier because the error changes more sharply with the time step size. In the end a better way to get more accuracy out of our time integration is to simply use a higher-order method and a smaller target error - the value of higher-order methods is precisely when an extremely accurate solution is desired. However there may be some cases where artificial error multipliers such as this could be valuable - perhaps around sharp, nonlinear ignition or extinction dynamics in complex chemistry problems (in which case one could add error multipliers based on the temperature or its rate of change, for instance).</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[190]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">data_rk2fe_mod</span> <span class="o">=</span> <span class="n">SaveAllDataToList</span><span class="p">(</span><span class="n">initial_solution</span><span class="o">=</span><span class="n">q0</span><span class="p">,</span> <span class="n">initial_time</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">save_frequency</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -14151,10 +14150,10 @@ Note that the time step drops significantly when the $y$-velocity is negative an
 
 
 
-<div id="27e7cdd5-6c07-458a-9bcb-4c5ed84e35f8"></div>
+<div id="8d26f0f4-b924-4107-917a-115d40a5722e"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#27e7cdd5-6c07-458a-9bcb-4c5ed84e35f8');
+var element = $('#8d26f0f4-b924-4107-917a-115d40a5722e');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 

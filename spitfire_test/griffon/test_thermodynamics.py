@@ -1,7 +1,7 @@
 import unittest
 from numpy import max, abs, ones, zeros, hstack
 from cantera import gas_constant
-from spitfire.chemistry.mechanism import ChemicalMechanismSpec as Mechanism
+from spitfire import ChemicalMechanismSpec as Mechanism
 import cantera as ct
 
 species_decl = list([ct.Species('A', 'H:2'),

@@ -13121,12 +13121,12 @@ Spitfire's abstraction of time integration techniques makes it possible for you 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">spitfire.time.governor</span> <span class="kn">import</span> <span class="n">Governor</span><span class="p">,</span> <span class="n">SaveAllDataToList</span><span class="p">,</span> <span class="n">FinalTime</span>
-<span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">GeneralAdaptiveExplicitRungeKutta</span> <span class="k">as</span> <span class="n">GERK</span>
+<span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">Governor</span><span class="p">,</span> <span class="n">SaveAllDataToList</span><span class="p">,</span> <span class="n">FinalTime</span>
+<span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">GeneralAdaptiveExplicitRungeKutta</span> <span class="k">as</span> <span class="n">GERK</span>
 
 <span class="n">runge_kutta_methods</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
@@ -13156,7 +13156,7 @@ Spitfire's abstraction of time integration techniques makes it possible for you 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">runge_kutta_methods</span><span class="p">[</span><span class="s1">&#39;Fehlberg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">GERK</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Fehlberg&#39;</span><span class="p">,</span>
@@ -13193,7 +13193,7 @@ Note how accurate the eighth-order method is compared to Forward Euler and the R
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -13244,10 +13244,10 @@ Note how accurate the eighth-order method is compared to Forward Euler and the R
 
 
 
-<div id="30bb40e6-d3bf-441a-a70e-36c1b4a66e35"></div>
+<div id="9924e57f-da5c-4173-8fbd-757944f687ef"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#30bb40e6-d3bf-441a-a70e-36c1b4a66e35');
+var element = $('#9924e57f-da5c-4173-8fbd-757944f687ef');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14060,7 +14060,7 @@ We simply ignore this difficulty here, so the class below will only be correct f
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[118]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">StepOutput</span><span class="p">,</span> <span class="n">TimeStepper</span>
@@ -14097,7 +14097,7 @@ We simply ignore this difficulty here, so the class below will only be correct f
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[119]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">governor</span><span class="o">.</span><span class="n">termination_criteria</span> <span class="o">=</span> <span class="n">FinalTime</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
@@ -14142,10 +14142,10 @@ We simply ignore this difficulty here, so the class below will only be correct f
 
 
 
-<div id="88643263-c07d-40f5-9ccf-61ff96a24ea0"></div>
+<div id="0983b0a1-eece-47af-bbdc-5905e1a2a5d3"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#88643263-c07d-40f5-9ccf-61ff96a24ea0');
+var element = $('#0983b0a1-eece-47af-bbdc-5905e1a2a5d3');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14950,7 +14950,7 @@ A first-order method will see a 10x decrease in error for a 10x decrease in the 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[106]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">compute_error</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">time_step_size</span><span class="p">):</span>
@@ -14982,10 +14982,10 @@ This sort of pattern is really convenient in many uses of Spitfire.</p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[120]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">ForwardEuler</span><span class="p">,</span> \
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">ForwardEuler</span><span class="p">,</span> \
     <span class="n">ExplicitRungeKutta4Classical</span><span class="p">,</span> \
     <span class="n">ExplicitRungeKutta2Ralston</span><span class="p">,</span> \
     <span class="n">ExplicitRungeKutta3Kutta</span>
@@ -15030,10 +15030,10 @@ This sort of pattern is really convenient in many uses of Spitfire.</p>
 
 
 
-<div id="8caf509c-c3c3-480c-b285-8c0bdae41dd1"></div>
+<div id="969b3954-55b4-477c-a3bb-cce06366f4e4"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#8caf509c-c3c3-480c-b285-8c0bdae41dd1');
+var element = $('#969b3954-55b4-477c-a3bb-cce06366f4e4');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 

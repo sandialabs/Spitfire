@@ -1,5 +1,5 @@
 import unittest
-from spitfire.chemistry.library import Library, Dimension
+from spitfire import Library, Dimension
 import numpy as np
 from os import remove
 from shutil import rmtree

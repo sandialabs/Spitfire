@@ -67,7 +67,7 @@ setup(name='Spitfire',
       license=readfile('license.md'),
       description=readfile('description_short'),
       long_description=readfile('readme.md'),
-      packages=['spitfire.chemistry', 'spitfire.time', 'spitfire.griffon'],
+      packages=['spitfire', 'spitfire.chemistry', 'spitfire.time', 'spitfire.griffon'],
       ext_modules=griffon_cython,
       package_data={'spitfire.griffon': ['*.so']})
 

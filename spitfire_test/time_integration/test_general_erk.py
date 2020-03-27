@@ -1,7 +1,6 @@
 import unittest
 from numpy import exp, log, mean, array, abs
-from spitfire.time.methods import GeneralAdaptiveExplicitRungeKutta
-from spitfire.time.governor import Governor, FinalTime
+from spitfire import GeneralAdaptiveExplicitRungeKutta, Governor, FinalTime
 
 
 class ExponentialDecayProblem(object):

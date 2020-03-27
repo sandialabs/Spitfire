@@ -1,8 +1,7 @@
 import unittest
 from numpy import exp, log, mean
 from spitfire.time.methods import *
-from spitfire.time.governor import Governor, FinalTime
-from spitfire.time.nonlinear import SimpleNewtonSolver  # this is necessary despite what your IDE says
+from spitfire import Governor, FinalTime, SimpleNewtonSolver
 
 
 def direct_solve(fun):

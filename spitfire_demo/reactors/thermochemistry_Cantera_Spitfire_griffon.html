@@ -13117,7 +13117,7 @@ Three particularly useful routes are:</p>
 <div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.chemistry.mechanism</span> <span class="kn">import</span> <span class="n">ChemicalMechanismSpec</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">ChemicalMechanismSpec</span>
 
 <span class="n">mech</span> <span class="o">=</span> <span class="n">ChemicalMechanismSpec</span><span class="p">(</span><span class="n">cantera_xml</span><span class="o">=</span><span class="s1">&#39;h2-burke.xml&#39;</span><span class="p">,</span> <span class="n">group_name</span><span class="o">=</span><span class="s1">&#39;h2-burke&#39;</span><span class="p">)</span>
 </pre></div>
@@ -13161,7 +13161,7 @@ To make streams of reactants the mechanism provides the <code>stream</code> meth
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">mix</span> <span class="o">=</span> <span class="n">mech</span><span class="o">.</span><span class="n">mix_for_equivalence_ratio</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">h2</span><span class="p">,</span> <span class="n">air</span><span class="p">)</span>
@@ -13184,10 +13184,10 @@ To make streams of reactants the mechanism provides the <code>stream</code> meth
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[46]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.chemistry.reactors</span> <span class="kn">import</span> <span class="n">HomogeneousReactor</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">HomogeneousReactor</span>
 
 <span class="n">r</span> <span class="o">=</span> <span class="n">HomogeneousReactor</span><span class="p">(</span><span class="n">mech</span><span class="p">,</span> <span class="n">mix</span><span class="p">,</span>
                        <span class="n">configuration</span><span class="o">=</span><span class="s1">&#39;isochoric&#39;</span><span class="p">,</span>
@@ -13213,7 +13213,7 @@ To make streams of reactants the mechanism provides the <code>stream</code> meth
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[48]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -13242,10 +13242,10 @@ To make streams of reactants the mechanism provides the <code>stream</code> meth
 
 
 
-<div id="9678dc82-d528-4dc9-8d94-bd235dc43a82"></div>
+<div id="c76ff487-1c06-4368-bf24-877bb8d1beea"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#9678dc82-d528-4dc9-8d94-bd235dc43a82');
+var element = $('#c76ff487-1c06-4368-bf24-877bb8d1beea');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14069,10 +14069,10 @@ if (IPython.notebook.kernel != null) {
 
 
 
-<div id="e8a7e964-38df-473f-8e67-a64084fd4f28"></div>
+<div id="9890299d-785b-4b9b-b555-ebfbab3ffd3e"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#e8a7e964-38df-473f-8e67-a64084fd4f28');
+var element = $('#9890299d-785b-4b9b-b555-ebfbab3ffd3e');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14874,12 +14874,12 @@ if (IPython.notebook.kernel != null) {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[50]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">spitfire.chemistry.analysis</span> <span class="k">as</span> <span class="nn">sca</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">get_ct_solution_array</span>
 
-<span class="n">ctsol</span><span class="p">,</span> <span class="n">shape</span> <span class="o">=</span> <span class="n">sca</span><span class="o">.</span><span class="n">get_ct_solution_array</span><span class="p">(</span><span class="n">mech</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+<span class="n">ctsol</span><span class="p">,</span> <span class="n">shape</span> <span class="o">=</span> <span class="n">get_ct_solution_array</span><span class="p">(</span><span class="n">mech</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -14897,7 +14897,7 @@ if (IPython.notebook.kernel != null) {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[77]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">qcb</span> <span class="o">=</span> <span class="n">ctsol</span><span class="o">.</span><span class="n">net_rates_of_progress</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
@@ -14935,10 +14935,10 @@ if (IPython.notebook.kernel != null) {
 
 
 
-<div id="82bf5443-0dcf-4590-a00b-27f8249c8ea8"></div>
+<div id="4a5771dc-f4d9-4fc7-b353-e61d8cd66252"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#82bf5443-0dcf-4590-a00b-27f8249c8ea8');
+var element = $('#4a5771dc-f4d9-4fc7-b353-e61d8cd66252');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 

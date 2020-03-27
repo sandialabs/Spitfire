@@ -13184,7 +13184,7 @@ The function below checks that the object's center is lower than its radius off 
 <div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.governor</span> <span class="kn">import</span> <span class="n">Governor</span><span class="p">,</span> <span class="n">CustomTermination</span><span class="p">,</span> <span class="n">SaveAllDataToList</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">Governor</span><span class="p">,</span> <span class="n">CustomTermination</span><span class="p">,</span> <span class="n">SaveAllDataToList</span>
 
 <span class="n">governor</span> <span class="o">=</span> <span class="n">Governor</span><span class="p">()</span>
 <span class="n">governor</span><span class="o">.</span><span class="n">do_logging</span> <span class="o">=</span> <span class="kc">False</span>
@@ -13207,10 +13207,10 @@ First we use the classical fourth-order Runge-Kutta method with a constant time 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">ExplicitRungeKutta4Classical</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">ExplicitRungeKutta4Classical</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="n">drag_coeff_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;no drag&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;weak drag&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;strong drag&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">}</span>
@@ -13252,10 +13252,10 @@ First we use the classical fourth-order Runge-Kutta method with a constant time 
 
 
 
-<div id="160a2fd6-699e-4ec5-b835-c99944ebcf08"></div>
+<div id="3700fa1e-0b16-4ca9-b91c-fb38eef7712b"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#160a2fd6-699e-4ec5-b835-c99944ebcf08');
+var element = $('#3700fa1e-0b16-4ca9-b91c-fb38eef7712b');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14064,8 +14064,7 @@ In the drag-free case the time step simply ramps up to the maximum value, while 
 <div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">AdaptiveERK54CashKarp</span>
-<span class="kn">from</span> <span class="nn">spitfire.time.stepcontrol</span> <span class="kn">import</span> <span class="n">PIController</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">AdaptiveERK54CashKarp</span><span class="p">,</span> <span class="n">PIController</span>
 
 <span class="o">%</span><span class="k">matplotlib</span> notebook
 <span class="n">figure</span><span class="p">,</span> <span class="n">axarray</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -14111,10 +14110,10 @@ In the drag-free case the time step simply ramps up to the maximum value, while 
 
 
 
-<div id="df0424e0-6319-48dc-95a7-e329a90c0cba"></div>
+<div id="bd45af32-d26f-4055-b35d-4356778dc36c"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#df0424e0-6319-48dc-95a7-e329a90c0cba');
+var element = $('#bd45af32-d26f-4055-b35d-4356778dc36c');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
