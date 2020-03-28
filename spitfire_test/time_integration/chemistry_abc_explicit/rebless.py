@@ -2,7 +2,7 @@ import pickle
 
 
 def run():
-    from spitfire.time.governor import Governor, FinalTime, SaveAllDataToList
+    from spitfire.time.integrator import odesolve, SaveAllDataToList
     from spitfire.time.methods import ExplicitRungeKutta4Classical
     import numpy as np
 
@@ -32,17 +32,14 @@ def run():
     final_time = 10.  # final time to integrate to
     time_step_size = 0.1  # size of the time step used
 
-    governor = Governor()
-    governor.termination_criteria = FinalTime(final_time)
-    governor.do_logging = False
-
     data = SaveAllDataToList(initial_solution=c0)
-    governor.custom_post_process_step = data.save_data
 
-    governor.integrate(right_hand_side=lambda t, y: right_hand_side(y, k_ab, k_bc),
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=ExplicitRungeKutta4Classical())
+    odesolve(lambda t, y: right_hand_side(y, k_ab, k_bc),
+             c0,
+             stop_at_time=final_time,
+             step_size=time_step_size,
+             method=ExplicitRungeKutta4Classical(),
+             post_step_callback=data.save_data)
 
     return dict({'t': data.t_list.copy(), 'sol': data.solution_list.copy()})
 

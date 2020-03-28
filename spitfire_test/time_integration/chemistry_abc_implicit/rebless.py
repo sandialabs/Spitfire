@@ -2,7 +2,7 @@ import pickle
 
 
 def run():
-    from spitfire.time.governor import Governor, FinalTime, SaveAllDataToList
+    from spitfire.time.integrator import odesolve, SaveAllDataToList
     from spitfire.time.methods import ESDIRK64, BackwardEulerWithError, SDIRK22, BackwardEuler
     from spitfire.time.nonlinear import SimpleNewtonSolver
     from scipy.linalg.lapack import dgetrf as lapack_lu_factor
@@ -31,7 +31,7 @@ def run():
                              q_1 - q_2,
                              2. * q_2])
 
-        def setup_lapack_lu(self, c, prefactor):
+        def setup_lapack_lu(self, t, c, prefactor):
             c_a = c[0]
             c_b = c[1]
             dq1_da = self._k_ab
@@ -55,7 +55,7 @@ def run():
                                    residual)[
                        0], 1, True  # the , 1, True parts are how many iterations and success/failure
 
-        def setup_diagonal(self, c, prefactor):
+        def setup_diagonal(self, t, c, prefactor):
             c_a = c[0]
             c_b = c[1]
             dq1_da = self._k_ab
@@ -75,7 +75,7 @@ def run():
         def solve_diagonal(self, residual):
             return self._lhs_inverse_op * residual, 1, True  # the , 1, True parts are how many iterations and success/failure
 
-        def setup_gmres(self, c, prefactor):
+        def setup_gmres(self, t, c, prefactor):
             c_a = c[0]
             c_b = c[1]
             dq1_da = self._k_ab
@@ -114,117 +114,114 @@ def run():
     final_time = 10.  # final time to integrate to
     time_step_size = 1.0  # size of the time step used
 
-    governor = Governor()
-    governor.termination_criteria = FinalTime(final_time)
-    governor.do_logging = False
-
-    data = SaveAllDataToList(initial_solution=c0)
-    governor.custom_post_process_step = data.save_data
-
     sol_dict = dict()
 
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=ESDIRK64(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_lapack_lu,
-                       projector_solve=problem.solve_lapack_lu)
+    data = SaveAllDataToList(initial_solution=c0)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=ESDIRK64(SimpleNewtonSolver()),
+             linear_setup=problem.setup_lapack_lu,
+             linear_solve=problem.solve_lapack_lu,
+             post_step_callback=data.save_data)
     sol_dict['lapack-esdirk64'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=ESDIRK64(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_diagonal,
-                       projector_solve=problem.solve_diagonal)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=ESDIRK64(SimpleNewtonSolver()),
+             linear_setup=problem.setup_diagonal,
+             linear_solve=problem.solve_diagonal,
+             post_step_callback=data.save_data)
     sol_dict['diagonal-esdirk64'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=ESDIRK64(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_gmres,
-                       projector_solve=problem.solve_gmres)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=ESDIRK64(SimpleNewtonSolver()),
+             linear_setup=problem.setup_gmres,
+             linear_solve=problem.solve_gmres,
+             post_step_callback=data.save_data)
     sol_dict['gmres-esdirk64'] = (data.t_list.copy(), data.solution_list.copy())
 
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=SDIRK22(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_lapack_lu,
-                       projector_solve=problem.solve_lapack_lu)
+    data.reset_data(initial_solution=c0)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=SDIRK22(SimpleNewtonSolver()),
+             linear_setup=problem.setup_lapack_lu,
+             linear_solve=problem.solve_lapack_lu,
+             post_step_callback=data.save_data)
     sol_dict['lapack-sdirk22'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=SDIRK22(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_diagonal,
-                       projector_solve=problem.solve_diagonal)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=SDIRK22(SimpleNewtonSolver()),
+             linear_setup=problem.setup_diagonal,
+             linear_solve=problem.solve_diagonal,
+             post_step_callback=data.save_data)
     sol_dict['diagonal-sdirk22'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=SDIRK22(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_gmres,
-                       projector_solve=problem.solve_gmres)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=SDIRK22(SimpleNewtonSolver()),
+             linear_setup=problem.setup_gmres,
+             linear_solve=problem.solve_gmres,
+             post_step_callback=data.save_data)
     sol_dict['gmres-sdirk22'] = (data.t_list.copy(), data.solution_list.copy())
 
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=BackwardEuler(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_lapack_lu,
-                       projector_solve=problem.solve_lapack_lu)
+    data.reset_data(initial_solution=c0)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=BackwardEuler(SimpleNewtonSolver()),
+             linear_setup=problem.setup_lapack_lu,
+             linear_solve=problem.solve_lapack_lu,
+             post_step_callback=data.save_data)
     sol_dict['lapack-euler'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=BackwardEuler(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_diagonal,
-                       projector_solve=problem.solve_diagonal)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=BackwardEuler(SimpleNewtonSolver()),
+             linear_setup=problem.setup_diagonal,
+             linear_solve=problem.solve_diagonal,
+             post_step_callback=data.save_data)
     sol_dict['diagonal-euler'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=BackwardEuler(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_gmres,
-                       projector_solve=problem.solve_gmres)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=BackwardEuler(SimpleNewtonSolver()),
+             linear_setup=problem.setup_gmres,
+             linear_solve=problem.solve_gmres,
+             post_step_callback=data.save_data)
     sol_dict['gmres-euler'] = (data.t_list.copy(), data.solution_list.copy())
 
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=BackwardEulerWithError(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_lapack_lu,
-                       projector_solve=problem.solve_lapack_lu)
+    data.reset_data(initial_solution=c0)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=BackwardEulerWithError(SimpleNewtonSolver()),
+             linear_setup=problem.setup_lapack_lu,
+             linear_solve=problem.solve_lapack_lu,
+             post_step_callback=data.save_data)
     sol_dict['lapack-euler-werror'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=BackwardEulerWithError(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_diagonal,
-                       projector_solve=problem.solve_diagonal)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=BackwardEulerWithError(SimpleNewtonSolver()),
+             linear_setup=problem.setup_diagonal,
+             linear_solve=problem.solve_diagonal,
+             post_step_callback=data.save_data)
     sol_dict['diagonal-euler-werror'] = (data.t_list.copy(), data.solution_list.copy())
 
     data.reset_data(initial_solution=c0)
-    governor.integrate(right_hand_side=problem.rhs,
-                       initial_condition=c0,
-                       controller=time_step_size,
-                       method=BackwardEulerWithError(SimpleNewtonSolver()),
-                       projector_setup=problem.setup_gmres,
-                       projector_solve=problem.solve_gmres)
+    odesolve(problem.rhs, c0, stop_at_time=final_time,
+             step_size=time_step_size,
+             method=BackwardEulerWithError(SimpleNewtonSolver()),
+             linear_setup=problem.setup_gmres,
+             linear_solve=problem.solve_gmres,
+             post_step_callback=data.save_data)
     sol_dict['gmres-euler-werror'] = (data.t_list.copy(), data.solution_list.copy())
 
     return sol_dict

@@ -1,7 +1,8 @@
 import unittest
 from numpy import exp, log, mean
 from spitfire.time.methods import *
-from spitfire import Governor, FinalTime, SimpleNewtonSolver
+from spitfire.time.nonlinear import *
+from spitfire import odesolve
 
 
 def direct_solve(fun):
@@ -20,7 +21,7 @@ class ExponentialDecayProblem(object):
     def rhs(self, t, state):
         return self.decay_constant * state
 
-    def setup(self, state, prefactor):
+    def setup(self, t, state, prefactor):
         self.lhs_inverse = 1. / (prefactor * self.decay_constant - 1.)
 
     @direct_solve
@@ -38,40 +39,18 @@ def validate_method(method):
         setup = None
         solve = None
 
-    class SaveLastDataPoint(object):
-        def __init__(self):
-            self._last_t_value = None
-            self._last_u_value = None
-
-        @property
-        def last_t_value(self):
-            return self._last_t_value
-
-        @property
-        def last_u_value(self):
-            return self._last_u_value
-
-        def get(self, t, u, *args, **kwargs):
-            self._last_t_value = t
-            self._last_u_value = u
-
-    data = SaveLastDataPoint()
-
-    governor = Governor()
-    governor.do_logging = False
-    governor.termination_criteria = FinalTime(1.0)
-    governor.custom_post_process_step = data.get
-
     dtlist = [0.1, 0.05, 0.025, 0.0125]
     errors = []
+    tf = 1.0
     for dt in dtlist:
-        governor.integrate(right_hand_side=rhs,
-                           projector_setup=setup,
-                           projector_solve=solve,
-                           initial_condition=array([1.]),
-                           method=method,
-                           controller=dt)
-        errors.append(norm(exp(-data.last_t_value) - data.last_u_value))
+        qf = odesolve(rhs,
+                      array([1.]),
+                      array([1.]),
+                      linear_setup=setup,
+                      linear_solve=solve,
+                      method=method,
+                      step_size=dt)
+        errors.append(norm(exp(-tf) - qf))
 
     order_list = []
     for idx in range(len(errors) - 1):
@@ -90,39 +69,28 @@ def create_test(m):
     return test
 
 
-explicit_methods = ['ForwardEuler',
-                    'ExplicitRungeKutta2Midpoint',
-                    'ExplicitRungeKutta2Trapezoid',
-                    'ExplicitRungeKutta2Ralston',
-                    'ExplicitRungeKutta3Kutta',
-                    'ExplicitRungeKutta4Classical',
-                    'AdaptiveERK21HeunEuler',
-                    'AdaptiveERK54CashKarp']
-
-implicit_methods = ['BackwardEuler',
-                    'BackwardEulerWithError',
-                    'CrankNicolson',
-                    'ImplicitMidpoint',
-                    'SDIRK22',
-                    'ESDIRK64']
-nonlinear_solvers = ['SimpleNewtonSolver']
-
-
 class TestOrderOfAccuracy(unittest.TestCase):
     pass
 
 
-for method_name in explicit_methods:
-    constructor = globals()[method_name]
-    setattr(TestOrderOfAccuracy, 'test_' + method_name, create_test(constructor()))
+for method in [ForwardEuler,
+               ExplicitRungeKutta2Midpoint,
+               ExplicitRungeKutta2Trapezoid,
+               ExplicitRungeKutta2Ralston,
+               ExplicitRungeKutta3Kutta,
+               ExplicitRungeKutta4Classical,
+               AdaptiveERK21HeunEuler,
+               AdaptiveERK54CashKarp]:
+    setattr(TestOrderOfAccuracy, 'test_' + str(method), create_test(method()))
 
-for method_name in implicit_methods:
-    method_constructor = globals()[method_name]
-    for solver_name in nonlinear_solvers:
-        solver_constructor = globals()[solver_name]
-        setattr(TestOrderOfAccuracy,
-                'test_' + method_name + '_' + solver_name,
-                create_test(method_constructor(solver_constructor())))
+for method in [BackwardEuler,
+               BackwardEulerWithError,
+               CrankNicolson,
+               SDIRK22,
+               SDIRK22KForm,
+               ESDIRK64]:
+    for solver in [SimpleNewtonSolver]:
+        setattr(TestOrderOfAccuracy, 'test_' + str(method) + '_' + str(solver), create_test(method(solver())))
 
 if __name__ == '__main__':
     unittest.main()

@@ -535,7 +535,7 @@ class GeneralAdaptiveExplicitRungeKuttaMultipleEmbedded(AdaptiveExplicitRungeKut
     """
 
     def __init__(self, name, order, A, b, bhats):
-        # todo: should add checks that A is explicit and that the coefficients match the provided error
+        # todo: add checks that A is explicit and that the coefficients match the provided error
         self.A = copy(A)
         self.b = copy(b)
         self.bhats = bhats
@@ -618,14 +618,17 @@ class BackwardEuler(ImplicitTimeStepper):
         :param rhs: the right-hand side of the ODE in the form f(t, y)
         :return: a StepOutput object
         """
-        state_n = state
+        state_n = copy(state)
 
         def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
             rhs_val = rhs(t + dt, state_arg) if evaluate_new_rhs else existing_rhs
             return dt * rhs_val - (state_arg - state_n), rhs_val
 
+        def linear_setup(state_arg):
+            lhs_setup(t + dt, state_arg)
+
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=rhs(t + dt, state))
@@ -673,17 +676,20 @@ class BackwardEulerWithError(AdaptiveImplicitTimeStepper):
         :param rhs: the right-hand side of the ODE in the form f(t, y)
         :return: a StepOutput object
         """
-        state_n = state
+        state_n = copy(state)
 
         def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
             rhs_val = rhs(t + dt, state_arg) if evaluate_new_rhs else existing_rhs
             return dt * rhs_val - (state_arg - state_n), rhs_val
 
+        def linear_setup(state_arg):
+            lhs_setup(t + dt, state_arg)
+
         max_nliter = self.nonlinear_solver.max_nonlinear_iter
         self.nonlinear_solver.max_nonlinear_iter = 1
 
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=rhs(t + dt, state))
@@ -694,7 +700,7 @@ class BackwardEulerWithError(AdaptiveImplicitTimeStepper):
 
         self.nonlinear_solver.max_nonlinear_iter = max_nliter
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=output.rhs_at_converged)
@@ -740,15 +746,18 @@ class CrankNicolson(ImplicitTimeStepper):
         :param rhs: the right-hand side of the ODE in the form f(t, y)
         :return: a StepOutput object
         """
-        state_n = state
+        state_n = copy(state)
         rhs_n = rhs(t, state_n)
 
         def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
             rhs_val = rhs(t + dt, state_arg) if evaluate_new_rhs else existing_rhs
-            return 0.5 * dt * (rhs_val + rhs_n) - (state_arg - state), rhs_val
+            return 0.5 * dt * (rhs_val + rhs_n) - (state_arg - state_n), rhs_val
+
+        def linear_setup(state_arg):
+            lhs_setup(t + dt, state_arg)
 
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=rhs(t + dt, state))
@@ -761,9 +770,9 @@ class CrankNicolson(ImplicitTimeStepper):
                           projector_setups=output.projector_setups)
 
 
-class ImplicitMidpoint(ImplicitTimeStepper):
+class SDIRK22KForm(ImplicitTimeStepper):
     """
-    The implicit midpoint, or second-order Gauss IRK, method
+    A two-stage, second-order singly diagonally implicit method
 
     **Constructor**:
 
@@ -771,13 +780,26 @@ class ImplicitMidpoint(ImplicitTimeStepper):
     ----------
     nonlinear_solver : spitfire.time.nonlinear.NonlinearSolver
         the solver used in each implicit stage
+    norm_weighting : np.ndarray or float
+        how the temporal error estimate is weighted in its norm calculation (default: 1)
+    norm_order : int or np.Inf
+        the order of the norm used in the temporal error estimate (default: Inf)
     """
 
     def __init__(self, nonlinear_solver):
-        super().__init__(name='Implicit Midpoint',
+        super().__init__(name='SDIRK22',
                          order=2,
-                         implicit_coefficient=1.,
+                         implicit_coefficient=1. - 0.5 * sqrt(2.),
                          nonlinear_solver=nonlinear_solver)
+
+        self.gamma = 1. - 0.5 * sqrt(2.)
+        self.a21 = 0.5 * sqrt(2.)
+
+        self.b1 = 0.5 * sqrt(2.)
+        self.b2 = 1. - 0.5 * sqrt(2.)
+
+        self.bvec = array([self.b1, self.b2])
+        self.c = array([self.gamma, 1.])
 
     def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
         """
@@ -789,22 +811,61 @@ class ImplicitMidpoint(ImplicitTimeStepper):
         :param rhs: the right-hand side of the ODE in the form f(t, y)
         :return: a StepOutput object
         """
+        nonlinear_iter = 0
+        linear_iter = 0
+        nonlinear_converged = True
+        slow_nonlinear_convergence = False
+        projector_setups = 0
 
-        def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
-            rhs_val = rhs(t + 0.5 * dt, state_arg) if evaluate_new_rhs else existing_rhs
-            return 0.5 * dt * rhs_val - (state_arg - state), rhs_val
+        current_c_value = None
+        prior_stage_k = None
+        state_n = copy(state)
 
+        g = self.gamma
+
+        def residual(kval_arg, existing_rhs=None, evaluate_new_rhs=True):
+            r = rhs(t + current_c_value * dt, state_n + dt * (g * kval_arg + prior_stage_k)) - kval_arg
+            return r, r
+
+        def linear_setup(kval_arg):
+            lhs_setup(t + current_c_value * dt, state_n + dt * (g * kval_arg + prior_stage_k))
+
+        # stage 1
+        prior_stage_k = 0.
+        current_c_value = self.c[0]
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
-                                       initial_guess=state,
-                                       initial_rhs=rhs(t + dt, state))
-        return StepOutput(solution_update=output.rhs_at_converged * dt,
-                          nonlinear_iter=output.iter,
-                          linear_iter=output.liter,
-                          nonlinear_converged=output.converged,
-                          slow_nonlinear_convergence=output.slow_convergence,
-                          projector_setups=output.projector_setups)
+                                       initial_guess=rhs(t + current_c_value * dt, state),
+                                       initial_rhs=None)
+        k1 = output.solution
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+        prior_stage_k = self.a21 * k1
+        current_c_value = self.c[1]
+
+        # stage 2
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=k1,
+                                       initial_rhs=None)
+        k2 = output.solution
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        return StepOutput(solution_update=dt * (self.b1 * k1 + self.b2 * k2),
+                          nonlinear_iter=nonlinear_iter,
+                          linear_iter=linear_iter,
+                          nonlinear_converged=nonlinear_converged,
+                          slow_nonlinear_convergence=slow_nonlinear_convergence,
+                          projector_setups=projector_setups)
 
 
 class SDIRK22(ImplicitTimeStepper):
@@ -862,11 +923,14 @@ class SDIRK22(ImplicitTimeStepper):
             rhs_val = rhs(t + current_c_value * dt, state_arg) if evaluate_new_rhs else existing_rhs
             return dt * (self.gamma * rhs_val + prior_stage_k) - (state_arg - state_n), rhs_val
 
+        def linear_setup(state_arg):
+            lhs_setup(t + current_c_value * dt, state_arg)
+
         # stage 1
         prior_stage_k = 0.
         current_c_value = self.c[0]
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=rhs(t + current_c_value * dt, state))
@@ -882,7 +946,7 @@ class SDIRK22(ImplicitTimeStepper):
 
         # stage 2
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=k1)
@@ -989,6 +1053,9 @@ class ESDIRK64(AdaptiveImplicitTimeStepper):
             rhs_val = rhs(t + current_c_value * dt, state_arg) if evaluate_new_rhs else existing_rhs
             return dt * (self.gamma * rhs_val + prior_stage_k) - (state_arg - state_n), rhs_val
 
+        def linear_setup(state_arg):
+            lhs_setup(t + current_c_value * dt, state_arg)
+
         # stage 1
         k1 = rhs(t, state)
         prior_stage_k = self.a21 * k1
@@ -996,7 +1063,7 @@ class ESDIRK64(AdaptiveImplicitTimeStepper):
 
         # stage 2
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=k1)
@@ -1012,7 +1079,7 @@ class ESDIRK64(AdaptiveImplicitTimeStepper):
 
         # stage 3
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=k2)
@@ -1028,7 +1095,7 @@ class ESDIRK64(AdaptiveImplicitTimeStepper):
 
         # stage 4
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=k3)
@@ -1044,7 +1111,7 @@ class ESDIRK64(AdaptiveImplicitTimeStepper):
 
         # stage 5
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=k4)
@@ -1060,7 +1127,7 @@ class ESDIRK64(AdaptiveImplicitTimeStepper):
 
         # stage 6
         output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=lhs_setup,
+                                       setup_method=linear_setup,
                                        solve_method=lhs_solve,
                                        initial_guess=state,
                                        initial_rhs=k5)

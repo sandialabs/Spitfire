@@ -1,7 +1,7 @@
 from spitfire.chemistry.flamelet2d import _Flamelet2D
 from spitfire.chemistry.flamelet import Flamelet
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.time.governor import Governor, NumberOfTimeSteps, FinalTime, Steady, SaveAllDataToList
+from spitfire.time.integrator import Governor, NumberOfTimeSteps, FinalTime, Steady, SaveAllDataToList
 from spitfire.time.methods import AdaptiveERK54CashKarp, ESDIRK64, BackwardEulerWithError
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
@@ -422,8 +422,8 @@ pi = PIController(first_step=1.e-6, target_error=1.e-8, max_step=1.e0)
 #                   method=esdirk,
 #                   controller=pi)[1]
 phi = g.integrate(right_hand_side=f.rhs,
-                  projector_setup=f.block_Jacobi_setup,
-                  projector_solve=f.block_Jacobi_prec_bicgstab_solve,
+                  linear_setup=f.block_Jacobi_setup,
+                  linear_solve=f.block_Jacobi_prec_bicgstab_solve,
                   initial_condition=phi0,
                   method=esdirk,
                   controller=pi)[1]

@@ -11,7 +11,7 @@ namely setting up models and solving both unsteady and steady flamelets
 #                    
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
-from spitfire.time.governor import Governor, Steady, FinalTime, CustomTermination, SaveAllDataToList
+from spitfire.time.integrator import odesolve
 from spitfire.time.methods import ESDIRK64
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
@@ -603,13 +603,13 @@ class Flamelet(object):
         values, expeig = self._adiabatic_jac_and_eig(state_interior, diffterm)
         return csc_matrix((values, self._jac_indices_griffon)), expeig
 
-    def _adiabatic_setup_superlu(self, state_interior, prefactor):
+    def _adiabatic_setup_superlu(self, t, state_interior, prefactor):
         jac = csc_matrix((self._adiabatic_jac_offset_scaled(state_interior, prefactor),
                           self._jac_indices_griffon))
         jac.eliminate_zeros()
         self._linear_inverse_operator = superlu_factor(jac)
 
-    def _adiabatic_setup_block_thomas(self, state_interior, prefactor):
+    def _adiabatic_setup_block_thomas(self, t, state_interior, prefactor):
         self._jacobian_values = self._adiabatic_jac_offset_scaled(state_interior, prefactor)
         py_btddod_full_factorize(self._jacobian_values,
                                  self._nz_interior,
@@ -728,13 +728,13 @@ class Flamelet(object):
         values, expeig = self._nonadiabatic_jac_and_eig(state_interior, diffterm)
         return csc_matrix((values, self._jac_indices_griffon)), expeig
 
-    def _nonadiabatic_setup_superlu(self, state_interior, prefactor):
+    def _nonadiabatic_setup_superlu(self, t, state_interior, prefactor):
         jac = csc_matrix((self._nonadiabatic_jac_offset_scaled(state_interior, prefactor),
                           self._jac_indices_griffon))
         jac.eliminate_zeros()
         self._linear_inverse_operator = superlu_factor(jac)
 
-    def _nonadiabatic_setup_block_thomas(self, state_interior, prefactor):
+    def _nonadiabatic_setup_block_thomas(self, t, state_interior, prefactor):
         self._jacobian_values = self._nonadiabatic_jac_offset_scaled(state_interior, prefactor)
         py_btddod_full_factorize(self._jacobian_values,
                                  self._nz_interior,
@@ -889,7 +889,9 @@ class Flamelet(object):
     # time integration, nonlinear solvers, etc.
     # ------------------------------------------------------------------------------------------------------------------
     def integrate(self,
-                  termination,
+                  stop_at_time=None,
+                  stop_at_steady=None,
+                  stop_criteria=None,
                   first_time_step=1.e-6,
                   max_time_step=1.e-3,
                   minimum_time_step_count=40,
@@ -902,18 +904,21 @@ class Flamelet(object):
                   stepper_type=ESDIRK64,
                   nlsolver_type=SimpleNewtonSolver,
                   stepcontrol_type=PIController,
-                  extra_governor_args=dict(),
+                  extra_integrator_args=dict(),
                   extra_stepper_args=dict(),
                   extra_nlsolver_args=dict(),
                   extra_stepcontrol_args=dict(),
-                  save_frequency=1,
                   save_first_and_last_only=False):
         """Base method for flamelet integration
 
         Parameters
         ----------
-        termination : Termination object as in spitfire.time.governor
-            how integration is stopped - instead of calling integrate() directly, use the integrate_to_time(), integrate_to_steady(), etc. methods of this class
+        stop_at_time : float
+            The final time to stop the simulation at
+        stop_at_steady : float
+            The tolerance at which a steady state is decided upon and stopped at
+        stop_criteria : callable (t, state, residual, n_steps)
+            Any callable that returns True when the simulation should stop
         first_time_step : float
             The time step size initially used by the time integrator
         max_time_step : float
@@ -938,16 +943,14 @@ class Flamelet(object):
             which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
         stepcontrol_type : spitfire.time.StepControl
             which time step adaptation method to use (optional, default: PIController)
-        extra_governor_args : dict
-            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_integrator_args : dict
+            any extra arguments to specify to the time integrator - arguments passed to the odesolve method
         extra_stepper_args : dict
             extra arguments to specify on the spitfire.time.TimeStepper object
         extra_nlsolver_args : dict
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
-        save_frequency : int
-            how many steps are taken between solution data and times being saved (default: 1)
         save_first_and_last_only : bool
             whether or not to retain all data (False, default) or only the first and last solutions
         Returns
@@ -955,22 +958,17 @@ class Flamelet(object):
             a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
 
-        data_holder = SaveAllDataToList(self._current_state,
-                                        self._current_time,
-                                        save_frequency=save_frequency,
-                                        save_first_and_last_only=save_first_and_last_only)
+        def post_step_callback(t, state, *args):
+            state[state < 0.] = 0.
+            return state
 
-        governor = Governor()
-        governor.termination_criteria = termination
-        governor.minimum_time_step_count = minimum_time_step_count
-        governor.projector_setup_rate = maximum_steps_per_jacobian
-        governor.do_logging = write_log
-        governor.log_rate = log_rate
-        governor.clip_to_positive = True
-        governor.norm_weighting = 1. / self._variable_scales
-        governor.custom_post_process_step = data_holder.save_data
-        for a in extra_governor_args:
-            setattr(governor, a, extra_governor_args[a])
+        integrator_args = {'stop_criteria': stop_criteria}
+        if stop_at_time is not None:
+            integrator_args.update({'stop_at_time': stop_at_time})
+        if stop_at_steady is not None:
+            integrator_args.update({'stop_at_steady': stop_at_steady})
+
+        integrator_args.update(extra_integrator_args)
 
         # build the step controller and set attributes
         step_control_args = {'first_step': first_time_step,
@@ -1002,23 +1000,42 @@ class Flamelet(object):
         else:
             raise ValueError('linear solver ' + linear_solver + ' is invalid, must be ''superlu'' or ''block thomas''')
 
-        _, current_state, time, _ = governor.integrate(right_hand_side=rhs_method,
-                                                       projector_setup=setup_method,
-                                                       projector_solve=solve_method,
-                                                       initial_condition=self._current_state,
-                                                       initial_time=self._current_time,
-                                                       controller=step_controller,
-                                                       method=stepper)
-        self._current_state = np.copy(current_state)
-        self._current_time = np.copy(time)
+        output = odesolve(right_hand_side=rhs_method,
+                          initial_state=self._current_state,
+                          initial_time=self._current_time,
+                          step_size=step_controller,
+                          method=stepper,
+                          linear_setup=setup_method,
+                          linear_solve=solve_method,
+                          minimum_time_step_count=minimum_time_step_count,
+                          linear_setup_rate=maximum_steps_per_jacobian,
+                          verbose=write_log,
+                          log_rate=log_rate,
+                          norm_weighting=1. / self._variable_scales,
+                          post_step_callback=post_step_callback,
+                          save_each_step=not save_first_and_last_only,
+                          **integrator_args)
 
-        time_dimension = Dimension('time', data_holder.t_list)
+        if save_first_and_last_only:
+            current_state, current_time, time_step_size = output
+            self._current_state = np.copy(current_state)
+            self._current_time = np.copy(current_time)
+            states = np.zeros((1, current_state.size))
+            states[0, :] = current_state
+            t = np.zeros(1)
+            t[0] = current_time
+        else:
+            t, states = output
+            self._current_state = np.copy(states[-1, :])
+            self._current_time = np.copy(t[-1])
+
+        time_dimension = Dimension('time', t)
         mixfrac_dimension = Dimension('mixture_fraction', self._z)
         output_library = Library(time_dimension, mixfrac_dimension)
 
         output_library['temperature'] = output_library.get_empty_dataset()
         output_library['temperature'][:, 0] = self.oxy_stream.T
-        output_library['temperature'][:, 1:-1] = data_holder.solution_list[:, ::self._n_equations]
+        output_library['temperature'][:, 1:-1] = states[:, ::self._n_equations]
         output_library['temperature'][:, -1] = self.fuel_stream.T
 
         output_library['pressure'] = np.zeros_like(output_library['temperature']) + self._pressure
@@ -1028,7 +1045,7 @@ class Flamelet(object):
         for i, s in enumerate(species_names[:-1]):
             output_library['mass fraction ' + s] = output_library.get_empty_dataset()
             output_library['mass fraction ' + s][:, 0] = self.oxy_stream.Y[i]
-            output_library['mass fraction ' + s][:, 1:-1] = data_holder.solution_list[:, 1 + i::self._n_equations]
+            output_library['mass fraction ' + s][:, 1:-1] = states[:, 1 + i::self._n_equations]
             output_library['mass fraction ' + s][:, -1] = self.fuel_stream.Y[i]
             output_library['mass fraction ' + species_names[-1]] -= output_library['mass fraction ' + s]
 
@@ -1041,43 +1058,10 @@ class Flamelet(object):
         ----------
         steady_tolerance : float
             residual tolerance below which steady state is defined
-        first_time_step : float
-            The time step size initially used by the time integrator
-        max_time_step : float
-            The maximum time step allowed by the integrator
-        minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        nonlinear_solve_tolerance : float
-            tolerance for the nonlinear solver
-        linear_solver : str
-            which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
-        stepper_type : spitfire.time.TimeStepper
-            which (single step) stepper method to use (optional, default: ESDIRK64)
-        nlsolver_type : spitfire.time.NonlinearSolver
-            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
-        stepcontrol_type : spitfire.time.StepControl
-            which time step adaptation method to use (optional, default: PIController)
-        extra_governor_args : dict
-            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
-        extra_stepper_args : dict
-            extra arguments to specify on the spitfire.time.TimeStepper object
-        extra_nlsolver_args : dict
-            extra arguments to specify on the spitfire.time.NonlinearSolver object
-        extra_stepcontrol_args : dict
-            extra arguments to specify on the spitfire.time.StepControl object
-        Returns
-        -------
-            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
+        **kwargs
+            Arbitrary keyword arguments - see the integrate() method documentation
         """
-        return self.integrate(Steady(steady_tolerance), **kwargs)
+        return self.integrate(stop_at_steady=steady_tolerance, **kwargs)
 
     def integrate_to_time(self, final_time, **kwargs):
         """Integrate a flamelet until it reaches a specified simulation time
@@ -1085,44 +1069,11 @@ class Flamelet(object):
         Parameters
         ----------
         final_time : float
-            time at which integration ceases
-        first_time_step : float
-            The time step size initially used by the time integrator
-        max_time_step : float
-            The maximum time step allowed by the integrator
-        minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        nonlinear_solve_tolerance : float
-            tolerance for the nonlinear solver
-        linear_solver : str
-            which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
-        stepper_type : spitfire.time.TimeStepper
-            which (single step) stepper method to use (optional, default: ESDIRK64)
-        nlsolver_type : spitfire.time.NonlinearSolver
-            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
-        stepcontrol_type : spitfire.time.StepControl
-            which time step adaptation method to use (optional, default: PIController)
-        extra_governor_args : dict
-            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
-        extra_stepper_args : dict
-            extra arguments to specify on the spitfire.time.TimeStepper object
-        extra_nlsolver_args : dict
-            extra arguments to specify on the spitfire.time.NonlinearSolver object
-        extra_stepcontrol_args : dict
-            extra arguments to specify on the spitfire.time.StepControl object
-        Returns
-        -------
-            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
+            time at which integration stops
+        **kwargs
+            Arbitrary keyword arguments - see the integrate() method documentation
         """
-        return self.integrate(FinalTime(final_time), **kwargs)
+        return self.integrate(stop_at_time=final_time, **kwargs)
 
     def integrate_to_steady_after_ignition(self,
                                            steady_tolerance=1.e-4,
@@ -1137,49 +1088,16 @@ class Flamelet(object):
             residual tolerance below which steady state is defined
         delta_temperature_ignition : float
             how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-        first_time_step : float
-            The time step size initially used by the time integrator
-        max_time_step : float
-            The maximum time step allowed by the integrator
-        minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        nonlinear_solve_tolerance : float
-            tolerance for the nonlinear solver
-        linear_solver : str
-            which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
-        stepper_type : spitfire.time.TimeStepper
-            which (single step) stepper method to use (optional, default: ESDIRK64)
-        nlsolver_type : spitfire.time.NonlinearSolver
-            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
-        stepcontrol_type : spitfire.time.StepControl
-            which time step adaptation method to use (optional, default: PIController)
-        extra_governor_args : dict
-            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
-        extra_stepper_args : dict
-            extra arguments to specify on the spitfire.time.TimeStepper object
-        extra_nlsolver_args : dict
-            extra arguments to specify on the spitfire.time.NonlinearSolver object
-        extra_stepcontrol_args : dict
-            extra arguments to specify on the spitfire.time.StepControl object
-        Returns
-        -------
-            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
+        **kwargs
+            Arbitrary keyword arguments - see the integrate() method documentation
         """
 
-        def stop_at_steady_after_ignition(state, t, nt, residual):
+        def stop_at_steady_after_ignition(t, state, residual, *args, **kwargs):
             has_ignited = self._check_ignition_delay(state, delta_temperature_ignition)
             is_steady = residual < steady_tolerance
-            return not (has_ignited and is_steady)
+            return has_ignited and is_steady
 
-        return self.integrate(CustomTermination(stop_at_steady_after_ignition), **kwargs)
+        return self.integrate(stop_criteria=stop_at_steady_after_ignition, **kwargs)
 
     def integrate_for_heat_loss(self, temperature_tolerance=0.05, steady_tolerance=1.e-4, **kwargs):
         """Integrate a flamelet until the temperature profile is sufficiently linear.
@@ -1194,50 +1112,17 @@ class Flamelet(object):
             tolerance for termination, where max(T) <= (1 + tolerance) max(T_oxy, T_fuel)
         steady_tolerance : float
             residual tolerance below which steady state is defined
-        first_time_step : float
-            The time step size initially used by the time integrator
-        max_time_step : float
-            The maximum time step allowed by the integrator
-        minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        nonlinear_solve_tolerance : float
-            tolerance for the nonlinear solver
-        linear_solver : str
-            which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
-        stepper_type : spitfire.time.TimeStepper
-            which (single step) stepper method to use (optional, default: ESDIRK64)
-        nlsolver_type : spitfire.time.NonlinearSolver
-            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
-        stepcontrol_type : spitfire.time.StepControl
-            which time step adaptation method to use (optional, default: PIController)
-        extra_governor_args : dict
-            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
-        extra_stepper_args : dict
-            extra arguments to specify on the spitfire.time.TimeStepper object
-        extra_nlsolver_args : dict
-            extra arguments to specify on the spitfire.time.NonlinearSolver object
-        extra_stepcontrol_args : dict
-            extra arguments to specify on the spitfire.time.StepControl object
-        Returns
-        -------
-            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
+        **kwargs
+            Arbitrary keyword arguments - see the integrate() method documentation
         """
 
-        def stop_at_linear_temperature_or_steady(state, t, nt, residual):
+        def stop_at_linear_temperature_or_steady(t, state, residual, *args, **kwargs):
             T_bc_max = max([self._oxy_stream.T, self._fuel_stream.T])
             is_linear_enough = np.max(state) < (1. + temperature_tolerance) * T_bc_max
             is_steady = residual < steady_tolerance
-            return not (is_linear_enough or is_steady)
+            return is_linear_enough or is_steady
 
-        return self.integrate(CustomTermination(stop_at_linear_temperature_or_steady), **kwargs)
+        return self.integrate(stop_criteria=stop_at_linear_temperature_or_steady, **kwargs)
 
     def compute_ignition_delay(self,
                                delta_temperature_ignition=400.,
@@ -1254,48 +1139,15 @@ class Flamelet(object):
             how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
         return_solution : bool
             whether or not to return the solution trajectory in addition to the ignition delay, as a tuple, (t, library)
-        first_time_step : float
-            The time step size initially used by the time integrator
-        max_time_step : float
-            The maximum time step allowed by the integrator
-        minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        nonlinear_solve_tolerance : float
-            tolerance for the nonlinear solver
-        linear_solver : str
-            which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
-        stepper_type : spitfire.time.TimeStepper
-            which (single step) stepper method to use (optional, default: ESDIRK64)
-        nlsolver_type : spitfire.time.NonlinearSolver
-            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
-        stepcontrol_type : spitfire.time.StepControl
-            which time step adaptation method to use (optional, default: PIController)
-        extra_governor_args : dict
-            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
-        extra_stepper_args : dict
-            extra arguments to specify on the spitfire.time.TimeStepper object
-        extra_nlsolver_args : dict
-            extra arguments to specify on the spitfire.time.NonlinearSolver object
-        extra_stepcontrol_args : dict
-            extra arguments to specify on the spitfire.time.StepControl object
-        Returns
-        -------
-            the ignition delay and, optionally, a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
+        **kwargs
+            Arbitrary keyword arguments - see the integrate() method documentation
         """
 
-        def stop_at_ignition(state, t, nt, residual):
+        def stop_at_ignition(t, state, residual, *args, **kwargs):
             has_ignited = self._check_ignition_delay(state, delta_temperature_ignition)
             is_not_steady = residual > minimum_allowable_residual
             if is_not_steady:
-                return not has_ignited
+                return has_ignited
             else:
                 error_msg = f'From compute_ignition_delay(): '
                 f'residual < minimum allowable value ({minimum_allowable_residual}),'
@@ -1305,9 +1157,9 @@ class Flamelet(object):
                 f'in case it is running perpetually.'
                 raise ValueError(error_msg)
 
-        self.integrate(CustomTermination(stop_at_ignition), **kwargs)
-
-        output_library = self.integrate(CustomTermination(stop_at_ignition), **kwargs)
+        output_library = self.integrate(stop_criteria=stop_at_ignition,
+                                        save_first_and_last_only=not return_solution,
+                                        **kwargs)
         tau_ignition = output_library.time_values[-1]
         if return_solution:
             return tau_ignition, output_library

@@ -336,7 +336,7 @@ class Library(object):
     def __getitem__(self, *slices):
         """Either return the data for a property, as in lib['myprop'], when a single string is provided,
             or obtain an entirely new library that is sliced according to the arguments, as in lib[:, 1:-1, 0, :].
-            Note that this will preserve the dimensionality of a library, even if a dimension has a single value.
+            Note that this will preserve the full dimensionality of a library, even if a dimension has a single value.
             Use the Library.squeeze(lib) class method to remove single-value dimensions if desired."""
         arg1 = slices[0]
         if isinstance(arg1, str):

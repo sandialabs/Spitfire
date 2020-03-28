@@ -10,7 +10,7 @@ This module contains the HomogeneousReactor class that provides a high-level int
 #                    
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
-from spitfire.time.governor import Governor, CustomTermination, Steady, FinalTime, SaveAllDataToList
+from spitfire.time.integrator import odesolve
 from spitfire.time.methods import ESDIRK64
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
@@ -427,7 +427,9 @@ class HomogeneousReactor(object):
         return HomogeneousReactor._shape_dict.keys()
 
     def integrate(self,
-                  termination,
+                  stop_at_time=None,
+                  stop_at_steady=None,
+                  stop_criteria=None,
                   first_time_step=1.e-6,
                   max_time_step=1.e6,
                   minimum_time_step_count=40,
@@ -441,18 +443,21 @@ class HomogeneousReactor(object):
                   stepper_type=ESDIRK64,
                   nlsolver_type=SimpleNewtonSolver,
                   stepcontrol_type=PIController,
-                  extra_governor_args=dict(),
+                  extra_integrator_args=dict(),
                   extra_stepper_args=dict(),
                   extra_nlsolver_args=dict(),
                   extra_stepcontrol_args=dict(),
-                  save_frequency=1,
                   save_first_and_last_only=False):
         """Base method for reactor integration
 
         Parameters
         ----------
-        termination : Termination object as in spitfire.time.governor
-            how integration is stopped - instead of calling integrate() directly, use the integrate_to_time(), integrate_to_steady(), etc. methods of this class
+        stop_at_time : float
+            The final time to stop the simulation at
+        stop_at_steady : float
+            The tolerance at which a steady state is decided upon and stopped at
+        stop_criteria : callable (t, state, residual, n_steps)
+            Any callable that returns True when the simulation should stop
         first_time_step : float
             The time step size initially used by the time integrator
         max_time_step : float
@@ -482,16 +487,14 @@ class HomogeneousReactor(object):
             which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
         stepcontrol_type : spitfire.time.StepControl
             which time step adaptation method to use (optional, default: PIController)
-        extra_governor_args : dict
-            any extra arguments to specify on the spitfire.time.Governor object that drives time integration
+        extra_integrator_args : dict
+            any extra arguments to specify to the time integrator - arguments passed to the odesolve method
         extra_stepper_args : dict
             extra arguments to specify on the spitfire.time.TimeStepper object
         extra_nlsolver_args : dict
             extra arguments to specify on the spitfire.time.NonlinearSolver object
         extra_stepcontrol_args : dict
             extra arguments to specify on the spitfire.time.StepControl object
-        save_frequency : int
-            how many steps are taken between solution data and times being saved (default: 1)
         save_first_and_last_only : bool
             whether or not to retain all data (False, default) or only the first and last solutions
         Returns
@@ -499,26 +502,17 @@ class HomogeneousReactor(object):
             a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
 
-        data_holder = SaveAllDataToList(self._current_state,
-                                        self._current_time,
-                                        save_frequency=save_frequency,
-                                        save_first_and_last_only=save_first_and_last_only)
+        def post_step_callback(t, state, *args):
+            state[state < 0.] = 0.
+            return state
 
-        # build the integration governor and set attributes
-        governor = Governor()
-        governor.termination_criteria = termination
-        governor.minimum_time_step_count = minimum_time_step_count
-        governor.projector_setup_rate = maximum_steps_per_jacobian
-        governor.do_logging = write_log
-        governor.log_rate = log_rate
-        governor.extra_logger_log = self._extra_logger_log
-        governor.extra_logger_title_line1 = self._extra_logger_title_line1
-        governor.extra_logger_title_line2 = self._extra_logger_title_line2
-        governor.clip_to_positive = True
-        governor.norm_weighting = 1. / self._variable_scales
-        governor.custom_post_process_step = data_holder.save_data
-        for a in extra_governor_args:
-            setattr(governor, a, extra_governor_args[a])
+        integrator_args = {'stop_criteria': stop_criteria}
+        if stop_at_time is not None:
+            integrator_args.update({'stop_at_time': stop_at_time})
+        if stop_at_steady is not None:
+            integrator_args.update({'stop_at_steady': stop_at_steady})
+
+        integrator_args.update(extra_integrator_args)
 
         # build the step controller and set attributes
         step_control_args = {'first_step': first_time_step,
@@ -592,45 +586,67 @@ class HomogeneousReactor(object):
                 return j.reshape((self._n_equations, self._n_equations), order='F')
 
         setup_wrapper = getattr(self, '_' + linear_solver + '_setup_wrapper')
-        setup_method = lambda state, prefactor: setup_wrapper(jac_method, state, prefactor)
+        setup_method = lambda t, state, prefactor: setup_wrapper(jac_method, state, prefactor)
 
         solve_method = self._lapack_solve if linear_solver == 'lapack' else self._superlu_solve
 
-        _, current_state, time, _ = governor.integrate(right_hand_side=rhs_method,
-                                                       projector_setup=setup_method,
-                                                       projector_solve=solve_method,
-                                                       initial_condition=self._current_state,
-                                                       initial_time=self._current_time,
-                                                       controller=step_controller,
-                                                       method=stepper)
-        self._current_state = np.copy(current_state)
-        self._current_time = np.copy(time)
+        output = odesolve(right_hand_side=rhs_method,
+                          initial_state=self._current_state,
+                          initial_time=self._current_time,
+                          step_size=step_controller,
+                          method=stepper,
+                          linear_setup=setup_method,
+                          linear_solve=solve_method,
+                          minimum_time_step_count=minimum_time_step_count,
+                          linear_setup_rate=maximum_steps_per_jacobian,
+                          verbose=write_log,
+                          log_rate=log_rate,
+                          extra_logger_log=self._extra_logger_log,
+                          extra_logger_title_line1=self._extra_logger_title_line1,
+                          extra_logger_title_line2=self._extra_logger_title_line2,
+                          norm_weighting=1. / self._variable_scales,
+                          post_step_callback=post_step_callback,
+                          save_each_step=not save_first_and_last_only,
+                          **integrator_args)
 
-        time_dimension = Dimension('time', data_holder.t_list)
+        if save_first_and_last_only:
+            current_state, current_time, time_step_size = output
+            self._current_state = np.copy(current_state)
+            self._current_time = np.copy(current_time)
+            states = np.zeros((1, current_state.size))
+            states[0, :] = current_state
+            t = np.zeros(1)
+            t[0] = current_time
+        else:
+            t, states = output
+            self._current_state = np.copy(states[-1, :])
+            self._current_time = np.copy(t[-1])
+
+        time_dimension = Dimension('time', t)
         output_library = Library(time_dimension)
 
         if self._configuration == 'isobaric':
             self._current_pressure = self._initial_pressure
-            self._current_temperature = current_state[0]
-            ynm1 = current_state[1:]
+            self._current_temperature = self._current_state[0]
+            ynm1 = self._current_state[1:]
             self._current_mass_fractions = hstack((ynm1, 1. - sum(ynm1)))
-            output_library['temperature'] = data_holder.solution_list[:, 0]
+            output_library['temperature'] = states[:, 0]
             output_library['pressure'] = self.current_pressure + np.zeros_like(output_library['temperature'])
 
         elif self._configuration == 'isochoric':
-            ynm1 = current_state[2:]
+            ynm1 = self._current_state[2:]
             self._current_mass_fractions = hstack((ynm1, 1. - sum(ynm1)))
-            self._current_pressure = current_state[0] * current_state[1] / sum(
+            self._current_pressure = self._current_state[0] * self._current_state[1] / sum(
                 [yi / Mi for (yi, Mi) in zip(self._current_mass_fractions.tolist(),
                                              self._mechanism.molecular_weights.tolist())])
-            self._current_temperature = current_state[1]
-            output_library['density'] = data_holder.solution_list[:, 0]
-            output_library['temperature'] = data_holder.solution_list[:, 1]
+            self._current_temperature = self._current_state[1]
+            output_library['density'] = states[:, 0]
+            output_library['temperature'] = states[:, 1]
 
         species_names = self._mechanism.species_names
         output_library['mass fraction ' + species_names[-1]] = np.ones_like(output_library['temperature'])
         for i, s in enumerate(species_names[:-1]):
-            output_library['mass fraction ' + s] = data_holder.solution_list[:, self._temperature_index + 1 + i]
+            output_library['mass fraction ' + s] = states[:, self._temperature_index + 1 + i]
             output_library['mass fraction ' + species_names[-1]] -= output_library['mass fraction ' + s]
 
         if plot is not None:
@@ -660,7 +676,7 @@ class HomogeneousReactor(object):
 
         return output_library
 
-    def integrate_to_steady(self, steady_tolerance=1.e-4, **kwargs):
+    def integrate_to_steady(self, steady_tolerance=1.e-6, **kwargs):
         """Integrate a reactor until steady state is reached
 
         Parameters
@@ -673,7 +689,7 @@ class HomogeneousReactor(object):
         -------
             a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
-        return self.integrate(Steady(steady_tolerance), **kwargs)
+        return self.integrate(stop_at_steady=steady_tolerance, **kwargs)
 
     def integrate_to_time(self, final_time, **kwargs):
         """Integrate a reactor until it reaches a specified simulation time
@@ -688,7 +704,7 @@ class HomogeneousReactor(object):
         -------
             a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
-        return self.integrate(FinalTime(final_time), **kwargs)
+        return self.integrate(stop_at_time=final_time, **kwargs)
 
     def integrate_to_steady_after_ignition(self,
                                            steady_tolerance=1.e-4,
@@ -716,12 +732,12 @@ class HomogeneousReactor(object):
             T0 = self._initial_temperature
             Tidx = self._temperature_index
 
-            def stop_at_steady_after_ignition(state, t, nt, residual):
+            def stop_at_steady_after_ignition(t, state, residual, *args, **kwargs):
                 has_ignited = state[Tidx] > (T0 + delta_temperature_ignition)
                 is_steady = residual < steady_tolerance
-                return not (has_ignited and is_steady)
+                return has_ignited and is_steady
 
-            return self.integrate(CustomTermination(stop_at_steady_after_ignition), **kwargs)
+            return self.integrate(stop_criteria=stop_at_steady_after_ignition, **kwargs)
 
     def compute_ignition_delay(self,
                                delta_temperature_ignition=400.,
@@ -751,10 +767,10 @@ class HomogeneousReactor(object):
             T0 = self._initial_temperature
             Tidx = self._temperature_index
 
-            def stop_at_ignition(state, t, nt, residual):
+            def stop_at_ignition(t, state, residual, *args, **kwargs):
                 has_ignited = state[Tidx] > (T0 + delta_temperature_ignition)
                 if residual > minimum_allowable_residual:
-                    return not has_ignited
+                    return has_ignited
                 else:
                     error_msg = f'From compute_ignition_delay(): '
                     f'residual < minimum allowable value ({minimum_allowable_residual}),'
@@ -764,7 +780,9 @@ class HomogeneousReactor(object):
                     f'in case it is running perpetually.'
                 raise ValueError(error_msg)
 
-        output_library = self.integrate(CustomTermination(stop_at_ignition), **kwargs)
+        output_library = self.integrate(stop_criteria=stop_at_ignition,
+                                        save_first_and_last_only=not return_solution,
+                                        **kwargs)
         tau_ignition = output_library.time_values[-1]
         if return_solution:
             return tau_ignition, output_library

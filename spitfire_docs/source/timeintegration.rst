@@ -55,11 +55,10 @@ Spitfire can do error-based adaptive time-stepping with the following methods:
 - implicit: six-stage, L-stable, order 4 method: ``ESDIRK64``
 
 With the time-steppers listed above, Spitfire provides several means of driving a simulation in time.
-All simulations, whether with explicit or implicit methods, with a constant or adaptive time step, are driven by Spitfire's ``Governor`` class.
-The governor manages the logging of information and in-situ post-processing of user data as the simulation proceeds.
-It also manages the evaluation of the Jacobian/preconditioning matrix used in implicit methods, depending upon performance
+All simulations, whether with explicit or implicit methods, with a constant or adaptive time step, are driven by Spitfire's ``odesolve`` method.
+This method manages the logging of information and in-situ post-processing of user data as the simulation proceeds,
+evaluation of the Jacobian/preconditioning matrix used in implicit methods, depending upon performance
 of nonlinear and linear solvers in each implicit time step.
-Termination of time integration is managed by the ``Governor`` too.
 
 
 Spitfire's Abstraction of the Implicit Solver Stack
@@ -81,4 +80,4 @@ where the prefactor :math:`\bar{p}=ph` consists of the temporal discretization c
 Nonlinear solution procedures typically require the repeated action of the inverse of the :math:`\mathrm{A}` operator, which can often be optimized by breaking it up into a costly setup phase (*e.g.*, factorization, preconditioner computation) and cheaper solve phase (*e.g.*, back-solution after factorization) so that the setup is called once per solve while solve is called many times.
 The linear problem is a subset of the nonlinear problem, which itself is a subset of each single time step (:math:`t^n\to t^{n+1}`), which is a subset of a time integration loop with possibly adaptive time stepping (varying :math:`h` in time).
 These five pieces form the backbone of time integration with implicit methods - this is referred to as the 'solver stack.'
-In Spitfire the stack consists of the ``Governor`` (time loop), ``StepController`` (:math:`h` adaptation), ``TimeStepper`` (single step method), ``NonlinearSolver`` (solve :math:`\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}`), and finally the ``setup`` and ``solve`` procedures for the linear solve (building the inverse of the approximate linear operator and repeatedly applying it, respectively).
+In Spitfire the stack consists of ``odesolve`` (time loop), ``StepController`` (:math:`h` adaptation), ``TimeStepper`` (single step method), ``NonlinearSolver`` (solve :math:`\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}`), and finally the ``setup`` and ``solve`` procedures for the linear solve (building the inverse of the approximate linear operator and repeatedly applying it, respectively).

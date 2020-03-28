@@ -21,6 +21,7 @@ class Test(unittest.TestCase):
             for key in gold_output:
                 t, sol = output[key]
                 gold_t, gold_sol = gold_output[key]
+
                 self.assertIsNone(assert_allclose(t, gold_t, atol=1.e-8))
                 self.assertIsNone(assert_allclose(sol, gold_sol, atol=1.e-8))
 

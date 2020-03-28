@@ -176,7 +176,7 @@ class _Flamelet2D(object):
                                      self._ycp, self._ycb, self._yct, r)
         return r
 
-    def block_Jacobi_setup(self, state, prefactor):
+    def block_Jacobi_setup(self, t, state, prefactor):
         self._jacobi_prefactor = prefactor
         self._griffon.flamelet2d_factored_block_diag_jacobian(state, self._pressure,
                                                               self._n_x, self._n_y, self._xcp, self._ycp, prefactor,

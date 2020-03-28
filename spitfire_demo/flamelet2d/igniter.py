@@ -1,7 +1,7 @@
 from spitfire.chemistry.flamelet2d import _Flamelet2D
 from spitfire.chemistry.flamelet import Flamelet
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.time.governor import Governor, NumberOfTimeSteps, FinalTime, Steady, SaveAllDataToList
+from spitfire.time.integrator import Governor, NumberOfTimeSteps, FinalTime, Steady, SaveAllDataToList
 from spitfire.time.methods import AdaptiveERK54CashKarp, ESDIRK64, BackwardEulerWithError
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
@@ -158,10 +158,10 @@ for i in range(viz_nt):
     g.termination_criteria = FinalTime((i + 1) * viz_dt)
     pi._first_step = dt
     _, phi, _, dt = g.integrate(right_hand_side=f.rhs,
-                      projector_setup=f.block_Jacobi_setup,
-                      projector_solve=f.block_Jacobi_solve,
-                      initial_condition=phi,
-                      method=esdirk,
-                      controller=pi,
-                      initial_time=i * viz_dt)
+                                linear_setup=f.block_Jacobi_setup,
+                                linear_solve=f.block_Jacobi_solve,
+                                initial_condition=phi,
+                                method=esdirk,
+                                controller=pi,
+                                initial_time=i * viz_dt)
     plot_contours(phi, 'T', i)

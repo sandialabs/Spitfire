@@ -69,8 +69,8 @@ class PIController(object):
     """
 
     def __init__(self, kp=0.06666666667, ki=0.1333333333,
-                 target_error=1.e-10, max_step=1.e-3,
-                 max_ramp=1.1, first_step=1.e-6):
+                 target_error=1.e-4, max_step=1.e4,
+                 max_ramp=1.1, first_step=1.e-3):
         self._kp = kp
         self._ki = ki
         self._target_error = target_error
@@ -188,7 +188,7 @@ class CascadeController(object):
             mod = min([self._max_ramp,
                        (self._target_error / error) ** self._ki * (self._err_history[-1] / error) ** self._kp])
             err_mod = min([self._max_ramp, (self._target_ratio / ratio) ** self._ratio_ki * (
-                    self._ratio_history[-1] / ratio) ** self._ratio_kp])
+                self._ratio_history[-1] / ratio) ** self._ratio_kp])
         self._target_error *= err_mod
         return min([step * mod, self._max_step])
 

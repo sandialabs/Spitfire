@@ -1,6 +1,6 @@
 import unittest
 from numpy import exp, log, mean, array, abs
-from spitfire import GeneralAdaptiveExplicitRungeKutta, Governor, FinalTime
+from spitfire import GeneralAdaptiveExplicitRungeKutta, odesolve
 
 
 class ExponentialDecayProblem(object):
@@ -16,38 +16,12 @@ def validate_method(method):
     edp = ExponentialDecayProblem()
     rhs = edp.rhs
 
-    class SaveLastDataPoint(object):
-        def __init__(self):
-            self._last_t_value = None
-            self._last_u_value = None
-
-        @property
-        def last_t_value(self):
-            return self._last_t_value
-
-        @property
-        def last_u_value(self):
-            return self._last_u_value
-
-        def get(self, t, u, *args, **kwargs):
-            self._last_t_value = t
-            self._last_u_value = u
-
-    data = SaveLastDataPoint()
-
-    governor = Governor()
-    governor.do_logging = False
-    governor.termination_criteria = FinalTime(1.0)
-    governor.custom_post_process_step = data.get
-
     dtlist = [0.1, 0.05, 0.025, 0.0125]
     errors = []
+    tf = 1.0
     for dt in dtlist:
-        governor.integrate(right_hand_side=rhs,
-                           initial_condition=array([1.]),
-                           method=method,
-                           controller=dt)
-        errors.append(abs(exp(-data.last_t_value) - data.last_u_value))
+        qf = odesolve(rhs, array([1.]), array([tf]), method=method, step_size=dt)
+        errors.append(abs(exp(-tf) - qf))
 
     order_list = []
     for idx in range(len(errors) - 1):
