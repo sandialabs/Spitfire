@@ -553,24 +553,24 @@ def odesolve(right_hand_side,
                     t_list.append(np.copy(current_time))
                     solution_list.append(np.copy(current_state))
 
-                _write_log(verbose,
-                           show_solver_stats_in_situ,
-                           log_count,
-                           log_rate,
-                           log_title_count,
-                           log_lines_per_header,
-                           extra_logger_title_line1,
-                           extra_logger_title_line2,
-                           extra_logger_log,
-                           current_state,
-                           current_time,
-                           time_step_size,
-                           residual,
-                           number_of_time_steps,
-                           number_nonlinear_iter,
-                           number_linear_iter,
-                           number_projector_setup,
-                           timer.perf_counter() - cpu_time_0)
+                log_count, log_title_count = _write_log(verbose,
+                                                        show_solver_stats_in_situ,
+                                                        log_count,
+                                                        log_rate,
+                                                        log_title_count,
+                                                        log_lines_per_header,
+                                                        extra_logger_title_line1,
+                                                        extra_logger_title_line2,
+                                                        extra_logger_log,
+                                                        current_state,
+                                                        current_time,
+                                                        time_step_size,
+                                                        residual,
+                                                        number_of_time_steps,
+                                                        number_nonlinear_iter,
+                                                        number_linear_iter,
+                                                        number_projector_setup,
+                                                        timer.perf_counter() - cpu_time_0)
 
                 time_step_size = step_size(number_of_time_steps, time_step_size, step_output)
 
