@@ -25,6 +25,7 @@ from scipy.linalg.lapack import dgetrf as lapack_lu_factor
 from scipy.linalg.lapack import dgetrs as lapack_lu_solve
 import time as timer
 import datetime
+import logging
 
 
 class SaveAllDataToList(object):
@@ -69,7 +70,7 @@ class SaveAllDataToList(object):
         return array(self._solution_list)
 
     def save_data(self, t, solution, *args, **kwargs):
-        """Method to provide to the Governor() object as the custom_post_process_step"""
+        """Method to provide to the Governor() object as the post_step_callback"""
         self._save_count += 1
         if self._save_count == self._save_frequency:
             self._save_count = 0
@@ -286,6 +287,7 @@ def odesolve(right_hand_side,
              stop_at_steady=None,
              minimum_time_step_count=0,
              maximum_time_step_count=Inf,
+             pre_step_callback=None,
              post_step_callback=None,
              step_update_callback=None,
              method=ESDIRK64(SimpleNewtonSolver()),
@@ -324,7 +326,8 @@ def odesolve(right_hand_side,
     :param stop_at_steady: force time integration to stop when a steady state is identified, provide either a boolean or a float for the tolerance
     :param minimum_time_step_count: minimum number of time steps that can be run (default: 0)
     :param maximum_time_step_count: maximum number of time steps that can be run (default: Inf)
-    :param post_step_callback: method of the form f(current_time, current_state, residual, number_of_time_steps) that can optionally return a modified state vector (default: None)
+    :param pre_step_callback: method of the form f(current_time, current_state, number_of_time_steps) called before each step (default: None)
+    :param post_step_callback: method of the form f(current_time, current_state, residual, number_of_time_steps) called after each step, that can optionally return a modified state vector (default: None)
     :param step_update_callback: method of the form f(state, dstate, time_error, target_error, nonlinear_solve_converged) that checks validity of a state update (default: None)
     :param method: the time stepping method (a spitfire.time.methods.TimeStepper object), defaults to ESDIRK64(SimpleNewtonSolver())
     :param step_size: the time step controller, either a float (for constant time step) or spitfire.time.stepcontrol class
@@ -415,6 +418,9 @@ def odesolve(right_hand_side,
                          'stop_at_steady=[True or tolerance], '
                          'or stop_criteria as a function(t, state, residual, nsteps)')
 
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+
     try:
         coerce_dt_at_final_step = False
         if stop_at_time is not None:
@@ -502,6 +508,9 @@ def odesolve(right_hand_side,
 
             if coerce_dt_at_final_step and current_time + time_step_size > stop_at_time:
                 time_step_size = stop_at_time - current_time
+
+            if pre_step_callback is not None:
+                pre_step_callback(current_time, current_state, number_of_time_steps)
 
             if method_is_implicit:
                 if build_projector_in_governor and eval_linear_setup:
@@ -647,10 +656,12 @@ def odesolve(right_hand_side,
                                'linear iter': number_linear_iter,
                                'Jacobian setups': number_projector_setup})
 
-    except Exception as e:
+    except Exception as error:
         stats_dict = {'success': False}
         print(f'Spitfire odesolve caught the following Exception during time integration:\n')
-        print(e)
+        logger.exception(error)
+
+    logging.disable(level=logging.DEBUG)
 
     if output_times is not None:
         if return_info:
