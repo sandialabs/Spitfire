@@ -254,11 +254,11 @@ class Library(object):
             f.write(str(self._extra_attributes))
 
         for d in self.dims:
-            np.savetxt(os.path.join(output_directory, f'{bd_prefix}_{d.name}.txt'),
+            np.savetxt(os.path.join(output_directory, f'{bd_prefix}_ivar_{d.name}.txt'),
                        d.values)
 
         for p in self.props:
-            np.savetxt(os.path.join(output_directory, f'{bd_prefix}_{prop_names_underscored[p]}.txt'),
+            np.savetxt(os.path.join(output_directory, f'{bd_prefix}_dvar_{prop_names_underscored[p]}.txt'),
                        self[p].ravel(order=ravel_order))
 
     @classmethod

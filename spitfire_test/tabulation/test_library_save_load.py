@@ -114,11 +114,11 @@ class SaveAndLoad(unittest.TestCase):
 
         l1.save_to_text_directory(dir_name, ravel_order='F')
 
-        xread = np.loadtxt(dir_name + f'/bulkdata_x.txt')
-        yread = np.loadtxt(dir_name + f'/bulkdata_y.txt')
-        zread = np.loadtxt(dir_name + f'/bulkdata_z.txt')
-        fread = np.loadtxt(dir_name + f'/bulkdata_f.txt').reshape(lib_shape, order='F')
-        gread = np.loadtxt(dir_name + f'/bulkdata_g.txt').reshape(lib_shape, order='F')
+        xread = np.loadtxt(dir_name + f'/bulkdata_ivar_x.txt')
+        yread = np.loadtxt(dir_name + f'/bulkdata_ivar_y.txt')
+        zread = np.loadtxt(dir_name + f'/bulkdata_ivar_z.txt')
+        fread = np.loadtxt(dir_name + f'/bulkdata_dvar_f.txt').reshape(lib_shape, order='F')
+        gread = np.loadtxt(dir_name + f'/bulkdata_dvar_g.txt').reshape(lib_shape, order='F')
 
         with open(dir_name + '/metadata_user_defined_attributes.txt', 'r') as f:
             ea_read = f.readline()
@@ -127,7 +127,7 @@ class SaveAndLoad(unittest.TestCase):
         with open(dir_name + '/metadata_dependent_variables.txt', 'r') as f:
             dv_lines = f.readlines()
 
-        rmtree(dir_name)
+        # rmtree(dir_name)
 
         self.assertTrue(np.all(np.abs(xvalues - xread) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(yvalues - yread) < 10. * machine_epsilon))
