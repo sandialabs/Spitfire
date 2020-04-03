@@ -25,15 +25,19 @@ def readfile(filename):
             return f.read()
 
 
+build_ext_arg = False
 griffon_build_dir = None
 for arg in command_line_args:
+    if 'build_ext' in arg:
+        build_ext_arg = True
     if 'griffon-build-dir' in arg:
         griffon_build_dir = arg.split('griffon-build-dir=')[1]
         command_line_args.remove(arg)
 
-if griffon_build_dir is None:
+if griffon_build_dir is None and build_ext_arg:
     raise ValueError(
-        'Error in installing Spitfire. The command line argument "--griffon-build-dir=[]" must be provided.')
+        'Error in building Spitfire extension modules. '
+        'The command line argument "--griffon-build-dir=[]" must be provided.')
 
 cython_extra_compile_args = ['-O3', '-g', '-std=c++11']
 
@@ -47,8 +51,8 @@ else:
     cython_lapack_extra = []
 
 cython_include_directories = [numpy_include(),
-                              os.path.join(griffon_build_dir, 'include')]
-cython_library_directories = [os.path.join(griffon_build_dir, 'lib')]
+                              os.path.join(griffon_build_dir, 'include') if griffon_build_dir is not None else '']
+cython_library_directories = [os.path.join(griffon_build_dir, 'lib') if griffon_build_dir is not None else '']
 cython_libraries = ['griffon_cpp'] + cython_lapack_lib
 
 griffon_cython = cythonize(Extension(name='spitfire.griffon.griffon',

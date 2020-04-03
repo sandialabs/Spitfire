@@ -208,7 +208,7 @@ class Library(object):
         with open(file_name, 'wb') as file_output:
             pickle.dump(self, file_output)
 
-    def save_to_text_directory(self, output_directory, ravel_order='F'):
+    def save_to_text_directory(self, output_directory, ravel_order='F', format='%.14e'):
         """
         Dump the contents of a library to a set of easy-to-process text files in a directory.
         Note that file names of property bulk data files will have spaces replaced by underscores.
@@ -255,11 +255,11 @@ class Library(object):
 
         for d in self.dims:
             np.savetxt(os.path.join(output_directory, f'{bd_prefix}_ivar_{d.name}.txt'),
-                       d.values)
+                       d.values, fmt=format)
 
         for p in self.props:
             np.savetxt(os.path.join(output_directory, f'{bd_prefix}_dvar_{prop_names_underscored[p]}.txt'),
-                       self[p].ravel(order=ravel_order))
+                       self[p].ravel(order=ravel_order), fmt=format)
 
     @classmethod
     def load_from_file(cls, file_name):
