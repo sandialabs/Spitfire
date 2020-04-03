@@ -127,13 +127,13 @@ class SaveAndLoad(unittest.TestCase):
         with open(dir_name + '/metadata_dependent_variables.txt', 'r') as f:
             dv_lines = f.readlines()
 
-        # rmtree(dir_name)
+        rmtree(dir_name)
 
-        self.assertTrue(np.all(np.abs(xvalues - xread) < 10. * machine_epsilon))
-        self.assertTrue(np.all(np.abs(yvalues - yread) < 10. * machine_epsilon))
-        self.assertTrue(np.all(np.abs(zvalues - zread) < 10. * machine_epsilon))
-        self.assertTrue(np.all(np.abs(fvalues - fread) < 10. * machine_epsilon))
-        self.assertTrue(np.all(np.abs(gvalues - gread) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(xvalues - xread) < 100. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(yvalues - yread) < 100. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(zvalues - zread) < 100. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvalues - fread) < 100. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(gvalues - gread) < 100. * machine_epsilon))
         self.assertTrue(ea_read, str(l1.extra_attributes))
         self.assertTrue(all([ivf.strip() == ivn for (ivf, ivn) in zip(iv_lines, [d.name for d in l1.dims])]))
         self.assertTrue(all([dvf.strip() == dvn.replace(' ', '_') for (dvf, dvn) in zip(dv_lines, l1.props)]))

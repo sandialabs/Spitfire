@@ -96,6 +96,13 @@ class Slice2D(unittest.TestCase):
         self.assertTrue(l2.shape == l1.x_grid.shape)
         self.assertTrue(l2.size == l1.x_grid.size)
 
+        l3 = l1[:]
+        self.assertTrue(np.all(np.abs(l1.x_grid - l3.x_grid) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1.y_grid - l3.y_grid) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1['f'] - l3['f']) < 10. * machine_epsilon))
+        self.assertTrue(l3.shape == l1.x_grid.shape)
+        self.assertTrue(l3.size == l1.x_grid.size)
+
     def test_partial(self):
         l1 = Library(Dimension('x', np.linspace(0, 1, 10)), Dimension('y', np.linspace(-1, 1, 10)))
         l1['f'] = np.exp(l1.x_grid) * np.cos(l1.y_grid)
@@ -144,14 +151,6 @@ class Slice2D(unittest.TestCase):
         self.assertTrue(np.all(np.abs(l1.y_grid - l3.y_grid) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(l1['f'] - l3['f']) < 10. * machine_epsilon))
 
-    def test_invalid_number_1(self):
-        l1 = Library(Dimension('x', np.linspace(0, 1, 2)), Dimension('y', np.linspace(-1, 1, 3)))
-        try:
-            l2 = l1[:]
-            self.assertTrue(False)
-        except LibraryIndexError:
-            self.assertTrue(True)
-
     def test_invalid_number_3(self):
         l1 = Library(Dimension('x', np.linspace(0, 1, 2)), Dimension('y', np.linspace(-1, 1, 3)))
         try:
@@ -174,6 +173,14 @@ class Slice3D(unittest.TestCase):
         self.assertTrue(np.all(np.abs(l1['f'] - l2['f']) < 10. * machine_epsilon))
         self.assertTrue(l2.shape == l1.x_grid.shape)
         self.assertTrue(l2.size == l1.x_grid.size)
+
+        l3 = l1[:]
+        self.assertTrue(np.all(np.abs(l1.x_grid - l3.x_grid) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1.y_grid - l3.y_grid) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1.z_grid - l3.z_grid) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1['f'] - l3['f']) < 10. * machine_epsilon))
+        self.assertTrue(l3.shape == l1.x_grid.shape)
+        self.assertTrue(l3.size == l1.x_grid.size)
 
     def test_partial(self):
         l1 = Library(Dimension('x', np.linspace(0, 1, 10)),
@@ -254,6 +261,121 @@ class Slice3D(unittest.TestCase):
         self.assertTrue(np.all(np.abs(l1.y_grid - l3.y_grid) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(l1.z_grid - l3.z_grid) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(l1['f'] - l3['f']) < 10. * machine_epsilon))
+
+    def test_view(self):
+        slices = [slice(0, None, None), slice(1, 3, None), slice(1, -3, None)]
+
+        l1 = Library(Dimension('x', np.linspace(0, 1, 10)),
+                     Dimension('y', np.linspace(-1, 1, 4)),
+                     Dimension('z', np.logspace(-1, 1, 7)))
+        gold_float = 0.5
+        gold_array = np.exp(-2. * l1.x_grid[slices])
+
+        fvals = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+
+        # start with float argument
+        g = gold_float
+        # set slice of original array
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        fvals[slices] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set slice of library property
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l1['f'][slices] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set property of library slice
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l1[slices]['f'] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set slice of library view property
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l2['f'][:, :, :] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set property of library view
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l2['f'] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # repeat with numpy array argument
+        g = gold_array
+        # set slice of original array
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        fvals[slices] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set slice of library property
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l1['f'][slices] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set property of library slice
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l1[slices]['f'] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set slice of library view property
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l2['f'][:, :, :] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+        # set property of library view
+        fvals[:, :, :] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l1['f'] = fvals
+        l2 = l1[slices]
+        l2['f'] = g
+        self.assertTrue(np.all(np.abs(l1['f'][slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
+        self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
 
 
 if __name__ == '__main__':
