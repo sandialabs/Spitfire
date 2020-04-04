@@ -154,6 +154,7 @@ For Mac OS X you can simply run `open build/html/index.html` and on Linux you co
 - Implicit methods
     - [Basics of using implicit methods](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/implicit/implicit_exponential_decay_simple.html)
     - [Advanced linear solvers for advection-diffusion](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/implicit/implicit_advection_diffusion_linear_solvers_advanced.html)
+    - [Solving an 'explosive' diffusion-reaction problem](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/time_integration/implicit/implicit_diffusion_reaction.html)
 
 ## Homogeneous Reactors 
   - [Introduction to Cantera and Spitfire](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/thermochemistry_Cantera_Spitfire_griffon.html)
