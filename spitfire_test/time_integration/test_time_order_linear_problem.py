@@ -32,7 +32,7 @@ class ExponentialDecayProblem(object):
 def validate_method(method):
     edp = ExponentialDecayProblem()
     rhs = edp.rhs
-    if isinstance(method, ImplicitTimeStepper):
+    if method.is_implicit:
         setup = edp.setup
         solve = edp.solve
     else:
@@ -45,7 +45,7 @@ def validate_method(method):
     for dt in dtlist:
         qf = odesolve(rhs,
                       array([1.]),
-                      array([1.]),
+                      array([tf]),
                       linear_setup=setup,
                       linear_solve=solve,
                       method=method,
@@ -73,22 +73,19 @@ class TestOrderOfAccuracy(unittest.TestCase):
     pass
 
 
-for method in [ForwardEuler,
-               ExplicitRungeKutta2Midpoint,
-               ExplicitRungeKutta2Trapezoid,
-               ExplicitRungeKutta2Ralston,
-               ExplicitRungeKutta3Kutta,
-               ExplicitRungeKutta4Classical,
-               AdaptiveERK21HeunEuler,
-               AdaptiveERK54CashKarp]:
+for method in [ForwardEulerS1P1,
+               ExpMidpointS2P2,
+               ExpTrapezoidalS2P2Q1,
+               ExpRalstonS2P2,
+               RK3KuttaS3P3,
+               RK4ClassicalS4P4,
+               CashKarpS6P5Q4, ]:
     setattr(TestOrderOfAccuracy, 'test_' + str(method), create_test(method()))
 
-for method in [BackwardEuler,
-               BackwardEulerWithError,
-               CrankNicolson,
-               SDIRK22,
-               SDIRK22KForm,
-               ESDIRK64]:
+for method in [BackwardEulerS1P1Q1,
+               CrankNicolsonS2P2,
+               SDIRKS2P2,
+               KennedyCarpenterS6P4Q3]:
     for solver in [SimpleNewtonSolver]:
         setattr(TestOrderOfAccuracy, 'test_' + str(method) + '_' + str(solver), create_test(method(solver())))
 

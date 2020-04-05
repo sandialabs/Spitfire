@@ -11,7 +11,7 @@ This module contains the HomogeneousReactor class that provides a high-level int
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 from spitfire.time.integrator import odesolve
-from spitfire.time.methods import ESDIRK64
+from spitfire.time.methods import KennedyCarpenterS6P4Q3
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
 from spitfire.chemistry.library import Dimension, Library
@@ -440,7 +440,7 @@ class HomogeneousReactor(object):
                   nonlinear_solve_tolerance=1.e-12,
                   linear_solver='lapack',
                   plot=None,
-                  stepper_type=ESDIRK64,
+                  stepper_type=KennedyCarpenterS6P4Q3,
                   nlsolver_type=SimpleNewtonSolver,
                   stepcontrol_type=PIController,
                   extra_integrator_args=dict(),

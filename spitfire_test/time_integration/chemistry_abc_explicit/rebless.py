@@ -3,7 +3,7 @@ import pickle
 
 def run():
     from spitfire.time.integrator import odesolve, SaveAllDataToList
-    from spitfire.time.methods import ExplicitRungeKutta4Classical
+    from spitfire.time.methods import RK4ClassicalS4P4
     import numpy as np
 
     def right_hand_side(c, k_ab, k_bc):
@@ -38,7 +38,7 @@ def run():
              c0,
              stop_at_time=final_time,
              step_size=time_step_size,
-             method=ExplicitRungeKutta4Classical(),
+             method=RK4ClassicalS4P4(),
              post_step_callback=data.save_data)
 
     return dict({'t': data.t_list.copy(), 'sol': data.solution_list.copy()})

@@ -4,7 +4,7 @@ import pickle
 def run():
     from spitfire.time.integrator import odesolve, SaveAllDataToList
     from spitfire.time.stepcontrol import PIController
-    from spitfire.time.methods import AdaptiveERK54CashKarp
+    from spitfire.time.methods import CashKarpS6P5Q4
     import numpy as np
 
     def right_hand_side(q, fluid_density, drag_coeff, gravity, surface_area, mass):
@@ -44,7 +44,7 @@ def run():
         odesolve(lambda t, y: right_hand_side(y, rf, cd, g, sa, m),
                  q0,
                  step_size=PIController(first_step=1e-6, target_error=1e-10, max_step=1e-3),
-                 method=AdaptiveERK54CashKarp(),
+                 method=CashKarpS6P5Q4(),
                  post_step_callback=data.save_data,
                  stop_criteria=object_has_landed)
 

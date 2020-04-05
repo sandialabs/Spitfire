@@ -13105,7 +13105,7 @@ $$ \frac{\mathrm{d}y}{\mathrm{d}t} = -ky $$<p>subject to initial condition $y(0)
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -13131,7 +13131,7 @@ Any callable object - something that has a <code>()</code> operator that takes t
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">dt</span> <span class="o">=</span> <span class="mf">0.02</span>
@@ -13157,7 +13157,7 @@ Any callable object - something that has a <code>()</code> operator that takes t
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">output_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
@@ -13179,7 +13179,7 @@ Any callable object - something that has a <code>()</code> operator that takes t
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">integrate</span> <span class="k">as</span> <span class="n">scipy_integrate</span>
@@ -13199,12 +13199,12 @@ Any callable object - something that has a <code>()</code> operator that takes t
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Using-Forward-Euler-and-RK4-in-odesolve">Using Forward Euler and RK4 in <code>odesolve</code><a class="anchor-link" href="#Using-Forward-Euler-and-RK4-in-odesolve">&#182;</a></h2><p>Now we show how to use Spitfire to use some explicit Runge-Kutta methods it provides for you. Other methods are provided as well, and in following demonstrations we will show how to write your own methods for use with <code>odesolve</code>.</p>
 <ul>
-<li><code>ForwardEuler</code>: <a href="https://en.wikipedia.org/wiki/Euler_method">the simplest time-stepping method of all</a></li>
-<li><code>ExplicitRungeKutta4Classical</code>: <a href="https://en.wikipedia.org/wiki/Runge–Kutta_methods"><em>the</em> Runge Kutta method</a>, a four-stage, fourth-order method</li>
+<li><code>ForwardEulerS1P1</code>: <a href="https://en.wikipedia.org/wiki/Euler_method">the simplest time-stepping method of all</a></li>
+<li><code>RK4ClassicalS4P4</code>: <a href="https://en.wikipedia.org/wiki/Runge–Kutta_methods"><em>the</em> Runge Kutta method</a>, a four-stage, fourth-order method</li>
 </ul>
 <p>Note below that two changes are needed to run the explicit methods.</p>
 <ol>
-<li>We provide the <code>method</code> keyword argument to <code>odesolve</code>. Carefully note that we are constructing an object with the parentheses after <code>ForwardEuler</code>.</li>
+<li>We provide the <code>method</code> keyword argument to <code>odesolve</code>. Carefully note that we are constructing an instance due to the parentheses after <code>ForwardEulerS1P1</code>.</li>
 <li>With these methods we have to tell Spitfire how large the time step is. The default method uses advanced adaptive time-stepping approaches, while here we simply use a constant time step by providing a number to the <code>step_size</code> keyword argument.</li>
 </ol>
 
@@ -13213,13 +13213,13 @@ Any callable object - something that has a <code>()</code> operator that takes t
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">ForwardEuler</span><span class="p">,</span> <span class="n">ExplicitRungeKutta4Classical</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">ForwardEulerS1P1</span><span class="p">,</span> <span class="n">RK4ClassicalS4P4</span>
 
-<span class="n">y_fe</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">output_times</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">ForwardEuler</span><span class="p">())</span>
-<span class="n">y_rk</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">output_times</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">ExplicitRungeKutta4Classical</span><span class="p">())</span>
+<span class="n">y_fe</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">output_times</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">ForwardEulerS1P1</span><span class="p">())</span>
+<span class="n">y_rk</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">output_times</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">RK4ClassicalS4P4</span><span class="p">())</span>
 </pre></div>
 
     </div>
@@ -13238,11 +13238,11 @@ Any callable object - something that has a <code>()</code> operator that takes t
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">t_fe_full</span><span class="p">,</span> <span class="n">y_fe_full</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stop_at_time</span><span class="o">=</span><span class="n">tf</span><span class="p">,</span> <span class="n">save_each_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">ForwardEuler</span><span class="p">())</span>
-<span class="n">t_rk_full</span><span class="p">,</span> <span class="n">y_rk_full</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stop_at_time</span><span class="o">=</span><span class="n">tf</span><span class="p">,</span> <span class="n">save_each_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">ExplicitRungeKutta4Classical</span><span class="p">())</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">t_fe_full</span><span class="p">,</span> <span class="n">y_fe_full</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stop_at_time</span><span class="o">=</span><span class="n">tf</span><span class="p">,</span> <span class="n">save_each_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">ForwardEulerS1P1</span><span class="p">())</span>
+<span class="n">t_rk_full</span><span class="p">,</span> <span class="n">y_rk_full</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">stop_at_time</span><span class="o">=</span><span class="n">tf</span><span class="p">,</span> <span class="n">save_each_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">RK4ClassicalS4P4</span><span class="p">())</span>
 </pre></div>
 
     </div>
@@ -13260,7 +13260,7 @@ Any callable object - something that has a <code>()</code> operator that takes t
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> notebook
@@ -13299,10 +13299,10 @@ Any callable object - something that has a <code>()</code> operator that takes t
 
 
 
-<div id="f7a6ec48-ca94-4bba-bea7-1cec2ac6db02"></div>
+<div id="d581ba4f-30e9-41fe-84db-871614adb7ba"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#f7a6ec48-ca94-4bba-bea7-1cec2ac6db02');
+var element = $('#d581ba4f-30e9-41fe-84db-871614adb7ba');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 

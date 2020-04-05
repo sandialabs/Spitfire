@@ -1,6 +1,6 @@
 import unittest
 from numpy import exp, log, mean, array, abs
-from spitfire import GeneralAdaptiveExplicitRungeKutta, odesolve
+from spitfire import GeneralAdaptiveERK, odesolve
 
 
 class ExponentialDecayProblem(object):
@@ -78,11 +78,11 @@ explicit_methods = [{'name': 'Forward Euler',
                      'order': 4}]
 
 for method_dict in explicit_methods:
-    method = GeneralAdaptiveExplicitRungeKutta(name=method_dict['name'],
-                                               order=method_dict['order'],
-                                               A=method_dict['A'],
-                                               b=method_dict['b'],
-                                               bhat=None if 'bhat' not in method_dict else method_dict['bhat'])
+    method = GeneralAdaptiveERK(name=method_dict['name'],
+                                order=method_dict['order'],
+                                A=method_dict['A'],
+                                b=method_dict['b'],
+                                bhat=None if 'bhat' not in method_dict else method_dict['bhat'])
     setattr(TestOrderOfAccuracy, 'test_general_erk_' + method_dict['name'], create_test(method))
 
 if __name__ == '__main__':

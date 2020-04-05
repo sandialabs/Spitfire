@@ -13189,10 +13189,10 @@ First we use the classical fourth-order Runge-Kutta method with a constant time 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">odesolve</span><span class="p">,</span> <span class="n">ExplicitRungeKutta4Classical</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">odesolve</span><span class="p">,</span> <span class="n">RK4ClassicalS4P4</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="n">drag_coeff_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;no drag&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;reasonable $C_D$&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;extreme drag&#39;</span><span class="p">:</span> <span class="mf">20.</span><span class="p">}</span>
@@ -13207,7 +13207,7 @@ First we use the classical fourth-order Runge-Kutta method with a constant time 
                     <span class="n">q0</span><span class="p">,</span>
                     <span class="n">save_each_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">step_size</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span>
-                    <span class="n">method</span><span class="o">=</span><span class="n">ExplicitRungeKutta4Classical</span><span class="p">(),</span>
+                    <span class="n">method</span><span class="o">=</span><span class="n">RK4ClassicalS4P4</span><span class="p">(),</span>
                     <span class="n">stop_criteria</span><span class="o">=</span><span class="n">object_has_landed</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">q</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">q</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
 
@@ -13235,10 +13235,10 @@ First we use the classical fourth-order Runge-Kutta method with a constant time 
 
 
 
-<div id="ce33eecc-1557-45de-bdd6-aaca9089536d"></div>
+<div id="64377a70-8e97-4415-8cae-a60e1e78444c"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#ce33eecc-1557-45de-bdd6-aaca9089536d');
+var element = $('#64377a70-8e97-4415-8cae-a60e1e78444c');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14035,7 +14035,7 @@ if (IPython.notebook.kernel != null) {
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Adaptive-time-stepping">Adaptive time-stepping<a class="anchor-link" href="#Adaptive-time-stepping">&#182;</a></h2><p>Above we had to guess at a value for the time step. Choosing a time step of one millisecond works well enough, but if we choose $\Delta t=0.1\,s$, which doesn't sound particularly unreasonable, the methods fail to stop near the point of impact.</p>
 <p>A key aspect of effective differential equation solvers is adaptive time-stepping, which is commonly (and in Spitfire) performed with error-control techniques. These techniques use embedded error estimation, meaning low-cast methods of assessing how accurate the solution is (locally). Methods for doing this exist in both linear multistep and Runge-Kutta methods.</p>
-<p>Spitfire provides several methods with error estimates to enable adaptive time-stepping, for which a <a href="https://en.wikipedia.org/wiki/PID_controller">PI controller</a> is available to adapt the time step to maintain the error near a particular target. Next we use the well-known <code>AdaptiveERK54CashKarp</code> method (see [<a href="https://en.wikipedia.org/wiki/Cash–Karp_method">https://en.wikipedia.org/wiki/Cash–Karp_method</a>]) and the PI controller to solve the problem without having to choose an arbitrary time step. We do initialize the time step size to a guessed value, although this is typically far easier to do than pick a fixed step size for the entire simulation. We also explicitly provide the target error for the controller and a maximum step size in this case.</p>
+<p>Spitfire provides several methods with error estimates to enable adaptive time-stepping, for which a <a href="https://en.wikipedia.org/wiki/PID_controller">PI controller</a> is available to adapt the time step to maintain the error near a particular target. Next we use the well-known <code>CashKarpS6P5Q4</code> method (see [<a href="https://en.wikipedia.org/wiki/Cash–Karp_method">https://en.wikipedia.org/wiki/Cash–Karp_method</a>]) and the PI controller to solve the problem without having to choose an arbitrary time step. We do initialize the time step size to a guessed value, although this is typically far easier to do than pick a fixed step size for the entire simulation. We also explicitly provide the target error for the controller and a maximum step size in this case.</p>
 <p>The trajectory plot shows that the solutions are at least reasonable and that the time step is varied quite differently for the case with extreme drag that is particularly nonlinear near the impact point.
 In the drag-free case the time step simply ramps up to the maximum value, while the other cases see the step size decrease as the object is nearing the ground and the acceleration is increasing (higher $y$-velocity magnitude leading to stronger drag forces).</p>
 
@@ -14044,10 +14044,10 @@ In the drag-free case the time step simply ramps up to the maximum value, while 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">AdaptiveERK54CashKarp</span><span class="p">,</span> <span class="n">PIController</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">CashKarpS6P5Q4</span><span class="p">,</span> <span class="n">PIController</span>
 
 <span class="o">%</span><span class="k">matplotlib</span> notebook
 <span class="n">figure</span><span class="p">,</span> <span class="n">axarray</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -14059,7 +14059,7 @@ In the drag-free case the time step simply ramps up to the maximum value, while 
                     <span class="n">q0</span><span class="p">,</span>
                     <span class="n">save_each_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">step_size</span><span class="o">=</span><span class="n">PIController</span><span class="p">(</span><span class="n">target_error</span><span class="o">=</span><span class="mf">1.e-8</span><span class="p">,</span> <span class="n">first_step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="mf">1.e0</span><span class="p">),</span>
-                    <span class="n">method</span><span class="o">=</span><span class="n">AdaptiveERK54CashKarp</span><span class="p">(),</span>
+                    <span class="n">method</span><span class="o">=</span><span class="n">CashKarpS6P5Q4</span><span class="p">(),</span>
                     <span class="n">stop_criteria</span><span class="o">=</span><span class="n">object_has_landed</span><span class="p">)</span>
     <span class="n">dt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">axarray</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">q</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">q</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
@@ -14092,10 +14092,10 @@ In the drag-free case the time step simply ramps up to the maximum value, while 
 
 
 
-<div id="6223c96d-0e9e-40f5-a081-9e87eb3c9af3"></div>
+<div id="f374f456-af59-46a8-be1c-44945118a33e"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#6223c96d-0e9e-40f5-a081-9e87eb3c9af3');
+var element = $('#f374f456-af59-46a8-be1c-44945118a33e');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 

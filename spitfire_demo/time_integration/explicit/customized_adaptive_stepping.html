@@ -13100,7 +13100,7 @@ The class is coded completely in our notebook and used with Spitfire internal ti
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -13148,14 +13148,14 @@ $$ y^{n+1,FE} = y^{n} + (\Delta t)^n r(t^n,y^n)$$<p>and then use the difference,
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">StepOutput</span><span class="p">,</span> <span class="n">TimeStepper</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire.time.methods</span> <span class="kn">import</span> <span class="n">StepOutput</span><span class="p">,</span> <span class="n">TimeStepperBase</span>
 
-<span class="k">class</span> <span class="nc">AB2FE</span><span class="p">(</span><span class="n">TimeStepper</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">AB2FE</span><span class="p">(</span><span class="n">TimeStepperBase</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Adams-Bashforth-2 w/FE error&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Adams-Bashforth-2 w/FE error&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">is_adaptive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rhs_nm1</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dt_nm1</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -13183,17 +13183,17 @@ $$ y^{n+1,FE} = y^{n} + (\Delta t)^n r(t^n,y^n)$$<p>and then use the difference,
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Now we'll solve the problem with our new <code>AB2FE</code> method and Spitfire's <code>AdaptiveERK21HeunEuler</code> method that does a similar technique (involving the trapezoidal and forward Euler methods) to make sure our implementation looks good.</p>
+<p>Now we'll solve the problem with our new <code>AB2FE</code> method and Spitfire's <code>ExpTrapezoidalS2P2Q1</code> method that does a similar technique (involving the trapezoidal and forward Euler methods) to make sure our implementation looks good.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">odesolve</span><span class="p">,</span> <span class="n">AdaptiveERK21HeunEuler</span><span class="p">,</span> <span class="n">PIController</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">spitfire</span> <span class="kn">import</span> <span class="n">odesolve</span><span class="p">,</span> <span class="n">ExpTrapezoidalS2P2Q1</span><span class="p">,</span> <span class="n">PIController</span>
 
 <span class="n">controller</span> <span class="o">=</span> <span class="n">PIController</span><span class="p">(</span><span class="n">target_error</span><span class="o">=</span><span class="mf">1.e-6</span><span class="p">,</span> <span class="n">first_step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="mf">1.e-1</span><span class="p">)</span>
 
@@ -13204,7 +13204,7 @@ $$ y^{n+1,FE} = y^{n} + (\Delta t)^n r(t^n,y^n)$$<p>and then use the difference,
                         <span class="n">q0</span><span class="p">,</span>
                         <span class="n">save_each_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                         <span class="n">step_size</span><span class="o">=</span><span class="n">controller</span><span class="p">,</span>
-                        <span class="n">method</span><span class="o">=</span><span class="n">AdaptiveERK21HeunEuler</span><span class="p">(),</span>
+                        <span class="n">method</span><span class="o">=</span><span class="n">ExpTrapezoidalS2P2Q1</span><span class="p">(),</span>
                         <span class="n">stop_criteria</span><span class="o">=</span><span class="n">object_has_landed</span><span class="p">)</span>
 
 <span class="n">t_ab2</span><span class="p">,</span> <span class="n">q_ab2</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">ode_rhs</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c_d</span><span class="p">),</span>
@@ -13250,10 +13250,10 @@ $$ y^{n+1,FE} = y^{n} + (\Delta t)^n r(t^n,y^n)$$<p>and then use the difference,
 
 
 
-<div id="98764ed3-89a8-4316-b814-c2ff3f93559d"></div>
+<div id="3223e8ae-8523-4ed8-8c97-168083d4c9ed"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#98764ed3-89a8-4316-b814-c2ff3f93559d');
+var element = $('#3223e8ae-8523-4ed8-8c97-168083d4c9ed');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 
@@ -14055,12 +14055,12 @@ if (IPython.notebook.kernel != null) {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">class</span> <span class="nc">RK2FE_PlusHeuristic</span><span class="p">(</span><span class="n">TimeStepper</span><span class="p">):</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">class</span> <span class="nc">RK2FE_PlusHeuristic</span><span class="p">(</span><span class="n">TimeStepperBase</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;ERK2(1) w/trajectory heuristic&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;ERK2(1) w/trajectory heuristic&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">is_adaptive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">single_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">k1</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
@@ -14094,7 +14094,7 @@ Note that the time step drops significantly when the $y$-velocity is negative an
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">t_rk2mod</span><span class="p">,</span> <span class="n">q_rk2mod</span> <span class="o">=</span> <span class="n">odesolve</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">ode_rhs</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c_d</span><span class="p">),</span>
@@ -14143,10 +14143,10 @@ Note that the time step drops significantly when the $y$-velocity is negative an
 
 
 
-<div id="920a35e7-a2eb-4fbd-b58e-df19dba154d4"></div>
+<div id="1a192400-9042-40fd-933f-f876ad9f1352"></div>
 <div class="output_subarea output_javascript ">
 <script type="text/javascript">
-var element = $('#920a35e7-a2eb-4fbd-b58e-df19dba154d4');
+var element = $('#1a192400-9042-40fd-933f-f876ad9f1352');
 /* Put everything inside the global mpl namespace */
 window.mpl = {};
 

@@ -20,17 +20,16 @@ from .griffon.griffon import PyCombustionKernels
 from .time.integrator import SaveAllDataToList, odesolve
 from .time.nonlinear import SimpleNewtonSolver
 from .time.stepcontrol import PIController
-from .time.methods import ESDIRK64, \
-    SDIRK22, \
-    BackwardEuler, \
-    BackwardEulerWithError, \
-    CrankNicolson, \
-    ForwardEuler, \
-    ExplicitRungeKutta2Midpoint, \
-    ExplicitRungeKutta2Ralston, \
-    ExplicitRungeKutta2Trapezoid, \
-    ExplicitRungeKutta3Kutta, \
-    ExplicitRungeKutta4Classical, \
-    GeneralAdaptiveExplicitRungeKutta, \
-    AdaptiveERK54CashKarp, \
-    AdaptiveERK21HeunEuler
+from .time.methods import (ForwardEulerS1P1,
+                           ExpMidpointS2P2,
+                           ExpTrapezoidalS2P2Q1,
+                           ExpRalstonS2P2,
+                           RK3KuttaS3P3,
+                           RK4ClassicalS4P4,
+                           CashKarpS6P5Q4,
+                           BackwardEulerS1P1Q1,
+                           CrankNicolsonS2P2,
+                           SDIRKS2P2,
+                           KennedyCarpenterS6P4Q3,
+                           GeneralAdaptiveERK,
+                           GeneralAdaptiveERKMultipleEmbedded)

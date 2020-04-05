@@ -120,7 +120,7 @@ cd ..
 5. Run the following commands to 'Cythonize' the Griffon C++ code and install Spitfire for use in Python.
 ```
 python3 setup.py build_ext --inplace --griffon-build-dir=griffon_build
-python3 setup.py install --griffon-build-dir=griffon_build
+python3 setup.py install
 ```
 
 ## Running the Tests

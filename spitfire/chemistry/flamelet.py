@@ -12,7 +12,7 @@ namely setting up models and solving both unsteady and steady flamelets
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 from spitfire.time.integrator import odesolve
-from spitfire.time.methods import ESDIRK64
+from spitfire.time.methods import KennedyCarpenterS6P4Q3
 from spitfire.time.nonlinear import SimpleNewtonSolver
 from spitfire.time.stepcontrol import PIController
 from spitfire.chemistry.library import Dimension, Library
@@ -901,7 +901,7 @@ class Flamelet(object):
                   maximum_steps_per_jacobian=1,
                   nonlinear_solve_tolerance=1.e-12,
                   linear_solver='block thomas',
-                  stepper_type=ESDIRK64,
+                  stepper_type=KennedyCarpenterS6P4Q3,
                   nlsolver_type=SimpleNewtonSolver,
                   stepcontrol_type=PIController,
                   extra_integrator_args=dict(),

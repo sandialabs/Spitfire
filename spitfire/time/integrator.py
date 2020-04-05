@@ -19,7 +19,7 @@ import numpy as np
 from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices, zeros, save as numpy_save
 from scipy.linalg import norm
 from spitfire.time.stepcontrol import ConstantTimeStep, PIController
-from spitfire.time.methods import ImplicitTimeStepper, ESDIRK64
+from spitfire.time.methods import KennedyCarpenterS6P4Q3
 from spitfire.time.nonlinear import finite_difference_jacobian, SimpleNewtonSolver
 from scipy.linalg.lapack import dgetrf as lapack_lu_factor
 from scipy.linalg.lapack import dgetrs as lapack_lu_solve
@@ -290,7 +290,7 @@ def odesolve(right_hand_side,
              pre_step_callback=None,
              post_step_callback=None,
              step_update_callback=None,
-             method=ESDIRK64(SimpleNewtonSolver()),
+             method=KennedyCarpenterS6P4Q3(SimpleNewtonSolver()),
              step_size=PIController(),
              linear_setup=None,
              linear_solve=None,
@@ -329,7 +329,7 @@ def odesolve(right_hand_side,
     :param pre_step_callback: method of the form f(current_time, current_state, number_of_time_steps) called before each step (default: None)
     :param post_step_callback: method of the form f(current_time, current_state, residual, number_of_time_steps) called after each step, that can optionally return a modified state vector (default: None)
     :param step_update_callback: method of the form f(state, dstate, time_error, target_error, nonlinear_solve_converged) that checks validity of a state update (default: None)
-    :param method: the time stepping method (a spitfire.time.methods.TimeStepper object), defaults to ESDIRK64(SimpleNewtonSolver())
+    :param method: the time stepping method (a spitfire.time.methods.TimeStepper object), defaults to KennedyCarpenterS6P4Q3(SimpleNewtonSolver())
     :param step_size: the time step controller, either a float (for constant time step) or spitfire.time.stepcontrol class
     :param linear_setup: the linear system setup method, in the form f(t, y, scale), to set up scale * J - M
     :param linear_solve: the linear system solve method, in the form f(residual), to solve (scale * J - M)x = b
@@ -418,6 +418,11 @@ def odesolve(right_hand_side,
                          'stop_at_steady=[True or tolerance], '
                          'or stop_criteria as a function(t, state, residual, nsteps)')
 
+    if isinstance(step_size, PIController):
+        if not method.is_adaptive:
+            raise TypeError('The method provided {method.name} cannot be used with a PI controller'
+                            ' (the default step_size argument), you must set step_size equal to a constant value.')
+
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
 
@@ -439,9 +444,8 @@ def odesolve(right_hand_side,
         if stop_at_steady_state:
             steady_tolerance = 1.e-4 if isinstance(stop_at_steady, bool) else stop_at_steady
 
-        method_is_implicit = isinstance(method, ImplicitTimeStepper)
-        use_finite_difference_jacobian = method_is_implicit and linear_setup is None
-        build_projector_in_governor = (method_is_implicit and method.nonlinear_solver.setup_projector_in_governor) or \
+        use_finite_difference_jacobian = method.is_implicit and linear_setup is None
+        build_projector_in_governor = (method.is_implicit and method.nonlinear_solver.setup_projector_in_governor) or \
                                       use_finite_difference_jacobian
         eval_linear_setup = True
 
@@ -497,7 +501,7 @@ def odesolve(right_hand_side,
 
         continue_time_stepping = True
 
-        if method_is_implicit:
+        if method.is_implicit:
             method_coeff = method.implicit_coefficient
 
         cpu_time_0 = timer.perf_counter()
@@ -512,7 +516,7 @@ def odesolve(right_hand_side,
             if pre_step_callback is not None:
                 pre_step_callback(current_time, current_state, number_of_time_steps)
 
-            if method_is_implicit:
+            if method.is_implicit:
                 if build_projector_in_governor and eval_linear_setup:
                     linear_setup(current_time, current_state, time_step_size * method_coeff)
                     number_projector_setup += 1
@@ -583,7 +587,7 @@ def odesolve(right_hand_side,
 
                 time_step_size = step_size(number_of_time_steps, time_step_size, step_output)
 
-                if method_is_implicit:
+                if method.is_implicit:
                     eval_linear_setup, time_step_size, linear_setup_count = _check_linear_setup(debug_verbose,
                                                                                                 nlsuccess,
                                                                                                 nlisslow,
@@ -632,7 +636,7 @@ def odesolve(right_hand_side,
             print('\n  CPU time')
             print('- total    (s) : {:.6e}'.format(total_runtime))
             print('- per step (ms): {:.6e}'.format(1.e3 * total_runtime / number_of_time_steps))
-            if method_is_implicit:
+            if method.is_implicit:
                 print('\n  Nonlinear iterations')
                 print('- total   : {:}'.format(number_nonlinear_iter))
                 print('- per step: {:.1f}'.format(number_nonlinear_iter / number_of_time_steps))
@@ -651,7 +655,7 @@ def odesolve(right_hand_side,
                       'time steps': number_of_time_steps,
                       'simulation time': current_time,
                       'total cpu time (s)': total_runtime}
-        if method_is_implicit:
+        if method.is_implicit:
             stats_dict.update({'nonlinear iter': number_nonlinear_iter,
                                'linear iter': number_linear_iter,
                                'Jacobian setups': number_projector_setup})
