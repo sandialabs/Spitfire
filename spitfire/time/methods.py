@@ -178,6 +178,32 @@ class RK3KuttaS3P3(TimeStepperBase):
         return StepOutput(solution_update=1. / 6. * (k1 + k3 + 4. * k2) * dt)
 
 
+class BogackiShampineS4P3Q2(TimeStepperBase):
+    """
+    **Constructor**:
+
+    Parameters
+    ----------
+    norm_weighting : float or np.ndarray the size of the state vector
+        multiplies the embedded error estimate prior to computing the norm (default: 1.)
+    norm_order : int or np.Inf
+        order of the norm of the error estimate (default: np.Inf)
+    """
+
+    def __init__(self, norm_weighting=1., norm_order=Inf):
+        super().__init__(name='ERK4 Bogacki-Shampine', order=3, n_stages=4,
+                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
+
+    def single_step(self, state, t, dt, rhs, *args, **kwargs):
+        k1 = rhs(t, state)
+        k2 = rhs(t + 0.5 * dt, state + 0.5 * dt * k1)
+        k3 = rhs(t + 0.75 * dt, state + 0.75 * dt * k2)
+        r1 = 1. / 9. * (2. * k1 + 3. * k2 + 4. * k3)
+        k4 = rhs(t + dt, state + dt * r1)
+        r2 = (7. * k1 + 6. * k2 + 8. * k3 + 3. * k4) / 24.
+        return StepOutput(solution_update=dt * r1, temporal_error=dt * self.norm(r2 - r1))
+
+
 class RK4ClassicalS4P4(TimeStepperBase):
     def __init__(self):
         super().__init__(name='ERK4 classical', order=4, n_stages=4)
@@ -203,7 +229,7 @@ class CashKarpS6P5Q4(TimeStepperBase):
     """
 
     def __init__(self, norm_weighting=1., norm_order=Inf):
-        super().__init__(name='Cash/Karp adaptive', order=5, n_stages=6,
+        super().__init__(name='Cash/Karp RK5', order=5, n_stages=6,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
 
     def single_step(self, state, t, dt, rhs, *args, **kwargs):
@@ -221,6 +247,86 @@ class CashKarpS6P5Q4(TimeStepperBase):
         r4 = 2825. / 27648. * k1 + 18575. / 48384. * k3 + 13525. / 55296. * k4 + 277. / 14336. * k5 + 0.25 * k6
         r5 = 37. / 378. * k1 + 250. / 621. * k3 + 125. / 594. * k4 + 512. / 1771. * k6
         return StepOutput(solution_update=d * r5, temporal_error=d * self.norm(r5 - r4))
+
+
+class ZonneveldS5P4Q3(TimeStepperBase):
+    """
+    **Constructor**:
+
+    Parameters
+    ----------
+    norm_weighting : float or np.ndarray the size of the state vector
+        multiplies the embedded error estimate prior to computing the norm (default: 1.)
+    norm_order : int or np.Inf
+        order of the norm of the error estimate (default: np.Inf)
+    """
+
+    def __init__(self, norm_weighting=1., norm_order=Inf):
+        super().__init__(name='Zonneveld RK4', order=4, n_stages=5,
+                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
+
+    def single_step(self, state, t, dt, rhs, *args, **kwargs):
+        q = state
+        r = rhs
+        d = dt
+
+        k1 = r(t, q)
+        k2 = r(t + 0.5 * d, q + 0.5 * d * k1)
+        k3 = r(t + 0.5 * d, q + 0.5 * d * k2)
+        k4 = r(t + d, q + d * k3)
+        k5 = r(t + 0.75 * d, q + 1. / 32. * d * (5. * k1 + 7. * k2 + 13. * k3 - k4))
+        r1 = (k1 + k4 + 2. * (k2 + k3)) / 6.
+        r2 = (-3. * k1 + 14. * (k2 + k3) + 13. * k4 - 32. * k5) / 6.
+        return StepOutput(solution_update=d * r1, temporal_error=d * self.norm(r1 - r2))
+
+
+class ExpKennedyCarpetnerS6P4Q3(TimeStepperBase):
+    """
+    **Constructor**:
+
+    Parameters
+    ----------
+    norm_weighting : float or np.ndarray the size of the state vector
+        multiplies the embedded error estimate prior to computing the norm (default: 1.)
+    norm_order : int or np.Inf
+        order of the norm of the error estimate (default: np.Inf)
+    """
+
+    def __init__(self, norm_weighting=1., norm_order=Inf):
+        super().__init__(name='Kennedy/Carpenter explicit RK4', order=4, n_stages=6,
+                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
+
+    def single_step(self, state, t, dt, rhs, *args, **kwargs):
+        q = state
+        r = rhs
+        d = dt
+
+        k1 = r(t, q)
+        k2 = r(t + 0.5 * d, q + 0.5 * d * k1)
+        k3 = r(t + 83. / 250. * d, q + d / 62500. * (13861. * k1 + 6889. * k2))
+        k4 = r(t + 31. / 50. * d, q + d * (9408046702089. / 11113171139209. * k3 -
+                                           116923316275. / 2393684061468. * k1 -
+                                           2731218467317. / 15368042101831. * k2))
+        k5 = r(t + 17. / 20. * d, q + d * (-451086348788. / 2902428689909. * k1 +
+                                           -2682348792572. / 7519795681897. * k2 +
+                                           12662868775082. / 11960479115383. * k3 +
+                                           3355817975965. / 11060851509271. * k4))
+        k6 = r(t + d, q + d * (647845179188. / 3216320057751. * k1 +
+                               73281519250. / 8382639484533. * k2 +
+                               552539513391. / 3454668386233. * k3 +
+                               3354512671639. / 8306763924573. * k4 +
+                               4040. / 17871. * k5))
+        r1 = (82889. / 524892. * k1 +
+              15625. / 83664. * k3 +
+              69875. / 102672. * k4 -
+              2260. / 8211. * k5 +
+              0.25 * k6)
+        r2 = (4586570599. / 29645900160. * k1 +
+              178811875. / 945068544. * k3 +
+              814220225. / 1159782912. * k4 -
+              3700637. / 11593932. * k5 +
+              61727. / 225920. * k6)
+        return StepOutput(solution_update=d * r1, temporal_error=d * self.norm(r1 - r2))
 
 
 class BackwardEulerS1P1Q1(TimeStepperBase):
@@ -323,7 +429,7 @@ class CrankNicolsonS2P2(TimeStepperBase):
                           projector_setups=output.projector_setups)
 
 
-class SDIRKS2P2(TimeStepperBase):
+class AlexanderEllsiepenS2P2Q1(TimeStepperBase):
     """
     **Constructor**:
 
@@ -331,16 +437,25 @@ class SDIRKS2P2(TimeStepperBase):
     ----------
     nonlinear_solver : spitfire.time.nonlinear.NonlinearSolver
         the solver used in each implicit stage
+        the solver used in each implicit stage
+    norm_weighting : float or np.ndarray the size of the state vector
+        multiplies the embedded error estimate prior to computing the norm (default: 1.)
+    norm_order : int or np.Inf
+        order of the norm of the error estimate (default: np.Inf)
     """
 
-    def __init__(self, nonlinear_solver):
-        super().__init__(name='SDIRK22', order=2, n_stages=2,
-                         is_implicit=True, implicit_coefficient=1. - 0.5 * sqrt(2.), nonlinear_solver=nonlinear_solver)
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+        super().__init__(name='Alexander Ellsiepen SDIRK22', order=2, n_stages=2,
+                         is_implicit=True, implicit_coefficient=1. - 0.5 * sqrt(2.), nonlinear_solver=nonlinear_solver,
+                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
         self.gamma = 1. - 0.5 * sqrt(2.)
         self.a21 = 0.5 * sqrt(2.)
 
         self.b1 = 0.5 * sqrt(2.)
         self.b2 = 1. - 0.5 * sqrt(2.)
+
+        self.bhat1 = 2.5 * sqrt(2.) - 1.
+        self.bhat2 = 2. - 2.5 * sqrt(2.)
 
         self.bvec = array([self.b1, self.b2])
         self.c = array([self.gamma, 1.])
@@ -404,6 +519,7 @@ class SDIRKS2P2(TimeStepperBase):
         projector_setups += output.projector_setups
 
         return StepOutput(solution_update=dt * (self.b1 * k1 + self.b2 * k2),
+                          temporal_error=dt * self.norm(self.bhat1 * k1 + self.bhat2 * k2),
                           nonlinear_iter=nonlinear_iter,
                           linear_iter=linear_iter,
                           nonlinear_converged=nonlinear_converged,
@@ -582,6 +698,510 @@ class KennedyCarpenterS6P4Q3(TimeStepperBase):
         # accumulation
         dstate = dt * (self.b1 * k1 + self.b2 * k2 + self.b3 * k3 + self.b4 * k4 + self.b5 * k5 + self.b6 * k6)
         dstate_h = dt * (self.b1h * k1 + self.b2h * k2 + self.b3h * k3 + self.b4h * k4 + self.b5h * k5 + self.b6h * k6)
+
+        return StepOutput(solution_update=dstate,
+                          temporal_error=self.norm(dstate - dstate_h),
+                          nonlinear_iter=nonlinear_iter,
+                          linear_iter=linear_iter,
+                          nonlinear_converged=nonlinear_converged,
+                          slow_nonlinear_convergence=slow_nonlinear_convergence,
+                          projector_setups=projector_setups)
+
+
+class KvaernoS4P3Q2(TimeStepperBase):
+    """
+    **Constructor**:
+
+    Parameters
+    ----------
+    nonlinear_solver : spitfire.time.nonlinear.NonlinearSolver
+        the solver used in each implicit stage
+    norm_weighting : float or np.ndarray the size of the state vector
+        multiplies the embedded error estimate prior to computing the norm (default: 1.)
+    norm_order : int or np.Inf
+        order of the norm of the error estimate (default: np.Inf)
+    """
+
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+        super().__init__(name='Kvaerno ESDIRK43', order=3, n_stages=4,
+                         is_implicit=True, implicit_coefficient=0.4358665215, nonlinear_solver=nonlinear_solver,
+                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
+        self.gamma = 0.4358665215
+        self.a21 = 0.4358665215
+        self.a31 = 0.490563388419108
+        self.a32 = 0.073570090080892
+        self.a41 = 0.308809969973036
+        self.a42 = 1.490563388254106
+        self.a43 = -1.235239879727145
+
+        self.b1 = self.a41
+        self.b2 = self.a42
+        self.b3 = self.a43
+        self.b4 = self.gamma
+        self.b1h = 0.490563388419108
+        self.b2h = 0.073570090080892
+        self.b3h = 0.4358665215
+        self.b4h = 0.
+
+        self.bvec = array([self.b1, self.b2, self.b3, self.b4])
+        self.bhvec = array([self.b1h, self.b2h, self.b3h, self.b4h])
+
+        self.A = array([[0., 0., 0., 0.],
+                        [self.a21, self.gamma, 0., 0.],
+                        [self.a31, self.a32, self.gamma, 0.],
+                        [self.a41, self.a42, self.a43, self.gamma], ])
+        self.c = sum(self.A, axis=1)
+
+    def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
+        """
+        Take a single step with this stepper method
+
+        :param state: the current state
+        :param t: the current time
+        :param dt: the size of the time step
+        :param rhs: the right-hand side of the ODE in the form f(t, y)
+        :return: a StepOutput object
+        """
+        nonlinear_iter = 0
+        linear_iter = 0
+        nonlinear_converged = True
+        slow_nonlinear_convergence = False
+        projector_setups = 0
+
+        current_c_value = None
+        prior_stage_k = None
+        state_n = copy(state)
+
+        def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
+            rhs_val = rhs(t + current_c_value * dt, state_arg) if evaluate_new_rhs else existing_rhs
+            return dt * (self.gamma * rhs_val + prior_stage_k) - (state_arg - state_n), rhs_val
+
+        def linear_setup(state_arg):
+            lhs_setup(t + current_c_value * dt, state_arg)
+
+        # stage 1
+        k1 = rhs(t, state)
+        prior_stage_k = self.a21 * k1
+        current_c_value = self.c[1]
+
+        # stage 2
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k1)
+        state = output.solution
+        k2 = output.rhs_at_converged
+        prior_stage_k = self.a32 * k2 + self.a31 * k1
+        current_c_value = self.c[2]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 3
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k2)
+        state = output.solution
+        k3 = output.rhs_at_converged
+        prior_stage_k = self.a43 * k3 + self.a42 * k2 + self.a41 * k1
+        current_c_value = self.c[3]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 4
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k3)
+        state = output.solution
+        k4 = output.rhs_at_converged
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # accumulation
+        dstate = dt * (self.b1 * k1 + self.b2 * k2 + self.b3 * k3 + self.b4 * k4)
+        dstate_h = dt * (self.b1h * k1 + self.b2h * k2 + self.b3h * k3 + self.b4h * k4)
+
+        return StepOutput(solution_update=dstate,
+                          temporal_error=self.norm(dstate - dstate_h),
+                          nonlinear_iter=nonlinear_iter,
+                          linear_iter=linear_iter,
+                          nonlinear_converged=nonlinear_converged,
+                          slow_nonlinear_convergence=slow_nonlinear_convergence,
+                          projector_setups=projector_setups)
+
+
+class KennedyCarpenterS4P3Q2(TimeStepperBase):
+    """
+    **Constructor**:
+
+    Parameters
+    ----------
+    nonlinear_solver : spitfire.time.nonlinear.NonlinearSolver
+        the solver used in each implicit stage
+    norm_weighting : float or np.ndarray the size of the state vector
+        multiplies the embedded error estimate prior to computing the norm (default: 1.)
+    norm_order : int or np.Inf
+        order of the norm of the error estimate (default: np.Inf)
+    """
+
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+        super().__init__(name='Kennedy/Carpenter ESDIRK43', order=3, n_stages=4,
+                         is_implicit=True, implicit_coefficient=1767732205903. / 4055673282236.,
+                         nonlinear_solver=nonlinear_solver,
+                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
+        self.gamma = 1767732205903. / 4055673282236.
+        self.a21 = self.gamma
+        self.a31 = 2746238789719. / 10658868560708.
+        self.a32 = -640167445237. / 6845629431997.
+        self.a41 = 1471266399579. / 7840856788654.
+        self.a42 = -4482444167858. / 7529755066697.
+        self.a43 = 11266239266428. / 11593286722821.
+
+        self.b1 = self.a41
+        self.b2 = self.a42
+        self.b3 = self.a43
+        self.b4 = self.gamma
+        self.b1h = 2756255671327. / 12835298489170.
+        self.b2h = -10771552573575. / 22201958757719.
+        self.b3h = 9247589265047. / 10645013368117.
+        self.b4h = 2193209047091. / 5459859503100.
+
+        self.bvec = array([self.b1, self.b2, self.b3, self.b4])
+        self.bhvec = array([self.b1h, self.b2h, self.b3h, self.b4h])
+
+        self.A = array([[0., 0., 0., 0.],
+                        [self.a21, self.gamma, 0., 0.],
+                        [self.a31, self.a32, self.gamma, 0.],
+                        [self.a41, self.a42, self.a43, self.gamma], ])
+        self.c = sum(self.A, axis=1)
+
+    def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
+        """
+        Take a single step with this stepper method
+
+        :param state: the current state
+        :param t: the current time
+        :param dt: the size of the time step
+        :param rhs: the right-hand side of the ODE in the form f(t, y)
+        :return: a StepOutput object
+        """
+        nonlinear_iter = 0
+        linear_iter = 0
+        nonlinear_converged = True
+        slow_nonlinear_convergence = False
+        projector_setups = 0
+
+        current_c_value = None
+        prior_stage_k = None
+        state_n = copy(state)
+
+        def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
+            rhs_val = rhs(t + current_c_value * dt, state_arg) if evaluate_new_rhs else existing_rhs
+            return dt * (self.gamma * rhs_val + prior_stage_k) - (state_arg - state_n), rhs_val
+
+        def linear_setup(state_arg):
+            lhs_setup(t + current_c_value * dt, state_arg)
+
+        # stage 1
+        k1 = rhs(t, state)
+        prior_stage_k = self.a21 * k1
+        current_c_value = self.c[1]
+
+        # stage 2
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k1)
+        state = output.solution
+        k2 = output.rhs_at_converged
+        prior_stage_k = self.a32 * k2 + self.a31 * k1
+        current_c_value = self.c[2]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 3
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k2)
+        state = output.solution
+        k3 = output.rhs_at_converged
+        prior_stage_k = self.a43 * k3 + self.a42 * k2 + self.a41 * k1
+        current_c_value = self.c[3]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 4
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k3)
+        state = output.solution
+        k4 = output.rhs_at_converged
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # accumulation
+        dstate = dt * (self.b1 * k1 + self.b2 * k2 + self.b3 * k3 + self.b4 * k4)
+        dstate_h = dt * (self.b1h * k1 + self.b2h * k2 + self.b3h * k3 + self.b4h * k4)
+
+        return StepOutput(solution_update=dstate,
+                          temporal_error=self.norm(dstate - dstate_h),
+                          nonlinear_iter=nonlinear_iter,
+                          linear_iter=linear_iter,
+                          nonlinear_converged=nonlinear_converged,
+                          slow_nonlinear_convergence=slow_nonlinear_convergence,
+                          projector_setups=projector_setups)
+
+
+class KennedyCarpenterS8P5Q4(TimeStepperBase):
+    """
+    **Constructor**:
+
+    Parameters
+    ----------
+    nonlinear_solver : spitfire.time.nonlinear.NonlinearSolver
+        the solver used in each implicit stage
+    norm_weighting : float or np.ndarray the size of the state vector
+        multiplies the embedded error estimate prior to computing the norm (default: 1.)
+    norm_order : int or np.Inf
+        order of the norm of the error estimate (default: np.Inf)
+    """
+
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+        super().__init__(name='Kennedy Carpenter ESDIRK85', order=5, n_stages=8,
+                         is_implicit=True, implicit_coefficient=41. / 200., nonlinear_solver=nonlinear_solver,
+                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
+        self.gamma = 41. / 200.
+        self.a21 = 41. / 200.
+        self.a31 = 41. / 400.
+        self.a32 = -567603406766. / 11931857230679.
+        self.a41 = 683785636431. / 9252920307686.
+        self.a42 = 0.
+        self.a43 = -110385047103. / 1367015193373.
+        self.a51 = 3016520224154. / 10081342136671.
+        self.a52 = 0.
+        self.a53 = 30586259806659. / 12414158314087.
+        self.a54 = -22760509404356. / 11113319521817.
+        self.a61 = 218866479029. / 1489978393911.
+        self.a62 = 0.
+        self.a63 = 638256894668. / 5436446318841.
+        self.a64 = -1179710474555. / 5321154724896.
+        self.a65 = -60928119172. / 8023461067671.
+        self.a71 = 1020004230633. / 5715676835656.
+        self.a72 = 0.
+        self.a73 = 25762820946817. / 25263940353407.
+        self.a74 = -2161375909145. / 9755907335909.
+        self.a75 = -211217309593. / 5846859502534.
+        self.a76 = -4269925059573. / 7827059040749.
+        self.a81 = -872700587467. / 9133579230613.
+        self.a82 = 0.
+        self.a83 = 0.
+        self.a84 = 22348218063261. / 9555858737531.
+        self.a85 = -1143369518992. / 8141816002931.
+        self.a86 = -39379526789629. / 19018526304540.
+        self.a87 = 32727382324388. / 42900044865799.
+
+        self.b1 = self.a81
+        self.b2 = self.a82
+        self.b3 = self.a83
+        self.b4 = self.a84
+        self.b5 = self.a85
+        self.b6 = self.a86
+        self.b7 = self.a87
+        self.b8 = self.gamma
+        self.b1h = -975461918565. / 9796059967033.
+        self.b2h = 0.
+        self.b3h = 0.
+        self.b4h = 78070527104295. / 32432590147079.
+        self.b5h = -548382580838. / 3424219808633.
+        self.b6h = -33438840321285. / 15594753105479.
+        self.b7h = 3629800801594. / 4656183773603.
+        self.b8h = 4035322873751. / 18575991585200.
+
+        self.bvec = array([self.b1, self.b2, self.b3, self.b4, self.b5, self.b6, self.b7, self.b8])
+        self.bhvec = array([self.b1h, self.b2h, self.b3h, self.b4h, self.b5h, self.b6h, self.b7h, self.b8h])
+
+        self.A = array([[0., 0., 0., 0., 0., 0., 0., 0.],
+                        [self.a21, self.gamma, 0., 0., 0., 0., 0., 0.],
+                        [self.a31, self.a32, self.gamma, 0., 0., 0., 0., 0.],
+                        [self.a41, self.a42, self.a43, self.gamma, 0., 0., 0., 0.],
+                        [self.a51, self.a52, self.a53, self.a54, self.gamma, 0., 0., 0.],
+                        [self.a61, self.a62, self.a63, self.a64, self.a65, self.gamma, 0., 0.],
+                        [self.a71, self.a72, self.a73, self.a74, self.a75, self.a76, self.gamma, 0.],
+                        [self.a81, self.a82, self.a83, self.a84, self.a85, self.a86, self.a87, self.gamma]])
+        self.c = sum(self.A, axis=1)
+
+    def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
+        """
+        Take a single step with this stepper method
+
+        :param state: the current state
+        :param t: the current time
+        :param dt: the size of the time step
+        :param rhs: the right-hand side of the ODE in the form f(t, y)
+        :return: a StepOutput object
+        """
+        nonlinear_iter = 0
+        linear_iter = 0
+        nonlinear_converged = True
+        slow_nonlinear_convergence = False
+        projector_setups = 0
+
+        current_c_value = None
+        prior_stage_k = None
+        state_n = copy(state)
+
+        def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
+            rhs_val = rhs(t + current_c_value * dt, state_arg) if evaluate_new_rhs else existing_rhs
+            return dt * (self.gamma * rhs_val + prior_stage_k) - (state_arg - state_n), rhs_val
+
+        def linear_setup(state_arg):
+            lhs_setup(t + current_c_value * dt, state_arg)
+
+        # stage 1
+        k1 = rhs(t, state)
+        prior_stage_k = self.a21 * k1
+        current_c_value = self.c[1]
+
+        # stage 2
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k1)
+        state = output.solution
+        k2 = output.rhs_at_converged
+        prior_stage_k = self.a32 * k2 + self.a31 * k1
+        current_c_value = self.c[2]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 3
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k2)
+        state = output.solution
+        k3 = output.rhs_at_converged
+        prior_stage_k = self.a43 * k3 + self.a42 * k2 + self.a41 * k1
+        current_c_value = self.c[3]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 4
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k3)
+        state = output.solution
+        k4 = output.rhs_at_converged
+        prior_stage_k = self.a54 * k4 + self.a53 * k3 + self.a52 * k2 + self.a51 * k1
+        current_c_value = self.c[4]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 5
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k4)
+        state = output.solution
+        k5 = output.rhs_at_converged
+        prior_stage_k = self.a65 * k5 + self.a64 * k4 + self.a63 * k3 + self.a62 * k2 + self.a61 * k1
+        current_c_value = self.c[5]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 6
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k5)
+        k6 = output.rhs_at_converged
+        prior_stage_k = self.a76 * k6 + self.a75 * k5 + self.a74 * k4 + self.a73 * k3 + self.a72 * k2 + self.a71 * k1
+        current_c_value = self.c[6]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 7
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k6)
+        k7 = output.rhs_at_converged
+        prior_stage_k = self.a87 * k7 + self.a86 * k6 + self.a85 * k5 + self.a84 * k4 + \
+                        self.a83 * k3 + self.a82 * k2 + self.a81 * k1
+        current_c_value = self.c[7]
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # stage 8
+        output = self.nonlinear_solver(residual_method=residual,
+                                       setup_method=linear_setup,
+                                       solve_method=lhs_solve,
+                                       initial_guess=state,
+                                       initial_rhs=k7)
+        k8 = output.rhs_at_converged
+        nonlinear_iter += output.iter
+        linear_iter += output.liter
+        nonlinear_converged = nonlinear_converged and output.converged
+        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
+        projector_setups += output.projector_setups
+
+        # accumulation
+        dstate = dt * (self.b1 * k1 + self.b2 * k2 + self.b3 * k3 +
+                       self.b4 * k4 + self.b5 * k5 + self.b6 * k6 + self.b7 * k7 + self.b8 * k8)
+        dstate_h = dt * (self.b1h * k1 + self.b2h * k2 + self.b3h * k3 +
+                         self.b4h * k4 + self.b5h * k5 + self.b6h * k6 + self.b7h * k7 + self.b8h * k8)
 
         return StepOutput(solution_update=dstate,
                           temporal_error=self.norm(dstate - dstate_h),

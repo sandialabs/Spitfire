@@ -3,7 +3,7 @@ import pickle
 
 def run():
     from spitfire.time.integrator import odesolve, SaveAllDataToList
-    from spitfire.time.methods import KennedyCarpenterS6P4Q3, BackwardEulerS1P1Q1, SDIRKS2P2
+    from spitfire.time.methods import KennedyCarpenterS6P4Q3, BackwardEulerS1P1Q1, AlexanderEllsiepenS2P2Q1
     from spitfire.time.nonlinear import SimpleNewtonSolver
     from scipy.linalg.lapack import dgetrf as lapack_lu_factor
     from scipy.linalg.lapack import dgetrs as lapack_lu_solve
@@ -146,7 +146,7 @@ def run():
     data.reset_data(initial_solution=c0)
     odesolve(problem.rhs, c0, stop_at_time=final_time,
              step_size=time_step_size,
-             method=SDIRKS2P2(SimpleNewtonSolver()),
+             method=AlexanderEllsiepenS2P2Q1(SimpleNewtonSolver()),
              linear_setup=problem.setup_lapack_lu,
              linear_solve=problem.solve_lapack_lu,
              post_step_callback=data.save_data)
@@ -155,7 +155,7 @@ def run():
     data.reset_data(initial_solution=c0)
     odesolve(problem.rhs, c0, stop_at_time=final_time,
              step_size=time_step_size,
-             method=SDIRKS2P2(SimpleNewtonSolver()),
+             method=AlexanderEllsiepenS2P2Q1(SimpleNewtonSolver()),
              linear_setup=problem.setup_diagonal,
              linear_solve=problem.solve_diagonal,
              post_step_callback=data.save_data)
@@ -164,7 +164,7 @@ def run():
     data.reset_data(initial_solution=c0)
     odesolve(problem.rhs, c0, stop_at_time=final_time,
              step_size=time_step_size,
-             method=SDIRKS2P2(SimpleNewtonSolver()),
+             method=AlexanderEllsiepenS2P2Q1(SimpleNewtonSolver()),
              linear_setup=problem.setup_gmres,
              linear_solve=problem.solve_gmres,
              post_step_callback=data.save_data)

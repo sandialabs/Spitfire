@@ -761,13 +761,6 @@ class Flamelet(object):
     # ------------------------------------------------------------------------------------------------------------------
     # getter methods
     # ------------------------------------------------------------------------------------------------------------------
-    def trajectory_data(self, key):
-        """Obtain the simulation data associated with a particular key/label (processed in situ)"""
-        if key not in self._insitu_processed_data.keys():
-            print('Available data:', self._insitu_processed_data.keys())
-            raise ValueError('data identifier ' + str(key) + ' is not valid!')
-        else:
-            return array(self._insitu_processed_data[key])
 
     def _get_mass_fraction_with_bcs(self, key, state):
         if isinstance(key, str):

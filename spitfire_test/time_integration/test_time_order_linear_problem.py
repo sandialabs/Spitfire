@@ -59,6 +59,9 @@ def validate_method(method):
     observed_order = mean(array(order_list))
     success = method.order - 0.1 < observed_order < method.order + 0.1
 
+    if not success:
+        print(method.name, method.order, observed_order)
+
     return success
 
 
@@ -79,13 +82,19 @@ for method in [ForwardEulerS1P1,
                ExpRalstonS2P2,
                RK3KuttaS3P3,
                RK4ClassicalS4P4,
+               BogackiShampineS4P3Q2,
+               ZonneveldS5P4Q3,
+               ExpKennedyCarpetnerS6P4Q3,
                CashKarpS6P5Q4, ]:
     setattr(TestOrderOfAccuracy, 'test_' + str(method), create_test(method()))
 
 for method in [BackwardEulerS1P1Q1,
                CrankNicolsonS2P2,
-               SDIRKS2P2,
-               KennedyCarpenterS6P4Q3]:
+               AlexanderEllsiepenS2P2Q1,
+               KennedyCarpenterS6P4Q3,
+               KennedyCarpenterS4P3Q2,
+               KvaernoS4P3Q2,
+               KennedyCarpenterS8P5Q4, ]:
     for solver in [SimpleNewtonSolver]:
         setattr(TestOrderOfAccuracy, 'test_' + str(method) + '_' + str(solver), create_test(method(solver())))
 
