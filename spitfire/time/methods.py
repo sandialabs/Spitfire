@@ -429,104 +429,6 @@ class CrankNicolsonS2P2(TimeStepperBase):
                           projector_setups=output.projector_setups)
 
 
-class AlexanderEllsiepenS2P2Q1(TimeStepperBase):
-    """
-    **Constructor**:
-
-    Parameters
-    ----------
-    nonlinear_solver : spitfire.time.nonlinear.NonlinearSolver
-        the solver used in each implicit stage
-        the solver used in each implicit stage
-    norm_weighting : float or np.ndarray the size of the state vector
-        multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
-    """
-
-    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
-        super().__init__(name='Alexander Ellsiepen SDIRK22', order=2, n_stages=2,
-                         is_implicit=True, implicit_coefficient=1. - 0.5 * sqrt(2.), nonlinear_solver=nonlinear_solver,
-                         is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
-        self.gamma = 1. - 0.5 * sqrt(2.)
-        self.a21 = 0.5 * sqrt(2.)
-
-        self.b1 = 0.5 * sqrt(2.)
-        self.b2 = 1. - 0.5 * sqrt(2.)
-
-        self.bhat1 = 2.5 * sqrt(2.) - 1.
-        self.bhat2 = 2. - 2.5 * sqrt(2.)
-
-        self.bvec = array([self.b1, self.b2])
-        self.c = array([self.gamma, 1.])
-
-    def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
-        """
-        Take a single step with this stepper method
-
-        :param state: the current state
-        :param t: the current time
-        :param dt: the size of the time step
-        :param rhs: the right-hand side of the ODE in the form f(t, y)
-        :return: a StepOutput object
-        """
-        nonlinear_iter = 0
-        linear_iter = 0
-        nonlinear_converged = True
-        slow_nonlinear_convergence = False
-        projector_setups = 0
-
-        current_c_value = None
-        prior_stage_k = None
-        state_n = copy(state)
-
-        def residual(state_arg, existing_rhs=None, evaluate_new_rhs=True):
-            rhs_val = rhs(t + current_c_value * dt, state_arg) if evaluate_new_rhs else existing_rhs
-            return dt * (self.gamma * rhs_val + prior_stage_k) - (state_arg - state_n), rhs_val
-
-        def linear_setup(state_arg):
-            lhs_setup(t + current_c_value * dt, state_arg)
-
-        # stage 1
-        prior_stage_k = 0.
-        current_c_value = self.c[0]
-        output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=linear_setup,
-                                       solve_method=lhs_solve,
-                                       initial_guess=state,
-                                       initial_rhs=rhs(t + current_c_value * dt, state))
-        state = output.solution
-        k1 = output.rhs_at_converged
-        nonlinear_iter += output.iter
-        linear_iter += output.liter
-        nonlinear_converged = nonlinear_converged and output.converged
-        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
-        projector_setups += output.projector_setups
-        prior_stage_k = self.a21 * k1
-        current_c_value = self.c[1]
-
-        # stage 2
-        output = self.nonlinear_solver(residual_method=residual,
-                                       setup_method=linear_setup,
-                                       solve_method=lhs_solve,
-                                       initial_guess=state,
-                                       initial_rhs=k1)
-        k2 = output.rhs_at_converged
-        nonlinear_iter += output.iter
-        linear_iter += output.liter
-        nonlinear_converged = nonlinear_converged and output.converged
-        slow_nonlinear_convergence = slow_nonlinear_convergence or output.slow_convergence
-        projector_setups += output.projector_setups
-
-        return StepOutput(solution_update=dt * (self.b1 * k1 + self.b2 * k2),
-                          temporal_error=dt * self.norm(self.bhat1 * k1 + self.bhat2 * k2),
-                          nonlinear_iter=nonlinear_iter,
-                          linear_iter=linear_iter,
-                          nonlinear_converged=nonlinear_converged,
-                          slow_nonlinear_convergence=slow_nonlinear_convergence,
-                          projector_setups=projector_setups)
-
-
 class KennedyCarpenterS6P4Q3(TimeStepperBase):
     """
     **Constructor**:
@@ -540,9 +442,13 @@ class KennedyCarpenterS6P4Q3(TimeStepperBase):
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
     """
+    __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43', 'a51', 'a52', 'a53', 'a54',
+                 'a61', 'a62', 'a63', 'a64', 'a65',
+                 'b1', 'b2', 'b3', 'b4', 'b5', 'b6',
+                 'b1h', 'b2h', 'b3h', 'b4h', 'b5h', 'b6h', 'A', 'c']
 
     def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
-        super().__init__(name='Kennedy Carpenter ESDIRK64', order=4, n_stages=6,
+        super().__init__(name='Kennedy/Carpenter ESDIRK64', order=4, n_stages=6,
                          is_implicit=True, implicit_coefficient=0.25, nonlinear_solver=nonlinear_solver,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
         self.gamma = 0.25
@@ -574,9 +480,6 @@ class KennedyCarpenterS6P4Q3(TimeStepperBase):
         self.b4h = 814220225. / 1159782912.
         self.b5h = -3700637. / 11593932.
         self.b6h = 61727. / 225920.
-
-        self.bvec = array([self.b1, self.b2, self.b3, self.b4, self.b5, self.b6])
-        self.bhvec = array([self.b1h, self.b2h, self.b3h, self.b4h, self.b5h, self.b6h])
 
         self.A = array([[0., 0., 0., 0., 0., 0.],
                         [self.a21, self.gamma, 0., 0., 0., 0.],
@@ -721,6 +624,9 @@ class KvaernoS4P3Q2(TimeStepperBase):
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
     """
+    __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43',
+                 'b1', 'b2', 'b3', 'b4',
+                 'b1h', 'b2h', 'b3h', 'b4h', 'A', 'c']
 
     def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
         super().__init__(name='Kvaerno ESDIRK43', order=3, n_stages=4,
@@ -742,9 +648,6 @@ class KvaernoS4P3Q2(TimeStepperBase):
         self.b2h = 0.073570090080892
         self.b3h = 0.4358665215
         self.b4h = 0.
-
-        self.bvec = array([self.b1, self.b2, self.b3, self.b4])
-        self.bhvec = array([self.b1h, self.b2h, self.b3h, self.b4h])
 
         self.A = array([[0., 0., 0., 0.],
                         [self.a21, self.gamma, 0., 0.],
@@ -856,6 +759,9 @@ class KennedyCarpenterS4P3Q2(TimeStepperBase):
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
     """
+    __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43',
+                 'b1', 'b2', 'b3', 'b4',
+                 'b1h', 'b2h', 'b3h', 'b4h', 'A', 'c']
 
     def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
         super().__init__(name='Kennedy/Carpenter ESDIRK43', order=3, n_stages=4,
@@ -878,9 +784,6 @@ class KennedyCarpenterS4P3Q2(TimeStepperBase):
         self.b2h = -10771552573575. / 22201958757719.
         self.b3h = 9247589265047. / 10645013368117.
         self.b4h = 2193209047091. / 5459859503100.
-
-        self.bvec = array([self.b1, self.b2, self.b3, self.b4])
-        self.bhvec = array([self.b1h, self.b2h, self.b3h, self.b4h])
 
         self.A = array([[0., 0., 0., 0.],
                         [self.a21, self.gamma, 0., 0.],
@@ -992,9 +895,15 @@ class KennedyCarpenterS8P5Q4(TimeStepperBase):
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
     """
+    __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43', 'a51', 'a52', 'a53', 'a54',
+                 'a61', 'a62', 'a63', 'a64', 'a65',
+                 'a71', 'a72', 'a73', 'a74', 'a75', 'a76',
+                 'a81', 'a82', 'a83', 'a84', 'a85', 'a86', 'a87',
+                 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8',
+                 'b1h', 'b2h', 'b3h', 'b4h', 'b5h', 'b6h', 'b7h', 'b8h', 'A', 'c']
 
     def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
-        super().__init__(name='Kennedy Carpenter ESDIRK85', order=5, n_stages=8,
+        super().__init__(name='Kennedy/Carpenter ESDIRK85', order=5, n_stages=8,
                          is_implicit=True, implicit_coefficient=41. / 200., nonlinear_solver=nonlinear_solver,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
         self.gamma = 41. / 200.
@@ -1043,9 +952,6 @@ class KennedyCarpenterS8P5Q4(TimeStepperBase):
         self.b6h = -33438840321285. / 15594753105479.
         self.b7h = 3629800801594. / 4656183773603.
         self.b8h = 4035322873751. / 18575991585200.
-
-        self.bvec = array([self.b1, self.b2, self.b3, self.b4, self.b5, self.b6, self.b7, self.b8])
-        self.bhvec = array([self.b1h, self.b2h, self.b3h, self.b4h, self.b5h, self.b6h, self.b7h, self.b8h])
 
         self.A = array([[0., 0., 0., 0., 0., 0., 0., 0.],
                         [self.a21, self.gamma, 0., 0., 0., 0., 0., 0.],

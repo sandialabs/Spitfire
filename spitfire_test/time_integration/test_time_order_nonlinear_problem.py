@@ -67,7 +67,6 @@ for method in [ForwardEulerS1P1,
 
 for method in [BackwardEulerS1P1Q1,
                CrankNicolsonS2P2,
-               AlexanderEllsiepenS2P2Q1,
                KennedyCarpenterS6P4Q3,
                KennedyCarpenterS4P3Q2,
                KvaernoS4P3Q2,

@@ -891,7 +891,7 @@ class Flamelet(object):
                   transient_tolerance=1.e-10,
                   write_log=False,
                   log_rate=100,
-                  maximum_steps_per_jacobian=1,
+                  maximum_steps_per_jacobian=10,
                   nonlinear_solve_tolerance=1.e-12,
                   linear_solver='block thomas',
                   stepper_type=KennedyCarpenterS6P4Q3,
