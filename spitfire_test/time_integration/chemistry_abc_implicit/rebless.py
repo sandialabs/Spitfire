@@ -2,8 +2,13 @@ import pickle
 
 
 def run():
-    from spitfire.time.integrator import odesolve, SaveAllDataToList
-    from spitfire.time.methods import KennedyCarpenterS6P4Q3, BackwardEulerS1P1Q1
+    from spitfire import (odesolve,
+                          SaveAllDataToList,
+                          BackwardEulerS1P1Q1,
+                          KennedyCarpenterS6P4Q3,
+                          KvaernoS4P3Q2,
+                          KennedyCarpenterS4P3Q2,
+                          KennedyCarpenterS8P5Q4, )
     from spitfire.time.nonlinear import SimpleNewtonSolver
     from scipy.linalg.lapack import dgetrf as lapack_lu_factor
     from scipy.linalg.lapack import dgetrs as lapack_lu_solve
@@ -112,90 +117,37 @@ def run():
     problem = ChemistryProblem(k_ab, k_bc)
 
     final_time = 10.  # final time to integrate to
-    time_step_size = 1.0  # size of the time step used
 
     sol_dict = dict()
 
-    data = SaveAllDataToList(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=KennedyCarpenterS6P4Q3(SimpleNewtonSolver()),
-             linear_setup=problem.setup_lapack_lu,
-             linear_solve=problem.solve_lapack_lu,
-             post_step_callback=data.save_data)
-    sol_dict['lapack-esdirk64'] = (data.t_list.copy(), data.solution_list.copy())
+    for method in [BackwardEulerS1P1Q1(SimpleNewtonSolver()),
+                   KennedyCarpenterS6P4Q3(SimpleNewtonSolver()),
+                   KvaernoS4P3Q2(SimpleNewtonSolver()),
+                   KennedyCarpenterS4P3Q2(SimpleNewtonSolver()),
+                   KennedyCarpenterS8P5Q4(SimpleNewtonSolver())]:
+        data = SaveAllDataToList(initial_solution=c0)
+        odesolve(problem.rhs, c0, stop_at_time=final_time,
+                 method=method,
+                 linear_setup=problem.setup_lapack_lu,
+                 linear_solve=problem.solve_lapack_lu,
+                 post_step_callback=data.save_data)
+        sol_dict['lapack-' + method.name] = (data.t_list.copy(), data.solution_list.copy())
 
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=KennedyCarpenterS6P4Q3(SimpleNewtonSolver()),
-             linear_setup=problem.setup_diagonal,
-             linear_solve=problem.solve_diagonal,
-             post_step_callback=data.save_data)
-    sol_dict['diagonal-esdirk64'] = (data.t_list.copy(), data.solution_list.copy())
+        data.reset_data(initial_solution=c0)
+        odesolve(problem.rhs, c0, stop_at_time=final_time,
+                 method=method,
+                 linear_setup=problem.setup_diagonal,
+                 linear_solve=problem.solve_diagonal,
+                 post_step_callback=data.save_data)
+        sol_dict['diagonal-' + method.name] = (data.t_list.copy(), data.solution_list.copy())
 
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=KennedyCarpenterS6P4Q3(SimpleNewtonSolver()),
-             linear_setup=problem.setup_gmres,
-             linear_solve=problem.solve_gmres,
-             post_step_callback=data.save_data)
-    sol_dict['gmres-esdirk64'] = (data.t_list.copy(), data.solution_list.copy())
-
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=BackwardEulerS1P1Q1(SimpleNewtonSolver()),
-             linear_setup=problem.setup_lapack_lu,
-             linear_solve=problem.solve_lapack_lu,
-             post_step_callback=data.save_data)
-    sol_dict['lapack-euler'] = (data.t_list.copy(), data.solution_list.copy())
-
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=BackwardEulerS1P1Q1(SimpleNewtonSolver()),
-             linear_setup=problem.setup_diagonal,
-             linear_solve=problem.solve_diagonal,
-             post_step_callback=data.save_data)
-    sol_dict['diagonal-euler'] = (data.t_list.copy(), data.solution_list.copy())
-
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=BackwardEulerS1P1Q1(SimpleNewtonSolver()),
-             linear_setup=problem.setup_gmres,
-             linear_solve=problem.solve_gmres,
-             post_step_callback=data.save_data)
-    sol_dict['gmres-euler'] = (data.t_list.copy(), data.solution_list.copy())
-
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=BackwardEulerS1P1Q1(SimpleNewtonSolver()),
-             linear_setup=problem.setup_lapack_lu,
-             linear_solve=problem.solve_lapack_lu,
-             post_step_callback=data.save_data)
-    sol_dict['lapack-euler-werror'] = (data.t_list.copy(), data.solution_list.copy())
-
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=BackwardEulerS1P1Q1(SimpleNewtonSolver()),
-             linear_setup=problem.setup_diagonal,
-             linear_solve=problem.solve_diagonal,
-             post_step_callback=data.save_data)
-    sol_dict['diagonal-euler-werror'] = (data.t_list.copy(), data.solution_list.copy())
-
-    data.reset_data(initial_solution=c0)
-    odesolve(problem.rhs, c0, stop_at_time=final_time,
-             step_size=time_step_size,
-             method=BackwardEulerS1P1Q1(SimpleNewtonSolver()),
-             linear_setup=problem.setup_gmres,
-             linear_solve=problem.solve_gmres,
-             post_step_callback=data.save_data)
-    sol_dict['gmres-euler-werror'] = (data.t_list.copy(), data.solution_list.copy())
+        data.reset_data(initial_solution=c0)
+        odesolve(problem.rhs, c0, stop_at_time=final_time,
+                 method=method,
+                 linear_setup=problem.setup_gmres,
+                 linear_solve=problem.solve_gmres,
+                 post_step_callback=data.save_data)
+        sol_dict['gmres-' + method.name] = (data.t_list.copy(), data.solution_list.copy())
 
     return sol_dict
 
