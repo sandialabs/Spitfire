@@ -526,21 +526,20 @@ namespace griffon
     mass_rhs_isobaric (const double *y, const double *enthalpies, const double *inflowEnthalpies, const double &rho,
                        const double &cp, const double *inflowY, const double &tau, double *out_rhs) const;
     void
-    chem_jacexactdense_isobaric (const double &pressure, const double &temperature, const double *y, const double &mmw,
-                                 const double &rho, const double &cp, const double *cpi, const double &cpsensT,
-                                 const double *h, const double *w, const double *wsens, double *out_rhs,
-                                 double *out_primJac) const;
+    chem_jac_isobaric (const double &pressure, const double &temperature, const double *y, const double &mmw,
+                       const double &rho, const double &cp, const double *cpi, const double &cpsensT, const double *h,
+                       const double *w, const double *wsens, double *out_rhs, double *out_primJac) const;
     void
-    mass_jacexactdense_isobaric (const double &pressure, const double &temperature, const double *y, const double &rho,
-                                 const double &cp, const double &cpsensT, const double *cpi, const double *enthalpies,
-                                 const double *inflowEnthalpies, const double &inflowTemperature, const double *inflowY,
-                                 const double &tau, double *out_rhs, double *out_primJac) const;
+    mass_jac_isobaric (const double &pressure, const double &temperature, const double *y, const double &rho,
+                       const double &cp, const double &cpsensT, const double *cpi, const double *enthalpies,
+                       const double *inflowEnthalpies, const double &inflowTemperature, const double *inflowY,
+                       const double &tau, double *out_rhs, double *out_primJac) const;
     void
-    heat_jacexactdense_isobaric (const double &temperature, const double &rho, const double &cp, const double &cpsensT,
-                                 const double *cpi, const double &convectionTemperature,
-                                 const double &radiationTemperature, const double &convectionCoefficient,
-                                 const double &radiativeEmissivity, const double &surfaceAreaOverVolume,
-                                 double *out_heatTransferRate, double *out_heatTransferRatePrimJac) const;
+    heat_jac_isobaric (const double &temperature, const double &rho, const double &cp, const double &cpsensT,
+                       const double *cpi, const double &convectionTemperature, const double &radiationTemperature,
+                       const double &convectionCoefficient, const double &radiativeEmissivity,
+                       const double &surfaceAreaOverVolume, double *out_heatTransferRate,
+                       double *out_heatTransferRatePrimJac) const;
     void
     transform_isobaric_primitive_jacobian (const double &rho, const double &pressure, const double &temperature,
                                            const double &mmw, const double *primJac, double *out_jac) const;
@@ -555,21 +554,21 @@ namespace griffon
                         const double &inflowRho, const double &pressure, const double &inflowPressure, const double &cv,
                         const double *inflowY, const double &tau, double *out_rhs) const;
     void
-    chem_jacexactdense_isochoric (const double &temperature, const double *y, const double &rho, const double &cv,
-                                  const double *cvi, const double &cvsensT, const double *e, const double *w,
-                                  const double *wsens, double *out_rhs, double *out_jac) const;
+    chem_jac_isochoric (const double &temperature, const double *y, const double &rho, const double &cv,
+                        const double *cvi, const double &cvsensT, const double *e, const double *w, const double *wsens,
+                        double *out_rhs, double *out_jac) const;
     void
-    mass_jacexactdense_isochoric (const double &pressure, const double &inflowPressure, const double &temperature,
-                                  const double *y, const double &rho, const double &inflowRho, const double &cv,
-                                  const double &cvsensT, const double *cvi, const double *energies,
-                                  const double *inflowEnergies, const double &inflowTemperature, const double *inflowY,
-                                  const double &tau, double *out_rhs, double *out_jac) const;
+    mass_jac_isochoric (const double &pressure, const double &inflowPressure, const double &temperature,
+                        const double *y, const double &rho, const double &inflowRho, const double &cv,
+                        const double &cvsensT, const double *cvi, const double *energies, const double *inflowEnergies,
+                        const double &inflowTemperature, const double *inflowY, const double &tau, double *out_rhs,
+                        double *out_jac) const;
     void
-    heat_jacexactdense_isochoric (const double &temperature, const double &rho, const double &cv, const double &cvsensT,
-                                  const double *cvi, const double &convectionTemperature,
-                                  const double &radiationTemperature, const double &convectionCoefficient,
-                                  const double &radiativeEmissivity, const double &surfaceAreaOverVolume,
-                                  double *out_heatTransferRate, double *out_heatTransferRateJac) const;
+    heat_jac_isochoric (const double &temperature, const double &rho, const double &cv, const double &cvsensT,
+                        const double *cvi, const double &convectionTemperature, const double &radiationTemperature,
+                        const double &convectionCoefficient, const double &radiativeEmissivity,
+                        const double &surfaceAreaOverVolume, double *out_heatTransferRate,
+                        double *out_heatTransferRateJac) const;
   };
 
 }

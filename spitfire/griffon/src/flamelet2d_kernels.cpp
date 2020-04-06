@@ -191,8 +191,7 @@ namespace griffon
         species_enthalpies (T, enthalpies);
         cp_sens_T (T, y, &cpsensT, cpisensT);
         prod_rates_sens_exact (T, rho, mmw, y, w, wsens);
-        chem_jacexactdense_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp,
-                                     primJac);
+        chem_jac_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp, primJac);
         transform_isobaric_primitive_jacobian (rho, pressure, T, mmw, primJac, jac);
         for (int iq = 0; iq < nqq; ++iq)
         {
@@ -206,7 +205,7 @@ namespace griffon
         {
           out_values[ijjac + iq] = jac[iq];
         }
-        griffon::lapack::lu_factorize (nq, jac, &out_pivots[ij], &out_factors[ijjac]);
+        griffon::lapack::lu_factorize_with_copy (nq, jac, &out_pivots[ij], &out_factors[ijjac]);
       }
       const int ij_1 = ix * nyq;
       const int im1j_1 = ij_1 - nyq;
@@ -233,8 +232,7 @@ namespace griffon
         species_enthalpies (T, enthalpies);
         cp_sens_T (T, y, &cpsensT, cpisensT);
         prod_rates_sens_exact (T, rho, mmw, y, w, wsens);
-        chem_jacexactdense_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp,
-                                     primJac);
+        chem_jac_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp, primJac);
         transform_isobaric_primitive_jacobian (rho, pressure, T, mmw, primJac, jac);
         for (int iq = 0; iq < nqq; ++iq)
         {
@@ -248,7 +246,7 @@ namespace griffon
         {
           out_values[ijjac_1 + iq] = jac[iq];
         }
-        griffon::lapack::lu_factorize (nq, jac, &out_pivots[ij_1], &out_factors[ijjac_1]);
+        griffon::lapack::lu_factorize_with_copy (nq, jac, &out_pivots[ij_1], &out_factors[ijjac_1]);
       }
       {
         double rho, cp, cpsensT;
@@ -264,8 +262,7 @@ namespace griffon
         species_enthalpies (T, enthalpies);
         cp_sens_T (T, y, &cpsensT, cpisensT);
         prod_rates_sens_exact (T, rho, mmw, y, w, wsens);
-        chem_jacexactdense_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp,
-                                     primJac);
+        chem_jac_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp, primJac);
         transform_isobaric_primitive_jacobian (rho, pressure, T, mmw, primJac, jac);
         for (int iq = 0; iq < nqq; ++iq)
         {
@@ -279,7 +276,7 @@ namespace griffon
         {
           out_values[ijjac_2 + iq] = jac[iq];
         }
-        griffon::lapack::lu_factorize (nq, jac, &out_pivots[ij_2], &out_factors[ijjac_2]);
+        griffon::lapack::lu_factorize_with_copy (nq, jac, &out_pivots[ij_2], &out_factors[ijjac_2]);
       }
     }
 
@@ -311,8 +308,7 @@ namespace griffon
         species_enthalpies (T, enthalpies);
         cp_sens_T (T, y, &cpsensT, cpisensT);
         prod_rates_sens_exact (T, rho, mmw, y, w, wsens);
-        chem_jacexactdense_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp,
-                                     primJac);
+        chem_jac_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp, primJac);
         transform_isobaric_primitive_jacobian (rho, pressure, T, mmw, primJac, jac);
         for (int iq = 0; iq < nqq; ++iq)
         {
@@ -326,7 +322,7 @@ namespace griffon
         {
           out_values[ijjac_1 + iq] = jac[iq];
         }
-        griffon::lapack::lu_factorize (nq, jac, &out_pivots[ij_1], &out_factors[ijjac_1]);
+        griffon::lapack::lu_factorize_with_copy (nq, jac, &out_pivots[ij_1], &out_factors[ijjac_1]);
       }
       {
         double rho, cp, cpsensT;
@@ -342,8 +338,7 @@ namespace griffon
         species_enthalpies (T, enthalpies);
         cp_sens_T (T, y, &cpsensT, cpisensT);
         prod_rates_sens_exact (T, rho, mmw, y, w, wsens);
-        chem_jacexactdense_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp,
-                                     primJac);
+        chem_jac_isobaric (pressure, T, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, rhsTemp, primJac);
         transform_isobaric_primitive_jacobian (rho, pressure, T, mmw, primJac, jac);
         for (int iq = 0; iq < nqq; ++iq)
         {
@@ -357,7 +352,7 @@ namespace griffon
         {
           out_values[ijjac_2 + iq] = jac[iq];
         }
-        griffon::lapack::lu_factorize (nq, jac, &out_pivots[ij_2], &out_factors[ijjac_2]);
+        griffon::lapack::lu_factorize_with_copy (nq, jac, &out_pivots[ij_2], &out_factors[ijjac_2]);
       }
     }
     double jac[nqq];
@@ -365,7 +360,7 @@ namespace griffon
     {
       jac[iq * (nq + 1)] = prefactor - 1.;
     }
-    griffon::lapack::lu_factorize (nq, jac, &out_pivots[0], &out_factors[0]);
+    griffon::lapack::lu_factorize_with_copy (nq, jac, &out_pivots[0], &out_factors[0]);
     for (int iq = 0; iq < nqq; ++iq)
     {
       out_values[iq] = jac[iq];
@@ -548,7 +543,7 @@ namespace griffon
 
     for (int id = 0; id < nxy; ++id)
     {
-      griffon::lapack::lu_solve (nq, &factors[id * nqq], &pivots[id * nq], &b[id * nq], &out_x[id * nq]);
+      griffon::lapack::lu_solve_with_copy (nq, &factors[id * nqq], &pivots[id * nq], &b[id * nq], &out_x[id * nq]);
     }
   }
 }

@@ -28,7 +28,7 @@ namespace griffon
     const int nSpec = mechanismData.phaseData.nSpecies;
     const auto invMolecularWeights = mechanismData.phaseData.inverseMolecularWeights.data ();
     const double mmw = mixture_molecular_weight (y);
-    for (std::size_t i = 0; i < nSpec; ++i)
+    for (int i = 0; i < nSpec; ++i)
     {
       x[i] = y[i] * mmw * invMolecularWeights[i];
     }

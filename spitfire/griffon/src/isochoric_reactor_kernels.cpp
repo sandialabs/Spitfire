@@ -66,10 +66,9 @@ namespace griffon
   }
 
   void
-  CombustionKernels::chem_jacexactdense_isochoric (const double &temperature, const double *y, const double &rho,
-                                                   const double &cv, const double *cvi, const double &cvsensT,
-                                                   const double *e, const double *w, const double *wsens,
-                                                   double *out_rhs, double *out_jac) const
+  CombustionKernels::chem_jac_isochoric (const double &temperature, const double *y, const double &rho,
+                                         const double &cv, const double *cvi, const double &cvsensT, const double *e,
+                                         const double *w, const double *wsens, double *out_rhs, double *out_jac) const
   {
     const int nSpec = mechanismData.phaseData.nSpecies;
     // out_primJac is an (n+1) x (n+1) column-major array
@@ -118,13 +117,12 @@ namespace griffon
   }
 
   void
-  CombustionKernels::mass_jacexactdense_isochoric (const double &pressure, const double &inflowPressure,
-                                                   const double &temperature, const double *y, const double &rho,
-                                                   const double &inflowRho, const double &cv, const double &cvsensT,
-                                                   const double *cvi, const double *energies,
-                                                   const double *inflowEnergies, const double &inflowTemperature,
-                                                   const double *inflowY, const double &tau, double *out_rhs,
-                                                   double *out_jac) const
+  CombustionKernels::mass_jac_isochoric (const double &pressure, const double &inflowPressure,
+                                         const double &temperature, const double *y, const double &rho,
+                                         const double &inflowRho, const double &cv, const double &cvsensT,
+                                         const double *cvi, const double *energies, const double *inflowEnergies,
+                                         const double &inflowTemperature, const double *inflowY, const double &tau,
+                                         double *out_rhs, double *out_jac) const
   {
     const int nSpec = mechanismData.phaseData.nSpecies;
     // out_primJac is an (n+1) x (n+1) column-major array
@@ -171,14 +169,11 @@ namespace griffon
   }
 
   void
-  CombustionKernels::heat_jacexactdense_isochoric (const double &temperature, const double &rho, const double &cv,
-                                                   const double &cvsensT, const double *cvi,
-                                                   const double &convectionTemperature,
-                                                   const double &radiationTemperature,
-                                                   const double &convectionCoefficient,
-                                                   const double &radiativeEmissivity,
-                                                   const double &surfaceAreaOverVolume, double *out_heatTransferRate,
-                                                   double *out_heatTransferRateJac) const
+  CombustionKernels::heat_jac_isochoric (const double &temperature, const double &rho, const double &cv,
+                                         const double &cvsensT, const double *cvi, const double &convectionTemperature,
+                                         const double &radiationTemperature, const double &convectionCoefficient,
+                                         const double &radiativeEmissivity, const double &surfaceAreaOverVolume,
+                                         double *out_heatTransferRate, double *out_heatTransferRateJac) const
   {
     const int nSpec = mechanismData.phaseData.nSpecies;
     heat_rhs_isochoric (temperature, rho, cv, convectionTemperature, radiationTemperature, convectionCoefficient,
@@ -317,14 +312,14 @@ namespace griffon
         break;
     }
 
-    chem_jacexactdense_isochoric (temperature, y, density, cv, cvi, cvsensT, energies, w, wsens, out_rhs, out_jac);
+    chem_jac_isochoric (temperature, y, density, cv, cvi, cvsensT, energies, w, wsens, out_rhs, out_jac);
 
     if (open)
     {
       ideal_gas_pressure (inflowDensity, inflowTemperature, inflowMmw, &inflowP);
       species_energies (inflowTemperature, inflowEnergies);
-      mass_jacexactdense_isochoric (p, inflowP, temperature, y, density, inflowDensity, cv, cvsensT, cvi, energies,
-                                    inflowEnergies, inflowTemperature, inflowY, tau, massRhs, massJac);
+      mass_jac_isochoric (p, inflowP, temperature, y, density, inflowDensity, cv, cvsensT, cvi, energies,
+                          inflowEnergies, inflowTemperature, inflowY, tau, massRhs, massJac);
       for (int i = 0; i < nSpec + 1; ++i)
       {
         out_rhs[i] += massRhs[i];
@@ -347,8 +342,8 @@ namespace griffon
         out_rhs[1] = 0.;
         break;
       case 2:  // diathermal
-        heat_jacexactdense_isochoric (temperature, density, cv, cvsensT, cvi, fluidTemperature, surfTemperature, hConv,
-                                      epsRad, surfaceAreaOverVolume, &heatTransferRate, heatTransferRateJac);
+        heat_jac_isochoric (temperature, density, cv, cvsensT, cvi, fluidTemperature, surfTemperature, hConv, epsRad,
+                            surfaceAreaOverVolume, &heatTransferRate, heatTransferRateJac);
         out_rhs[1] += heatTransferRate;
         for (int k = 0; k < nSpec + 1; ++k)
         {

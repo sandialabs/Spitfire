@@ -538,9 +538,7 @@ namespace griffon
           }
         }
 
-        is_dense = (type == RateType::THIRD_BODY or
-                    type == RateType::LINDEMANN or
-                    type == RateType::TROE);
+        is_dense = (type == RateType::THIRD_BODY or type == RateType::LINDEMANN or type == RateType::TROE);
         for (int i = 0; i < n_net; ++i)
         {
           if (net_indices[i] == pd.nSpecies - 1)

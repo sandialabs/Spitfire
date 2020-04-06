@@ -109,7 +109,7 @@ namespace griffon
       }
 
       const int i = num_blocks - 1;
-      griffon::lapack::lu_solve (block_size, &d_factors[i * nelem_block], &d_pivots[i * block_size], &y[i * block_size],
+      griffon::lapack::lu_solve_with_copy (block_size, &d_factors[i * nelem_block], &d_pivots[i * block_size], &y[i * block_size],
                                  &out_solution[i * block_size]);
       for (int i = num_blocks - 2; i >= 0; --i)
       {
@@ -119,7 +119,7 @@ namespace griffon
         {
           local_tmp[j] = y[i * block_size + j] - sup[i_base + j] * out_solution[ip1_base + j];
         }
-        griffon::lapack::lu_solve (block_size, &d_factors[i * nelem_block], &d_pivots[i * block_size], local_tmp,
+        griffon::lapack::lu_solve_with_copy (block_size, &d_factors[i * nelem_block], &d_pivots[i * block_size], local_tmp,
                                    &out_solution[i * block_size]);
       }
     }
@@ -394,7 +394,7 @@ namespace griffon
       const int nelem_block = block_size * block_size;
       for (int i = 0; i < num_blocks; ++i)
       {
-        griffon::lapack::lu_factorize (block_size, &matrix_values[i * nelem_block], &out_pivots[i * block_size],
+        griffon::lapack::lu_factorize_with_copy (block_size, &matrix_values[i * nelem_block], &out_pivots[i * block_size],
                                        &out_factors[i * nelem_block]);
       }
     }
@@ -406,7 +406,7 @@ namespace griffon
       const int nelem_block = block_size * block_size;
       for (int i = 0; i < num_blocks; ++i)
       {
-        griffon::lapack::lu_solve (block_size, &factors[i * nelem_block], &pivots[i * block_size], &rhs[i * block_size],
+        griffon::lapack::lu_solve_with_copy (block_size, &factors[i * nelem_block], &pivots[i * block_size], &rhs[i * block_size],
                                    &out_solution[i * block_size]);
       }
     }
@@ -419,7 +419,7 @@ namespace griffon
       const int nelem_blockdiagonals = num_blocks * nelem_block;
       double rhsTemp[block_size];
 
-      griffon::lapack::lu_solve (block_size, factors, pivots, rhs, out_solution);
+      griffon::lapack::lu_solve_with_copy (block_size, factors, pivots, rhs, out_solution);
       const double *sub = &matrix_values[nelem_blockdiagonals];
       for (int i = 1; i < num_blocks; ++i)
       {
@@ -428,7 +428,7 @@ namespace griffon
           rhsTemp[iq] = rhs[i * block_size + iq]
               - sub[(i - 1) * block_size + iq] * out_solution[(i - 1) * block_size + iq];
         }
-        griffon::lapack::lu_solve (block_size, &factors[i * nelem_block], &pivots[i * block_size], rhsTemp,
+        griffon::lapack::lu_solve_with_copy (block_size, &factors[i * nelem_block], &pivots[i * block_size], rhsTemp,
                                    &out_solution[i * block_size]);
       }
     }
@@ -443,7 +443,7 @@ namespace griffon
       double rhsTemp[block_size];
 
       const int i = num_blocks - 1;
-      griffon::lapack::lu_solve (block_size, &factors[i * nelem_block], &pivots[i * block_size], &rhs[i * block_size],
+      griffon::lapack::lu_solve_with_copy (block_size, &factors[i * nelem_block], &pivots[i * block_size], &rhs[i * block_size],
                                  &out_solution[i * block_size]);
       const double *sup = &matrix_values[nelem_blockdiagonals + nelem_offdiagonal];
       for (int i = num_blocks - 2; i >= 0; --i)
@@ -452,7 +452,7 @@ namespace griffon
         {
           rhsTemp[iq] = rhs[i * block_size + iq] - sup[i * block_size + iq] * out_solution[(i + 1) * block_size + iq];
         }
-        griffon::lapack::lu_solve (block_size, &factors[i * nelem_block], &pivots[i * block_size], rhsTemp,
+        griffon::lapack::lu_solve_with_copy (block_size, &factors[i * nelem_block], &pivots[i * block_size], rhsTemp,
                                    &out_solution[i * block_size]);
       }
     }

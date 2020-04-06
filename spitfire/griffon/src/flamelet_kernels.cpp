@@ -336,8 +336,7 @@ namespace griffon
           break;
       }
 
-      chem_jacexactdense_isobaric (pressure, T, y, mmw, rho, cp[iz], cpi, cpsensT[iz], enthalpies, w, wsens, rhsTemp,
-                                   primJac);
+      chem_jac_isobaric (pressure, T, y, mmw, rho, cp[iz], cpi, cpsensT[iz], enthalpies, w, wsens, rhsTemp, primJac);
 
       if (!adiabatic)
       {

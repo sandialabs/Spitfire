@@ -67,9 +67,6 @@ class _Flamelet2D(object):
                  grid_2=None,
                  rates_sensitivity_type='exact',
                  sensitivity_transform_type='exact'):
-        self._constructor_arguments = locals()
-        del self._constructor_arguments['self']
-
         self._gas = mech_spec.copy_stream(stream_1)
         self._stream_1 = stream_1
         self._stream_2 = stream_2

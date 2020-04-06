@@ -47,16 +47,33 @@ namespace griffon
       return d;
     }
 
-    extern "C" void
-    dgemv_ (const char *transpose, const int *m, const int *n, const double *alpha, const double *mat, const int *lda,
-            const double *x, const int *incx, const double *beta, double *y, const int *incy);
+    /*
+     * @brief add a matvec to a vector, y = beta * y + alpha * mat * x
+     *
+     * @param n the number of elements
+     * @param y the output vector
+     * @param alpha the scale on the matvec product
+     * @param mat the column-major matrix
+     * @param x the vector being multiplied by the matrix
+     * @param beta the scale on the y vector
+     */
     inline void
     matrix_vector_multiply (const int n, double *y, const double alpha, const double *mat, const double *x,
                             const double beta)
     {
-      const int one = 1;
-      char trans = 'N';
-      dgemv_ (&trans, &n, &n, &alpha, mat, &n, x, &one, &beta, y, &one);
+      for (int j = 0; j < n; ++j)
+      {
+        y[j] *= beta;
+      }
+      for (int i = 0; i < n; ++i)
+      {
+        const double axi = alpha * x[i];
+        const int offset = i * n;
+        for (int j = 0; j < n; ++j)
+        {
+          y[j] = y[j] + mat[offset + j] * axi;
+        }
+      }
     }
 
   }
@@ -75,7 +92,7 @@ namespace griffon
      * @param factor the factored matrix (out argument)
      */
     inline void
-    lu_factorize (const int n, const double *matrix, int *ipiv, double *factor)
+    lu_factorize_with_copy (const int n, const double *matrix, int *ipiv, double *factor)
     {
       for (int i = 0; i < n * n; ++i)
         factor[i] = matrix[i];
@@ -96,7 +113,7 @@ namespace griffon
      * @param solution the solution (out argument)
      */
     inline void
-    lu_solve (const int n, const double *factor, const int *ipiv, const double *rhs, double *solution)
+    lu_solve_with_copy (const int n, const double *factor, const int *ipiv, const double *rhs, double *solution)
     {
       const int one = 1;
       char trans = 'N';
@@ -115,8 +132,8 @@ namespace griffon
      * @param solutionmatrix the solution (out argument)
      */
     inline void
-    lu_solve_on_matrix (const int n, const double *factor, const int *ipiv, const double *rhsmatrix,
-                        double *solutionmatrix)
+    lu_solve_on_matrix_with_copy (const int n, const double *factor, const int *ipiv, const double *rhsmatrix,
+                                  double *solutionmatrix)
     {
       const int one = 1;
       char trans = 'N';

@@ -63,11 +63,10 @@ namespace griffon
   }
 
   void
-  CombustionKernels::chem_jacexactdense_isobaric (const double &pressure, const double &temperature, const double *y,
-                                                  const double &mmw, const double &rho, const double &cp,
-                                                  const double *cpi, const double &cpsensT, const double *h,
-                                                  const double *w, const double *wsens, double *out_rhs,
-                                                  double *out_primJac) const
+  CombustionKernels::chem_jac_isobaric (const double &pressure, const double &temperature, const double *y,
+                                        const double &mmw, const double &rho, const double &cp, const double *cpi,
+                                        const double &cpsensT, const double *h, const double *w, const double *wsens,
+                                        double *out_rhs, double *out_primJac) const
   {
     const int nSpec = mechanismData.phaseData.nSpecies;
     // out_primJac is an n x (n+1) column-major array
@@ -111,12 +110,11 @@ namespace griffon
   }
 
   void
-  CombustionKernels::mass_jacexactdense_isobaric (const double &pressure, const double &temperature, const double *y,
-                                                  const double &rho, const double &cp, const double &cpsensT,
-                                                  const double *cpi, const double *enthalpies,
-                                                  const double *inflowEnthalpies, const double &inflowTemperature,
-                                                  const double *inflowY, const double &tau, double *out_rhs,
-                                                  double *out_primJac) const
+  CombustionKernels::mass_jac_isobaric (const double &pressure, const double &temperature, const double *y,
+                                        const double &rho, const double &cp, const double &cpsensT, const double *cpi,
+                                        const double *enthalpies, const double *inflowEnthalpies,
+                                        const double &inflowTemperature, const double *inflowY, const double &tau,
+                                        double *out_rhs, double *out_primJac) const
   {
     const int nSpec = mechanismData.phaseData.nSpecies;
     // out_primJac is an n x (n+1) column-major array
@@ -155,14 +153,11 @@ namespace griffon
   }
 
   void
-  CombustionKernels::heat_jacexactdense_isobaric (const double &temperature, const double &rho, const double &cp,
-                                                  const double &cpsensT, const double *cpi,
-                                                  const double &convectionTemperature,
-                                                  const double &radiationTemperature,
-                                                  const double &convectionCoefficient,
-                                                  const double &radiativeEmissivity,
-                                                  const double &surfaceAreaOverVolume, double *out_heatTransferRate,
-                                                  double *out_heatTransferRatePrimJac) const
+  CombustionKernels::heat_jac_isobaric (const double &temperature, const double &rho, const double &cp,
+                                        const double &cpsensT, const double *cpi, const double &convectionTemperature,
+                                        const double &radiationTemperature, const double &convectionCoefficient,
+                                        const double &radiativeEmissivity, const double &surfaceAreaOverVolume,
+                                        double *out_heatTransferRate, double *out_heatTransferRatePrimJac) const
   {
     const int nSpec = mechanismData.phaseData.nSpecies;
     heat_rhs_isobaric (temperature, rho, cp, convectionTemperature, radiationTemperature, convectionCoefficient,
@@ -289,8 +284,7 @@ namespace griffon
         break;
     }
 
-    chem_jacexactdense_isobaric (pressure, temperature, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, out_rhs,
-                                 primJac);
+    chem_jac_isobaric (pressure, temperature, y, mmw, rho, cp, cpi, cpsensT, enthalpies, w, wsens, out_rhs, primJac);
 
     if (open)
     {
@@ -298,8 +292,8 @@ namespace griffon
       double massPrimJac[nSpec * (nSpec + 1)];
       double inflowEnthalpies[nSpec];
       species_enthalpies (inflowTemperature, inflowEnthalpies);
-      mass_jacexactdense_isobaric (pressure, temperature, y, rho, cp, cpsensT, cpi, enthalpies, inflowEnthalpies,
-                                   inflowTemperature, inflowY, tau, massRhs, massPrimJac);
+      mass_jac_isobaric (pressure, temperature, y, rho, cp, cpsensT, cpi, enthalpies, inflowEnthalpies,
+                         inflowTemperature, inflowY, tau, massRhs, massPrimJac);
       for (int i = 0; i < nSpec * (nSpec + 1); ++i)
       {
         primJac[i] += massPrimJac[i];
@@ -322,8 +316,8 @@ namespace griffon
         out_rhs[0] = 0.;
         break;
       case 2:  // diathermal
-        heat_jacexactdense_isobaric (temperature, rho, cp, cpsensT, cpi, fluidTemperature, surfTemperature, hConv,
-                                     epsRad, surfaceAreaOverVolume, &heatTransferRate, heatTrasferRatePrimJac);
+        heat_jac_isobaric (temperature, rho, cp, cpsensT, cpi, fluidTemperature, surfTemperature, hConv, epsRad,
+                           surfaceAreaOverVolume, &heatTransferRate, heatTrasferRatePrimJac);
         for (int k = 0; k < nSpec + 1; ++k)
         {
           primJac[k * nSpec] += heatTrasferRatePrimJac[k];

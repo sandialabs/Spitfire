@@ -230,9 +230,6 @@ class Flamelet(object):
                  use_scaled_heat_loss=False,
                  initial_time=0.):
 
-        self._constructor_arguments = locals()
-        del self._constructor_arguments['self']
-
         # process the mechanism
         self._oxy_stream = oxy_stream
         self._fuel_stream = fuel_stream
