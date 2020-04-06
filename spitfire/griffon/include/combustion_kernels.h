@@ -598,8 +598,15 @@ private:
                      double *out_heatTransferRateJac) const;
 
 public:
-  inline const MechData&
-  get_mechanism_data() const
+  void
+  flamelet_rhs_test1(const double *state, const double &pressure, const double *oxyState, const double *fuelState,
+                     const bool adiabatic, const double *T_convection, const double *h_convection,
+                     const double *T_radiation, const double *h_radiation, const int &nzi, const double *cmajor,
+                     const double *csub, const double *csup, const double *mcoeff, const double *ncoeff,
+                     const double *dissipationRate, const bool include_enthalpy_flux, const bool include_variable_cp,
+                     const bool use_scaled_heat_loss, double *out_rhs) const;
+
+  inline const MechData &get_mechanism_data() const
   {
     return mechanismData;
   }

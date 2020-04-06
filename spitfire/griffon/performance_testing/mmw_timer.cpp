@@ -1,203 +1,15 @@
-/*
- * mmw_timer.cpp
- *
- *  Created on: Apr 5, 2020
- *      Author: mahanse
- */
-
-#include <iostream>
-#include <chrono>
+#include "test_helper.h"
 #include <cstdlib>
-#include "combustion_kernels.h"
-
-struct Timer
-{
-  std::chrono::high_resolution_clock::time_point tic_time;
-  std::chrono::high_resolution_clock::time_point toc_time;
-
-  void
-  tic()
-  {
-    tic_time = std::chrono::high_resolution_clock::now();
-  }
-
-  double
-  toc(const double multiplier = 1.e6, const int repeats = 1)
-  {
-    toc_time = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::duration<double>>(toc_time - tic_time).count() * multiplier / ((double)repeats);
-  }
-};
-
-void print(const int ns, const int nz, const int rp, const std::string name, const double dcput)
-{
-  std::cout << rp << " repeats of \"" << name << "\" with nspec = " << ns << " and ngrid = " << nz
-            << " completed, average of " << dcput << " us each\n";
-}
-
-using AtomMap = std::map<std::string, double>;
 
 int main(int argc, char *argv[])
 {
 
-  int nz = atoi(argv[1]);
-  int ns = atoi(argv[2]);
-  int rp = atoi(argv[3]);
+  int nz = atoi(argv[1]); // number of grid points
+  int ns = atoi(argv[2]); // number of species
+  int rp = atoi(argv[3]); // number of repeats
 
-  //  const int nz = 256;   // number of grid points
-  //  const int ns = 8;     // number of species
-  //  const int rp = 1000;  // number of repeats
-
-  griffon::CombustionKernels m;
-
-  m.mechanism_add_element("H");
-  m.mechanism_add_element("O");
-  m.mechanism_add_element("C");
-  m.mechanism_add_element("N");
-
-  m.mechanism_set_ref_pressure(101325.);
-  m.mechanism_set_ref_temperature(300.);
-
-  std::vector<std::pair<std::string, AtomMap>> available_species;
-
-  std::vector<std::string> elements = {{"H", "O", "C", "N"}};
-  std::vector<std::string> species_names;
-  for (const auto &e : elements)
-  {
-    const auto species_name = e;
-    if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-    {
-      species_names.push_back(species_name);
-      available_species.push_back(std::make_pair(species_name, AtomMap({{e, 1.}})));
-    }
-  }
-  for (const auto &e1 : elements)
-  {
-    for (const auto &e2 : elements)
-    {
-      {
-        const auto species_name = e1 + e2;
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 1.}, {e2, 1.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + "2" + e2;
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 2.}, {e2, 1.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + e2 + "2";
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 1.}, {e2, 2.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + "2" + e2 + "2";
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 2.}, {e2, 2.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + "3" + e2;
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 3.}, {e2, 1.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + "3" + e2 + "2";
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 3.}, {e2, 2.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + e2 + "3";
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 1.}, {e2, 3.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + "2" + e2 + "3";
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 2.}, {e2, 3.}})));
-        }
-      }
-      {
-        const auto species_name = e1 + "3" + e2 + "3";
-        if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-        {
-          species_names.push_back(species_name);
-          available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 3.}, {e2, 3.}})));
-        }
-      }
-    }
-  }
-  for (const auto &e1 : elements)
-  {
-    for (const auto &e2 : elements)
-    {
-      for (const auto &e3 : elements)
-      {
-        {
-          const auto species_name = e1 + e2 + e3;
-          if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-          {
-            species_names.push_back(species_name);
-            available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 1.}, {e2, 1.}, {e3, 1.}})));
-          }
-        }
-        {
-          const auto species_name = "2" + e1 + e2 + e3;
-          if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-          {
-            species_names.push_back(species_name);
-            available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 2.}, {e2, 1.}, {e3, 1.}})));
-          }
-        }
-        {
-          const auto species_name = e1 + "2" + e2 + e3;
-          if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-          {
-            species_names.push_back(species_name);
-            available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 1.}, {e2, 2.}, {e3, 1.}})));
-          }
-        }
-        {
-          const auto species_name = e1 + e2 + "2" + e3;
-          if (std::find(species_names.begin(), species_names.end(), species_name) == species_names.end())
-          {
-            species_names.push_back(species_name);
-            available_species.push_back(std::make_pair(species_name, AtomMap({{e1, 1.}, {e2, 1.}, {e3, 2.}})));
-          }
-        }
-      }
-    }
-  }
-
-  std::cout << species_names.size() << " species available\n";
-
-  for (int is = 0; is < ns; ++is)
-  {
-    m.mechanism_add_species(available_species[is].first, available_species[is].second);
-  }
-  const double *minv = m.get_mechanism_data().phaseData.inverseMolecularWeights.data();
+  griffon::CombustionKernels m = griffon::make_fake_mechanism(ns);
+  const auto minv = m.get_mechanism_data().phaseData.inverseMolecularWeights.data();
 
   // ----
 
@@ -210,7 +22,7 @@ int main(int argc, char *argv[])
     double mmw[nz];
     double sum = 0.;
 
-    Timer timer;
+    griffon::Timer timer;
     timer.tic();
     for (int r = 0; r < rp; ++r)
     {
@@ -225,7 +37,7 @@ int main(int argc, char *argv[])
     std::cout << "sum = " << sum << '\n';
 
     auto dt = timer.toc(1.e6, rp);
-    print(ns, nz, rp, "zloop(extract_y, mechfxn)", dt);
+    griffon::print_result(ns, nz, rp, "zloop(extract_y, mechfxn)", dt);
   }
 
   {
@@ -237,7 +49,7 @@ int main(int argc, char *argv[])
     double mmw[nz];
     double sum = 0.;
 
-    Timer timer;
+    griffon::Timer timer;
     timer.tic();
     for (int r = 0; r < rp; ++r)
     {
@@ -257,7 +69,7 @@ int main(int argc, char *argv[])
     std::cout << "sum = " << sum << '\n';
 
     auto dt = timer.toc(1.e6, rp);
-    print(ns, nz, rp, "zloop(extract_y,sloop)", dt);
+    griffon::print_result(ns, nz, rp, "zloop(extract_y,sloop)", dt);
   }
 
   {
@@ -269,7 +81,7 @@ int main(int argc, char *argv[])
     double mmw[nz];
     double sum = 0.;
 
-    Timer timer;
+    griffon::Timer timer;
     timer.tic();
     for (int r = 0; r < rp; ++r)
     {
@@ -291,7 +103,7 @@ int main(int argc, char *argv[])
     std::cout << "sum = " << sum << '\n';
 
     auto dt = timer.toc(1.e6, rp);
-    print(ns, nz, rp, "zloop(directTY,sloop)", dt);
+    griffon::print_result(ns, nz, rp, "zloop(directTY,sloop)", dt);
   }
 
   {
@@ -304,7 +116,7 @@ int main(int argc, char *argv[])
     double mmw[nz];
     double sum = 0.;
 
-    Timer timer;
+    griffon::Timer timer;
     timer.tic();
     for (int r = 0; r < rp; ++r)
     {
@@ -332,7 +144,7 @@ int main(int argc, char *argv[])
     std::cout << "sum = " << sum << '\n';
 
     auto dt = timer.toc(1.e6, rp);
-    print(ns, nz, rp, "sloop(zloop,directTY)", dt);
+    griffon::print_result(ns, nz, rp, "sloop(zloop,directTY)", dt);
   }
 
   {
@@ -356,7 +168,7 @@ int main(int argc, char *argv[])
     double mmw[nz];
     double sum = 0.;
 
-    Timer timer;
+    griffon::Timer timer;
     timer.tic();
     for (int r = 0; r < rp; ++r)
     {
@@ -379,7 +191,7 @@ int main(int argc, char *argv[])
     std::cout << "sum = " << sum << '\n';
 
     auto dt = timer.toc(1.e6, rp);
-    print(ns, nz, rp, "sloop(zloop,transposedY) no transpose", dt);
+    griffon::print_result(ns, nz, rp, "sloop(zloop,transposedY) no transpose", dt);
   }
 
   {
@@ -392,7 +204,7 @@ int main(int argc, char *argv[])
     double mmw[nz];
     double sum = 0.;
 
-    Timer timer;
+    griffon::Timer timer;
     timer.tic();
     for (int r = 0; r < rp; ++r)
     {
@@ -412,7 +224,7 @@ int main(int argc, char *argv[])
     std::cout << "sum = " << sum << '\n';
 
     auto dt = timer.toc(1.e6, rp);
-    print(ns, nz, rp, "TY transpose", dt);
+    griffon::print_result(ns, nz, rp, "TY transpose", dt);
   }
 
   {
@@ -425,7 +237,7 @@ int main(int argc, char *argv[])
     double mmw[nz];
     double sum = 0.;
 
-    Timer timer;
+    griffon::Timer timer;
     timer.tic();
     for (int r = 0; r < rp; ++r)
     {
@@ -458,6 +270,6 @@ int main(int argc, char *argv[])
     std::cout << "sum = " << sum << '\n';
 
     auto dt = timer.toc(1.e6, rp);
-    print(ns, nz, rp, "sloop(zloop,transposedY) FULL", dt);
+    griffon::print_result(ns, nz, rp, "sloop(zloop,transposedY) FULL", dt);
   }
 }
