@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include "blas_lapack_kernels.h"
 
 namespace griffon
 {
@@ -346,8 +347,13 @@ namespace griffon
     /*
      * general-purpose thermodynamics evaluations
      */
-    double
-    mixture_molecular_weight (const double *y) const;
+    inline double
+    mixture_molecular_weight (const double *y) const
+    {
+      const int nSpec = mechanismData.phaseData.nSpecies;
+      const auto invMolecularWeights = mechanismData.phaseData.inverseMolecularWeights.data ();
+      return 1. / blas::inner_product (nSpec, y, invMolecularWeights);
+    }
     void
     mole_fractions (const double *y, double *x) const;
     double

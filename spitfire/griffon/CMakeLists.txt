@@ -31,3 +31,4 @@ message(STATUS "BLAS/LAPACK found: " ${BLASLAPACK} )
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src)
+add_subdirectory(performance_testing)

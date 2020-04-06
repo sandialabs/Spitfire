@@ -14,14 +14,6 @@
 namespace griffon
 {
 
-  double
-  CombustionKernels::mixture_molecular_weight (const double *y) const
-  {
-    const int nSpec = mechanismData.phaseData.nSpecies;
-    const auto invMolecularWeights = mechanismData.phaseData.inverseMolecularWeights.data ();
-    return 1. / blas::inner_product (nSpec, y, invMolecularWeights);
-  }
-
   void
   CombustionKernels::mole_fractions (const double *y, double *x) const
   {
