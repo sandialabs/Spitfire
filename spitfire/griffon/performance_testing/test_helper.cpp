@@ -1,4 +1,5 @@
 #include "test_helper.h"
+#include <algorithm>
 
 namespace griffon
 {
