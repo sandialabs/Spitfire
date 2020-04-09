@@ -314,7 +314,8 @@ def odesolve(right_hand_side,
              time_step_increase_factor_to_force_jacobian=1.05,
              time_step_decrease_factor_to_force_jacobian=0.9,
              show_solver_stats_in_situ=False,
-             return_info=False):
+             return_info=False,
+             throw_on_failure=True):
     """
     Solve a time integration problem with a wide variety of solvers, termination options, etc.
 
@@ -355,6 +356,7 @@ def odesolve(right_hand_side,
     :param time_step_decrease_factor_to_force_jacobian: how much the time step size must decrease on a time step to force setup of the projector (default: 0.9)
     :param show_solver_stats_in_situ: whether or not to include the number of nonlinear iterations per step, linear iterations per nonlinear iteration, number of time steps per Jacobian evaluation (projector setup) in the logged output (default: False)
     :param return_info: whether or not to return a dictionary of solver statistics
+    :param throw_on_failure: whether or not to throw an exception on integrator/model failure (default: True)
     :return this method returns a variety of options:
         1. output_times is provided: returns an array of output states, and the solver stats dictionary if return_info is True
         2. save_each_step is True: returns an array of times, and an array of output states, and the solver stats dictionary if return_info is True
@@ -664,8 +666,9 @@ def odesolve(right_hand_side,
         stats_dict = {'success': False}
         print(f'Spitfire odesolve caught the following Exception during time integration:\n')
         logger.exception(error)
-
-    logging.disable(level=logging.DEBUG)
+        logging.disable(level=logging.DEBUG)
+        if throw_on_failure:
+            raise ValueError('odesolve failed to integrate the system due to an Exception being caught - see above')
 
     if output_times is not None:
         if return_info:
