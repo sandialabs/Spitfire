@@ -347,8 +347,8 @@ class Library(object):
                f'\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
                f'------------------------------------------\n' + \
                f'\n'.join([f'{k:20}, min = {np.min(self._props[k])} max = {np.max(self._props[k])}' for k in
-                           enumerate(self._props.keys())]) + \
-               f'------------------------------------------\n'
+                           self._props.keys()]) + \
+               f'\n------------------------------------------\n'
 
     def __repr__(self):
         return f'\nSpitfire Library(ndim={len(self.dims)}, nproperties={len(list(self._props.keys()))})\n' + \
