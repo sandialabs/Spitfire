@@ -670,6 +670,8 @@ def odesolve(right_hand_side,
         if throw_on_failure:
             raise ValueError('odesolve failed to integrate the system due to an Exception being caught - see above')
 
+    logging.disable(level=logging.DEBUG)
+    
     if output_times is not None:
         if return_info:
             return output_states, stats_dict
