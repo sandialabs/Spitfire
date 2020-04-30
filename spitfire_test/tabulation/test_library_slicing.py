@@ -263,7 +263,7 @@ class Slice3D(unittest.TestCase):
         self.assertTrue(np.all(np.abs(l1['f'] - l3['f']) < 10. * machine_epsilon))
 
     def test_view(self):
-        slices = [slice(0, None, None), slice(1, 3, None), slice(1, -3, None)]
+        slices = (slice(0, None, None), slice(1, 3, None), slice(1, -3, None))
 
         l1 = Library(Dimension('x', np.linspace(0, 1, 10)),
                      Dimension('y', np.linspace(-1, 1, 4)),

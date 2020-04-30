@@ -135,7 +135,6 @@ inline void
 lu_solve_on_matrix_with_copy(const int n, const double *factor, const int *ipiv, const double *rhsmatrix,
                              double *solutionmatrix)
 {
-  const int one = 1;
   char trans = 'N';
   int info;
   for (int i = 0; i < n * n; ++i)
