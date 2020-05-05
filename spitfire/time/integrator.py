@@ -664,7 +664,8 @@ def odesolve(right_hand_side,
 
     except Exception as error:
         stats_dict = {'success': False}
-        print(f'Spitfire odesolve caught the following Exception during time integration:\n')
+        if verbose:
+            print(f'Spitfire odesolve caught the following Exception during time integration:\n')
         logger.exception(error)
         logging.disable(level=logging.DEBUG)
         if throw_on_failure:
