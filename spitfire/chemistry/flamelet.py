@@ -1573,7 +1573,7 @@ class Flamelet(object):
             conv = False
             mds = 1.e-6
 
-            the_psitc_args = {'tolerance': tolerance, 'log_rate': 1, 'verbose': verbose, 'max_iterations': 200}
+            the_psitc_args = {'tolerance': tolerance, 'log_rate': 1, 'verbose': verbose, 'max_iterations': 400}
             if psitc_args is not None:
                 the_psitc_args.update(psitc_args)
             if use_psitc:
