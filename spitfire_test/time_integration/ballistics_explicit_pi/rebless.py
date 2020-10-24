@@ -2,7 +2,7 @@ import pickle
 
 
 def run():
-    from spitfire.time.integrator import odesolve, SaveAllDataToList
+    from spitfire.time.integrator import odesolve
     from spitfire.time.stepcontrol import PIController
     from spitfire.time.methods import CashKarpS6P5Q4
     import numpy as np
@@ -39,17 +39,12 @@ def run():
     for key in drag_coeff_dict:
         cd = drag_coeff_dict[key]
 
-        data = SaveAllDataToList(initial_solution=q0, save_frequency=10)
-
-        odesolve(lambda t, y: right_hand_side(y, rf, cd, g, sa, m),
-                 q0,
-                 step_size=PIController(first_step=1e-6, target_error=1e-10, max_step=1e-3),
-                 method=CashKarpS6P5Q4(),
-                 post_step_callback=data.save_data,
-                 stop_criteria=object_has_landed)
-
-        solution_data[key] = (data.t_list.copy(), data.solution_list.copy())
-        data.reset_data(q0, 0.)
+        solution_data[key] = odesolve(lambda t, y: right_hand_side(y, rf, cd, g, sa, m),
+                                      q0,
+                                      step_size=PIController(first_step=1e-6, target_error=1e-10, max_step=1e-3),
+                                      method=CashKarpS6P5Q4(),
+                                      save_each_step=10,
+                                      stop_criteria=object_has_landed)
 
     return solution_data
 

@@ -366,7 +366,7 @@ class Flamelet(object):
             self._T_conv = oxy_stream.T + self._z[1:-1] * (fuel_stream.T - oxy_stream.T)
             self._T_rad = oxy_stream.T + self._z[1:-1] * (fuel_stream.T - oxy_stream.T)
             zst = self._mechanism.stoich_mixture_fraction(fuel_stream, oxy_stream)
-            factor = np.max(self._x) * (1. - zst) / zst
+            factor = np.max(self._x) / (1. - zst) / zst
             self._h_conv *= factor
             self._h_rad *= factor
 

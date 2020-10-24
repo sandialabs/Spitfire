@@ -2,7 +2,7 @@ import pickle
 
 
 def run():
-    from spitfire.time.integrator import odesolve, SaveAllDataToList
+    from spitfire.time.integrator import odesolve
     from spitfire.time.methods import RK4ClassicalS4P4
     import numpy as np
 
@@ -32,16 +32,14 @@ def run():
     final_time = 10.  # final time to integrate to
     time_step_size = 0.1  # size of the time step used
 
-    data = SaveAllDataToList(initial_solution=c0)
+    t, sol = odesolve(lambda t, y: right_hand_side(y, k_ab, k_bc),
+                      c0,
+                      stop_at_time=final_time,
+                      step_size=time_step_size,
+                      method=RK4ClassicalS4P4(),
+                      save_each_step=True)
 
-    odesolve(lambda t, y: right_hand_side(y, k_ab, k_bc),
-             c0,
-             stop_at_time=final_time,
-             step_size=time_step_size,
-             method=RK4ClassicalS4P4(),
-             post_step_callback=data.save_data)
-
-    return dict({'t': data.t_list.copy(), 'sol': data.solution_list.copy()})
+    return dict({'t': t.copy(), 'sol': sol.copy()})
 
 
 if __name__ == '__main__':

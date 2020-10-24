@@ -17,7 +17,7 @@ from .chemistry.tabulation import build_adiabatic_eq_library, \
 
 from .griffon.griffon import PyCombustionKernels
 
-from .time.integrator import SaveAllDataToList, odesolve
+from .time.integrator import odesolve
 from .time.nonlinear import SimpleNewtonSolver
 from .time.stepcontrol import PIController
 from .time.methods import (ForwardEulerS1P1,

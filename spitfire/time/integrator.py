@@ -16,7 +16,7 @@ In many cases the Jacobian/preconditioner can be lagged for several time steps t
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 import numpy as np
-from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices, zeros, save as numpy_save
+from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices, zeros
 from scipy.linalg import norm
 from spitfire.time.stepcontrol import ConstantTimeStep, PIController
 from spitfire.time.methods import KennedyCarpenterS6P4Q3
@@ -26,72 +26,6 @@ from scipy.linalg.lapack import dgetrs as lapack_lu_solve
 import time as timer
 import datetime
 import logging
-
-
-class SaveAllDataToList(object):
-    """A class that saves solution data and times from time integration at a particular step frequency
-
-    **Constructor**:
-
-    Parameters
-    ----------
-    initial_solution : np.ndarray
-        the initial solution
-    initial_time : float
-        the initial time (default: 0.)
-    save_frequency : int
-        how many steps are taken between solution data and times being saved (default: 1)
-    file_prefix : str
-        file prefix where solution times and solution data will be dumped (to numpy binary) during the simulation
-    file_first_and_last_only : bool
-        whether or not to save all data (False, default) or only the first and last solutions to the numpy binary file
-    save_first_and_last_only : bool
-        whether or not to retain (in memory) all data (False, default) or only the first and last solutions
-    """
-
-    def __init__(self, initial_solution, initial_time=0., save_frequency=1, file_prefix=None,
-                 file_first_and_last_only=False, save_first_and_last_only=False):
-        self._t_list = [np.copy(initial_time)]
-        self._solution_list = [np.copy(initial_solution)]
-        self._save_count = 0
-        self._save_frequency = save_frequency
-        self._file_prefix = file_prefix
-        self._file_first_and_last_only = file_first_and_last_only
-        self._save_first_and_last_only = save_first_and_last_only
-
-    @property
-    def t_list(self):
-        """Obtain a np.array of the list of solution times that were saved"""
-        return array(self._t_list)
-
-    @property
-    def solution_list(self):
-        """Obtain a np.array of the solutions that were saved"""
-        return array(self._solution_list)
-
-    def save_data(self, t, solution, *args, **kwargs):
-        """Method to provide to the Governor() object as the post_step_callback"""
-        self._save_count += 1
-        if self._save_count == self._save_frequency:
-            self._save_count = 0
-            if len(self.t_list) > 1 and self._save_first_and_last_only:
-                self._t_list[-1] = np.copy(t)
-                self._solution_list[-1] = np.copy(solution)
-            else:
-                self._t_list.append(np.copy(t))
-                self._solution_list.append(np.copy(solution))
-            if self._file_prefix is not None:
-                if self._file_first_and_last_only:
-                    numpy_save(self._file_prefix + '_times.npy', self.t_list[[0, -1]])
-                    numpy_save(self._file_prefix + '_solutions.npy', self.solution_list[[0, -1], :])
-                else:
-                    numpy_save(self._file_prefix + '_times.npy', self.t_list)
-                    numpy_save(self._file_prefix + '_solutions.npy', self.solution_list)
-
-    def reset_data(self, initial_solution, initial_time=0.):
-        """Reset the data on a SaveAllDataToList object"""
-        self._t_list = [np.copy(initial_time)]
-        self._solution_list = [np.copy(initial_solution)]
 
 
 def _log_header(verbose,
@@ -321,6 +255,8 @@ def odesolve(right_hand_side,
 
     :param right_hand_side: the right-hand side of the ODE system, in the form f(t, y)
     :param initial_state: the initial state vector
+    :param output_times: a collection of times at which the state will be returned
+    :param save_each_step: set to True to save all data at each time step, or set to a positive integer to specify a step frequency of saving data
     :param initial_time: the initial time
     :param stop_criteria: any data with a call operator (state, t, dt, nt, residual) that returns True to stop time integration
     :param stop_at_time: force time integration to stop at exactly the provided final time
@@ -359,7 +295,7 @@ def odesolve(right_hand_side,
     :param throw_on_failure: whether or not to throw an exception on integrator/model failure (default: True)
     :return this method returns a variety of options:
         1. output_times is provided: returns an array of output states, and the solver stats dictionary if return_info is True
-        2. save_each_step is True: returns an array of times, and an array of output states, and the solver stats dictionary if return_info is True
+        2. save_each_step is True (or a positive integer frequency): returns an array of times, and an array of output states, and the solver stats dictionary if return_info is True
         3. else: returns an the final state vector, final time, and final time step, and the solver stats dictionary if return_info is True
     """
 
@@ -390,6 +326,14 @@ def odesolve(right_hand_side,
         if not (isinstance(stop_at_steady, bool) or isinstance(stop_at_steady, float)):
             raise TypeError('Error in Spitfire odesolve, the stop_at_time argument must be provided as '
                             'a boolean (default tolerance if True) or a float.')
+
+    if not (isinstance(save_each_step, bool) or isinstance(save_each_step, int)):
+        raise ValueError('Error in Spitfire odesolve, the save_each_step argument must be either True/False '
+                         'or a positive integer (the step frequency at which data is saved).')
+    else:
+        if isinstance(save_each_step, int) and save_each_step < 0:
+            raise ValueError('Error in Spitfire odesolve, the save_each_step argument must be either True/False '
+                             'or a positive integer (the step frequency at which data is saved).')
 
     if output_times is not None:
         if stop_at_time is not None:
@@ -565,8 +509,10 @@ def odesolve(right_hand_side,
                     output_time_idx += 1
 
                 if save_each_step:
-                    t_list.append(np.copy(current_time))
-                    solution_list.append(np.copy(current_state))
+                    if isinstance(save_each_step, bool) or \
+                            (isinstance(save_each_step, int) and not (number_of_time_steps % save_each_step)):
+                        t_list.append(np.copy(current_time))
+                        solution_list.append(np.copy(current_state))
 
                 log_count, log_title_count = _write_log(verbose,
                                                         show_solver_stats_in_situ,
@@ -672,17 +618,19 @@ def odesolve(right_hand_side,
             raise ValueError('odesolve failed to integrate the system due to an Exception being caught - see above')
 
     logging.disable(level=logging.DEBUG)
-    
+
     if output_times is not None:
         if return_info:
             return output_states, stats_dict
         else:
             return output_states
-
-    if save_each_step:
-        return array(t_list), array(solution_list)
-
-    if return_info:
-        return current_state, current_time, time_step_size, stats_dict
+    elif save_each_step:
+        if return_info:
+            return array(t_list), array(solution_list), stats_dict
+        else:
+            return array(t_list), array(solution_list)
     else:
-        return current_state, current_time, time_step_size
+        if return_info:
+            return current_state, current_time, time_step_size, stats_dict
+        else:
+            return current_state, current_time, time_step_size

@@ -3,7 +3,6 @@ import pickle
 
 def run():
     from spitfire import (odesolve,
-                          SaveAllDataToList,
                           BackwardEulerS1P1Q1,
                           KennedyCarpenterS6P4Q3,
                           KvaernoS4P3Q2,
@@ -125,29 +124,26 @@ def run():
                    KvaernoS4P3Q2(SimpleNewtonSolver()),
                    KennedyCarpenterS4P3Q2(SimpleNewtonSolver()),
                    KennedyCarpenterS8P5Q4(SimpleNewtonSolver())]:
-        data = SaveAllDataToList(initial_solution=c0)
-        odesolve(problem.rhs, c0, stop_at_time=final_time,
-                 method=method,
-                 linear_setup=problem.setup_lapack_lu,
-                 linear_solve=problem.solve_lapack_lu,
-                 post_step_callback=data.save_data)
-        sol_dict['lapack-' + method.name] = (data.t_list.copy(), data.solution_list.copy())
+        t, sol = odesolve(problem.rhs, c0, stop_at_time=final_time,
+                          method=method,
+                          linear_setup=problem.setup_lapack_lu,
+                          linear_solve=problem.solve_lapack_lu,
+                          save_each_step=True)
+        sol_dict['lapack-' + method.name] = (t.copy(), sol.copy())
 
-        data.reset_data(initial_solution=c0)
-        odesolve(problem.rhs, c0, stop_at_time=final_time,
-                 method=method,
-                 linear_setup=problem.setup_diagonal,
-                 linear_solve=problem.solve_diagonal,
-                 post_step_callback=data.save_data)
-        sol_dict['diagonal-' + method.name] = (data.t_list.copy(), data.solution_list.copy())
+        t, sol = odesolve(problem.rhs, c0, stop_at_time=final_time,
+                          method=method,
+                          linear_setup=problem.setup_diagonal,
+                          linear_solve=problem.solve_diagonal,
+                          save_each_step=True)
+        sol_dict['diagonal-' + method.name] = (t.copy(), sol.copy())
 
-        data.reset_data(initial_solution=c0)
-        odesolve(problem.rhs, c0, stop_at_time=final_time,
-                 method=method,
-                 linear_setup=problem.setup_gmres,
-                 linear_solve=problem.solve_gmres,
-                 post_step_callback=data.save_data)
-        sol_dict['gmres-' + method.name] = (data.t_list.copy(), data.solution_list.copy())
+        t, sol = odesolve(problem.rhs, c0, stop_at_time=final_time,
+                          method=method,
+                          linear_setup=problem.setup_gmres,
+                          linear_solve=problem.solve_gmres,
+                          save_each_step=True)
+        sol_dict['gmres-' + method.name] = (t.copy(), sol.copy())
 
     return sol_dict
 
