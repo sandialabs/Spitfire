@@ -13,9 +13,7 @@ def run():
     air.TP = 1200., pressure
     fuel = m.stream('TPY', (300., pressure, 'H2:1'))
 
-    flamelet_specs = {'mech_spec': m, 'pressure': pressure,
-                      'oxy_stream': air, 'fuel_stream': fuel,
-                      'grid_points': 34}
+    flamelet_specs = {'mech_spec': m, 'oxy_stream': air, 'fuel_stream': fuel, 'grid_points': 34}
 
     l = build_adiabatic_eq_library(flamelet_specs, verbose=False)
     l = sca.compute_specific_enthalpy(m, l)

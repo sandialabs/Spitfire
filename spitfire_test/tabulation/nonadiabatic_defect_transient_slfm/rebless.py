@@ -1,7 +1,7 @@
 from os.path import abspath, join
 
 
-def run():
+def run(num_procs):
     from spitfire.chemistry.mechanism import ChemicalMechanismSpec
     from spitfire.chemistry.tabulation import build_nonadiabatic_defect_transient_slfm_library
     import spitfire.chemistry.analysis as sca
@@ -14,13 +14,12 @@ def run():
     air.TP = 1200., pressure
     fuel = m.stream('TPY', (300., pressure, 'H2:1'))
 
-    flamelet_specs = {'mech_spec': m, 'pressure': pressure,
-                      'oxy_stream': air, 'fuel_stream': fuel,
-                      'grid_points': 34}
+    flamelet_specs = {'mech_spec': m, 'oxy_stream': air, 'fuel_stream': fuel, 'grid_points': 34}
 
     l = build_nonadiabatic_defect_transient_slfm_library(flamelet_specs, verbose=False,
                                                          diss_rate_values=np.logspace(0, 1, 4),
-                                                         integration_args={'transient_tolerance': 1e-10})
+                                                         integration_args={'transient_tolerance': 1e-10},
+                                                         num_procs=num_procs)
     l = sca.compute_specific_enthalpy(m, l)
     l = sca.compute_isochoric_specific_heat(m, l)
     l = sca.compute_isobaric_specific_heat(m, l)
@@ -33,5 +32,5 @@ def run():
 
 if __name__ == '__main__':
     gold_pkl = abspath(join('spitfire_test', 'tabulation', 'nonadiabatic_defect_transient_slfm', 'gold.pkl'))
-    output_library = run()
+    output_library = run(num_procs=1)
     output_library.save_to_file(gold_pkl)

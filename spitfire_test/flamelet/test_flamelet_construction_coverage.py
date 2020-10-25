@@ -1,7 +1,8 @@
 import unittest
 import numpy as np
+import pickle
 from os.path import join, abspath
-from spitfire import ChemicalMechanismSpec, Flamelet
+from spitfire import ChemicalMechanismSpec, Flamelet, FlameletSpec
 
 
 def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):
@@ -9,6 +10,7 @@ def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):
     mechanism = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='h2-burke')
     air = mechanism.stream(stp_air=True)
     fuel = mechanism.stream('X', 'H2:1')
+    fuel.TP = 300, air.P
 
     if grid_type == 'uniform':
         grid_specs = {'grid_points': 8}
@@ -29,7 +31,6 @@ def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):
         drf_specs = {'dissipation_rate': np.linspace(0., 1., 8)}
 
     flamelet_specs = {'mech_spec': mechanism,
-                      'pressure': air.P,
                       'oxy_stream': air,
                       'fuel_stream': fuel,
                       'initial_condition': initialization}
@@ -38,6 +39,20 @@ def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):
 
     try:
         Flamelet(**flamelet_specs)
+        Flamelet(flamelet_specs=flamelet_specs)
+        fso = FlameletSpec(**flamelet_specs)
+        f = Flamelet(fso)
+
+        fso_pickle = pickle.dumps(fso)
+        fso2 = pickle.loads(fso_pickle)
+        f = Flamelet(fso2)
+
+        lib = f.make_library_from_interior_state(f.initial_interior_state)
+        Flamelet(library_slice=lib)
+
+        lib_pickle = pickle.dumps(lib)
+        lib2 = pickle.loads(lib_pickle)
+        Flamelet(library_slice=lib2)
         return True
     except:
         return False
@@ -48,6 +63,7 @@ def construct_nonadiabatic_flamelet(initialization, grid_type, diss_rate_form):
     mechanism = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='h2-burke')
     air = mechanism.stream(stp_air=True)
     fuel = mechanism.stream('X', 'H2:1')
+    fuel.TP = 300, air.P
 
     if grid_type == 'uniform':
         grid_specs = {'grid_points': 8}
@@ -67,36 +83,49 @@ def construct_nonadiabatic_flamelet(initialization, grid_type, diss_rate_form):
     elif diss_rate_form == 'custom':
         drf_specs = {'dissipation_rate': np.linspace(0., 1., 8)}
 
-    try:
-        flamelet_specs = {'mech_spec': mechanism,
-                          'pressure': air.P,
-                          'oxy_stream': air,
-                          'fuel_stream': fuel,
-                          'initial_condition': initialization,
-                          'heat_transfer': 'nonadiabatic',
-                          'convection_temperature': 350.,
-                          'convection_coefficient': 0.,
-                          'radiation_temperature': 350.,
-                          'radiative_emissivity': 0.}
-        flamelet_specs.update(grid_specs)
-        flamelet_specs.update(drf_specs)
-        Flamelet(**flamelet_specs)
+    flamelet_specs = {'mech_spec': mechanism,
+                      'oxy_stream': air,
+                      'fuel_stream': fuel,
+                      'initial_condition': initialization,
+                      'heat_transfer': 'nonadiabatic',
+                      'convection_temperature': 350.,
+                      'convection_coefficient': 0.,
+                      'radiation_temperature': 350.,
+                      'radiative_emissivity': 0.}
+    flamelet_specs.update(grid_specs)
+    flamelet_specs.update(drf_specs)
+    Flamelet(**flamelet_specs)
 
-        flamelet_specs = {'mech_spec': mechanism,
-                          'pressure': air.P,
-                          'oxy_stream': air,
-                          'fuel_stream': fuel,
-                          'initial_condition': initialization,
-                          'heat_transfer': 'nonadiabatic',
-                          'use_scaled_heat_loss': True,
-                          'convection_coefficient': 1.e7,
-                          'radiative_emissivity': 0.}
-        flamelet_specs.update(grid_specs)
-        flamelet_specs.update(drf_specs)
+    flamelet_specs = {'mech_spec': mechanism,
+                      'oxy_stream': air,
+                      'fuel_stream': fuel,
+                      'initial_condition': initialization,
+                      'heat_transfer': 'nonadiabatic',
+                      'use_scaled_heat_loss': True,
+                      'convection_coefficient': 1.e7,
+                      'radiative_emissivity': 0.}
+    flamelet_specs.update(grid_specs)
+    flamelet_specs.update(drf_specs)
+
+    try:
         Flamelet(**flamelet_specs)
+        Flamelet(flamelet_specs=flamelet_specs)
+        fso = FlameletSpec(**flamelet_specs)
+        f = Flamelet(fso)
+
+        fso_pickle = pickle.dumps(fso)
+        fso2 = pickle.loads(fso_pickle)
+        f = Flamelet(fso2)
+
+        lib = f.make_library_from_interior_state(f.initial_interior_state)
+        Flamelet(library_slice=lib)
+
+        lib_pickle = pickle.dumps(lib)
+        lib2 = pickle.loads(lib_pickle)
+        Flamelet(library_slice=lib2)
+
         return True
-    except Exception as e:
-        print(e)
+    except:
         return False
 
 
@@ -118,15 +147,16 @@ test_xml = abspath(join('spitfire_test', 'test_mechanisms', 'h2-burke.xml'))
 mechanism = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='h2-burke')
 air = mechanism.stream(stp_air=True)
 fuel = mechanism.stream('X', 'H2:1')
+fuel.TP = 300, air.P
 
 flamelet_specs = {'mech_spec': mechanism,
-                  'pressure': air.P,
                   'oxy_stream': air,
                   'fuel_stream': fuel,
                   'grid_points': 8,
                   'grid_cluster_intensity': 4.,
                   'initial_condition': 'equilibrium',
                   'max_dissipation_rate': 0.}
+
 temp_flamelet = Flamelet(**flamelet_specs)
 
 for ht in temp_flamelet._heat_transfers:

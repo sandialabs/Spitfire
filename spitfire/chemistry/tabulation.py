@@ -16,7 +16,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from multiprocessing import Pool, Manager
 from time import perf_counter
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
-from spitfire.chemistry.flamelet import Flamelet
+from spitfire.chemistry.flamelet import Flamelet, FlameletSpec
 from spitfire.chemistry.library import Dimension, Library
 import spitfire.chemistry.analysis as sca
 
@@ -51,21 +51,24 @@ def build_unreacted_library(flamelet_specs, verbose=True):
     """
     Build a flamelet library with the unreacted state (linear enthalpy and mass fractions)
 
-    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream)
+    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
     :param verbose: whether or not to show progress of the library construction
     :return: the library instance
     """
-    m = flamelet_specs['mech_spec']
-    fuel = flamelet_specs['fuel_stream']
-    oxy = flamelet_specs['oxy_stream']
-    fs0 = dict(flamelet_specs)
+
+    if isinstance(flamelet_specs, dict):
+        flamelet_specs = FlameletSpec(**flamelet_specs)
+
+    m = flamelet_specs.mech_spec
+    fuel = flamelet_specs.fuel_stream
+    oxy = flamelet_specs.oxy_stream
 
     cput0 = _write_library_header('unreacted', m, fuel, oxy, verbose)
 
-    fs0.update({'initial_condition': 'unreacted'})
-    flamelet = Flamelet(**fs0)
+    flamelet_specs.initial_condition = 'unreacted'
+    flamelet = Flamelet(flamelet_specs)
 
-    output_library = flamelet._make_library_from_interior_state(flamelet.initial_interior_state)
+    output_library = flamelet.make_library_from_interior_state(flamelet.initial_interior_state)
 
     _write_library_footer(cput0, verbose)
     return output_library
@@ -75,22 +78,24 @@ def build_adiabatic_eq_library(flamelet_specs, verbose=True):
     """
     Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption
 
-    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
-     details of the grid in mixture fraction are required)
+    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
     :param verbose: whether or not to show progress of the library construction
     :return: the library instance
     """
-    m = flamelet_specs['mech_spec']
-    fuel = flamelet_specs['fuel_stream']
-    oxy = flamelet_specs['oxy_stream']
-    fs0 = dict(flamelet_specs)
+
+    if isinstance(flamelet_specs, dict):
+        flamelet_specs = FlameletSpec(**flamelet_specs)
+
+    m = flamelet_specs.mech_spec
+    fuel = flamelet_specs.fuel_stream
+    oxy = flamelet_specs.oxy_stream
 
     cput0 = _write_library_header('adiabatic equilibrium', m, fuel, oxy, verbose)
 
-    fs0.update({'initial_condition': 'equilibrium'})
-    flamelet = Flamelet(**fs0)
+    flamelet_specs.initial_condition = 'equilibrium'
+    flamelet = Flamelet(flamelet_specs)
 
-    output_library = flamelet._make_library_from_interior_state(flamelet.initial_interior_state)
+    output_library = flamelet.make_library_from_interior_state(flamelet.initial_interior_state)
 
     _write_library_footer(cput0, verbose)
     return output_library
@@ -100,22 +105,24 @@ def build_adiabatic_bs_library(flamelet_specs, verbose=True):
     """
     Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions
 
-    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
-     details of the grid in mixture fraction are required)
+    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
     :param verbose: whether or not to show progress of the library construction
     :return: the library instance
     """
-    m = flamelet_specs['mech_spec']
-    fuel = flamelet_specs['fuel_stream']
-    oxy = flamelet_specs['oxy_stream']
-    fs0 = dict(flamelet_specs)
+
+    if isinstance(flamelet_specs, dict):
+        flamelet_specs = FlameletSpec(**flamelet_specs)
+
+    m = flamelet_specs.mech_spec
+    fuel = flamelet_specs.fuel_stream
+    oxy = flamelet_specs.oxy_stream
 
     cput0 = _write_library_header('adiabatic Burke-Schumann', m, fuel, oxy, verbose)
 
-    fs0.update({'initial_condition': 'Burke-Schumann'})
-    flamelet = Flamelet(**fs0)
+    flamelet_specs.initial_condition = 'Burke-Schumann'
+    flamelet = Flamelet(flamelet_specs)
 
-    output_library = flamelet._make_library_from_interior_state(flamelet.initial_interior_state)
+    output_library = flamelet.make_library_from_interior_state(flamelet.initial_interior_state)
 
     _write_library_footer(cput0, verbose)
     return output_library
@@ -125,26 +132,29 @@ def _build_nonadiabatic_defect_unstrained_library(initialization,
                                                   flamelet_specs,
                                                   n_defect_st=16,
                                                   verbose=True):
-    m = flamelet_specs['mech_spec']
-    fuel = flamelet_specs['fuel_stream']
-    oxy = flamelet_specs['oxy_stream']
+    if isinstance(flamelet_specs, dict):
+        flamelet_specs = FlameletSpec(**flamelet_specs)
+
+    m = flamelet_specs.mech_spec
+    fuel = flamelet_specs.fuel_stream
+    oxy = flamelet_specs.oxy_stream
+
     z_st = m.stoich_mixture_fraction(fuel, oxy)
-    fs0 = dict(flamelet_specs)
 
     cput0 = _write_library_header('nonadiabatic (defect) ' + initialization, m, fuel, oxy, verbose)
 
-    fs0.update({'initial_condition': initialization})
-    flamelet = Flamelet(**fs0)
+    flamelet_specs.initial_condition = initialization
+    flamelet = Flamelet(flamelet_specs)
 
     # compute the extreme enthalpy defect
     state_ad = flamelet.initial_interior_state
-    adiabatic_lib = flamelet._make_library_from_interior_state(state_ad)
+    adiabatic_lib = flamelet.make_library_from_interior_state(state_ad)
     enthalpy_ad = sca.compute_specific_enthalpy(m, adiabatic_lib)['enthalpy']
 
     z_interior = flamelet.mixfrac_grid[1:-1]
     state_cooled_eq = state_ad.copy()
     state_cooled_eq[::m.n_species] = z_interior * fuel.T + (1 - z_interior) * oxy.T
-    cooled_lib = flamelet._make_library_from_interior_state(state_cooled_eq)
+    cooled_lib = flamelet.make_library_from_interior_state(state_cooled_eq)
     enthalpy_cooled_eq = sca.compute_specific_enthalpy(m, cooled_lib)['enthalpy']
 
     z = flamelet.mixfrac_grid
@@ -157,6 +167,7 @@ def _build_nonadiabatic_defect_unstrained_library(initialization,
     z_dim = Dimension(_mixture_fraction_name, flamelet.mixfrac_grid)
     g_dim = Dimension(_enthalpy_defect_name + _stoich_suffix, defect_range)
     output_library = Library(z_dim, g_dim)
+    output_library.extra_attributes['mech_spec'] = m
 
     for p in adiabatic_lib.props:
         output_library[p] = output_library.get_empty_dataset()
@@ -170,7 +181,7 @@ def _build_nonadiabatic_defect_unstrained_library(initialization,
     fz[z > z_st] = (1 - z[z > z_st]) / (1 - z_st)
 
     ns = m.n_species
-    g_library = flamelet._make_library_from_interior_state(flamelet.initial_interior_state)
+    g_library = flamelet.make_library_from_interior_state(flamelet.initial_interior_state)
     for ig in range(n_defect_st):
         defected_enthalpy = enthalpy_ad + defect_range[ig] * fz
 
@@ -205,8 +216,7 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
     Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption and with
     heat loss effects with a presumed (triangular) form of the enthalpy defect.
 
-    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
-     details of the grid in mixture fraction are required)
+    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
     :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the table (default: 16)
     :param verbose: whether or not to show progress of the library construction
     :return: the library instance
@@ -224,8 +234,7 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs,
     Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions and with
     heat loss effects with a presumed (triangular) form of the enthalpy defect.
 
-    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
-     details of the grid in mixture fraction are required)
+    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
     :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the table (default: 16)
     :param verbose: whether or not to show progress of the library construction
     :return: the library instance
@@ -245,8 +254,7 @@ def build_adiabatic_slfm_library(flamelet_specs,
     """
     Build a flamelet library with an adiabatic strained laminar flamelet model
 
-    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
-     details of the grid in mixture fraction are required)
+    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
     :param diss_rate_values: the np.array of reference dissipation rate values in the table (note that if the flamelet
      extinguishes at any point, the extinguished flamelet and larger dissipation rates are not included in the library)
     :param diss_rate_ref: the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
@@ -254,29 +262,35 @@ def build_adiabatic_slfm_library(flamelet_specs,
     :return: the library instance
     """
 
-    m = flamelet_specs['mech_spec']
-    fuel = flamelet_specs['fuel_stream']
-    oxy = flamelet_specs['oxy_stream']
-    fs0 = dict(flamelet_specs)
-    init = 'equilibrium' if 'initial_condition' not in flamelet_specs else flamelet_specs['initial_condition']
+    if isinstance(flamelet_specs, dict):
+        flamelet_specs = FlameletSpec(**flamelet_specs)
+
+    m = flamelet_specs.mech_spec
+    fuel = flamelet_specs.fuel_stream
+    oxy = flamelet_specs.oxy_stream
+    flamelet_specs.initial_condition = 'equilibrium'
+    if diss_rate_ref == 'maximum':
+        flamelet_specs.max_dissipation_rate = 0.
+    else:
+        flamelet_specs.stoich_dissipation_rate = 0.
 
     cput00 = _write_library_header('adiabatic SLFM', m, fuel, oxy, verbose)
 
-    fs0.update({'max_dissipation_rate': 0., 'initial_condition': init})
-    f = Flamelet(**fs0)
+    f = Flamelet(flamelet_specs)
 
     table_dict = dict()
 
     nchi = diss_rate_values.size
-    diss_rate_key = 'max_dissipation_rate' if diss_rate_ref == 'maximum' else 'stoich_dissipation_rate'
     suffix = _stoich_suffix if diss_rate_ref == 'stoichiometric' else '_max'
 
-    fs = dict(flamelet_specs)
-    fs['initial_condition'] = 'equilibrium'
     x_values = list()
     for idx, chival in enumerate(diss_rate_values):
-        fs[diss_rate_key] = chival
-        flamelet = Flamelet(**fs)
+        if diss_rate_ref == 'maximum':
+            flamelet_specs.max_dissipation_rate = chival
+        else:
+            flamelet_specs.stoich_dissipation_rate = chival
+
+        flamelet = Flamelet(flamelet_specs)
         if verbose:
             print(f'{idx + 1:4}/{nchi:4} (chi{suffix} = {chival:8.1e} 1/s) ', end='', flush=True)
         cput0 = perf_counter()
@@ -300,7 +314,7 @@ def build_adiabatic_slfm_library(flamelet_specs,
         table_dict[chi_st] = dict()
         for k in x_library.props:
             table_dict[chi_st][k] = x_library[k].ravel()
-        fs['initial_condition'] = flamelet.current_interior_state
+        flamelet_specs.initial_condition = flamelet.current_interior_state
         if _return_intermediates:
             table_dict[chi_st]['adiabatic_state'] = np.copy(flamelet.current_interior_state)
 
@@ -312,6 +326,7 @@ def build_adiabatic_slfm_library(flamelet_specs,
         x_dim = Dimension(_dissipation_rate_name + _stoich_suffix, np.array(x_values))
 
         output_library = Library(z_dim, x_dim)
+        output_library.extra_attributes['mech_spec'] = m
 
         for quantity in table_dict[chi_st]:
             output_library[quantity] = output_library.get_empty_dataset()
@@ -322,28 +337,14 @@ def build_adiabatic_slfm_library(flamelet_specs,
         return output_library
 
 
-def _expand_enthalpy_defect_dimension(args):
-    chi_st = args[0]
-    managed_dict = args[1]
-    flamelet_specs = args[2]
-    mech_args = args[3]
-    oxy_tpy = args[4]
-    fuel_tpy = args[5]
-    table_dict = args[6]
-    h_stoich_spacing = args[7]
-    verbose = args[8]
-    input_integration_args = args[9]
-    solver_verbose = args[10]
-    fsnad = dict(flamelet_specs)
-    fsnad['mech_spec'] = ChemicalMechanismSpec(*mech_args)
-    fsnad['oxy_stream'] = fsnad['mech_spec'].stream('TPY', oxy_tpy)
-    fsnad['fuel_stream'] = fsnad['mech_spec'].stream('TPY', fuel_tpy)
-    fsnad['initial_condition'] = table_dict[chi_st]['adiabatic_state']
-    fsnad['stoich_dissipation_rate'] = chi_st
-    fsnad['heat_transfer'] = 'nonadiabatic'
-    fsnad['use_scaled_heat_loss'] = True
-    fsnad['convection_coefficient'] = 1.e7
-    fsnad['radiative_emissivity'] = 0.
+def _expand_enthalpy_defect_dimension(chi_st, managed_dict, flamelet_specs, table_dict,
+                                      h_stoich_spacing, verbose, input_integration_args, solver_verbose):
+    flamelet_specs.initial_condition = table_dict[chi_st]['adiabatic_state']
+    flamelet_specs.stoich_dissipation_rate = chi_st
+    flamelet_specs.heat_transfer = 'nonadiabatic'
+    flamelet_specs.use_scaled_heat_loss = True
+    flamelet_specs.convection_coefficient = 1.e7
+    flamelet_specs.radiative_emissivity = 0.
 
     integration_args = dict(
         {'first_time_step': 1.e-9,
@@ -361,10 +362,10 @@ def _expand_enthalpy_defect_dimension(args):
     running = True
     while running and integration_args['transient_tolerance'] > 1.e-15:
         try:
-            fnonad = Flamelet(**fsnad)
+            fnonad = Flamelet(flamelet_specs)
             transient_lib = fnonad.integrate_for_heat_loss(**integration_args)
             running = False
-        except:
+        except Exception as e:
             if solver_verbose:
                 print(
                     f'Transient heat loss calculation failed with tolerance of {integration_args["transient_tolerance"]:.1e}, retrying with 100x lower...')
@@ -372,7 +373,7 @@ def _expand_enthalpy_defect_dimension(args):
     indices = [0]
     z = fnonad.mixfrac_grid
     z_st = fnonad.mechanism.stoich_mixture_fraction(fnonad.fuel_stream, fnonad.oxy_stream)
-    h_tz = sca.compute_specific_enthalpy(fsnad['mech_spec'], transient_lib)['enthalpy']
+    h_tz = sca.compute_specific_enthalpy(flamelet_specs.mech_spec, transient_lib)['enthalpy']
     h_ad = h_tz[0, :]
     nt, nz = h_tz.shape
     last_hst = interp1d(z, h_ad)(z_st)
@@ -421,25 +422,17 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
         pool = Pool(num_procs)
         manager = Manager()
         nonad_table_dict = manager.dict()
-        flamelet_specs_no_ct = dict(flamelet_specs)
-        del flamelet_specs_no_ct['mech_spec']
-        del flamelet_specs_no_ct['fuel_stream']
-        del flamelet_specs_no_ct['oxy_stream']
-        mech_args = [flamelet_specs['mech_spec'].mech_xml_path, flamelet_specs['mech_spec'].group_name]
-        oxy_tpy = flamelet_specs['oxy_stream'].TPY
-        fuel_tpy = flamelet_specs['fuel_stream'].TPY
         cput000 = perf_counter()
-        pool.map(_expand_enthalpy_defect_dimension, ((chi_st,
-                                                      nonad_table_dict,
-                                                      flamelet_specs_no_ct,
-                                                      mech_args,
-                                                      oxy_tpy,
-                                                      fuel_tpy,
-                                                      table_dict,
-                                                      h_stoich_spacing,
-                                                      verbose,
-                                                      integration_args,
-                                                      solver_verbose) for chi_st in table_dict.keys()))
+
+        pool.starmap(_expand_enthalpy_defect_dimension,
+                     ((chi_st,
+                       nonad_table_dict,
+                       flamelet_specs,
+                       table_dict,
+                       h_stoich_spacing,
+                       verbose,
+                       integration_args,
+                       solver_verbose) for chi_st in table_dict.keys()))
 
         if verbose:
             print('----------------------------------------------------------------------------------')
@@ -457,26 +450,16 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
         return serial_dict
     else:
         serial_dict = dict()
-        flamelet_specs_no_ct = dict(flamelet_specs)
-        del flamelet_specs_no_ct['mech_spec']
-        del flamelet_specs_no_ct['fuel_stream']
-        del flamelet_specs_no_ct['oxy_stream']
-        mech_args = [flamelet_specs['mech_spec'].mech_xml_path, flamelet_specs['mech_spec'].group_name]
-        oxy_tpy = flamelet_specs['oxy_stream'].TPY
-        fuel_tpy = flamelet_specs['fuel_stream'].TPY
         cput000 = perf_counter()
         for chi_st in table_dict.keys():
-            _expand_enthalpy_defect_dimension((chi_st,
-                                               serial_dict,
-                                               flamelet_specs_no_ct,
-                                               mech_args,
-                                               oxy_tpy,
-                                               fuel_tpy,
-                                               table_dict,
-                                               h_stoich_spacing,
-                                               verbose,
-                                               integration_args,
-                                               solver_verbose))
+            _expand_enthalpy_defect_dimension(chi_st,
+                                              serial_dict,
+                                              flamelet_specs,
+                                              table_dict,
+                                              h_stoich_spacing,
+                                              verbose,
+                                              integration_args,
+                                              solver_verbose)
 
         if verbose:
             print('----------------------------------------------------------------------------------')
@@ -573,8 +556,7 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
     Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through rapid, transient extinction (as opposed to quasisteady heat loss)
 
-    :param flamelet_specs: dictionary with Flamelet construction arguments (mech_spec, fuel_stream, oxy_stream, and
-     details of the grid in mixture fraction are required)
+    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
     :param diss_rate_values: the np.array of reference dissipation rate values in the table (note that if the flamelet
      extinguishes at any point, the extinguished flamelet and larger dissipation rates are not included in the library)
     :param diss_rate_ref: the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
@@ -588,9 +570,15 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
     :param extend_defect_dim: whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
     :return: the library instance
     """
-    cput00 = _write_library_header('nonadiabatic (defect) SLFM', flamelet_specs['mech_spec'],
-                                   flamelet_specs['fuel_stream'], flamelet_specs['oxy_stream'],
-                                   verbose)
+
+    if isinstance(flamelet_specs, dict):
+        flamelet_specs = FlameletSpec(**flamelet_specs)
+
+    m = flamelet_specs.mech_spec
+    fuel = flamelet_specs.fuel_stream
+    oxy = flamelet_specs.oxy_stream
+
+    cput00 = _write_library_header('nonadiabatic (defect) SLFM', m, fuel, oxy, verbose)
 
     ugt = _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                                                                diss_rate_values,
@@ -614,6 +602,7 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
     g_dim = Dimension(_enthalpy_defect_name + _stoich_suffix, g_values)
 
     output_library = Library(z_dim, x_dim, g_dim)
+    output_library.extra_attributes['mech_spec'] = m
 
     for quantity in structured_defect_table[key0]:
         values = output_library.get_empty_dataset()

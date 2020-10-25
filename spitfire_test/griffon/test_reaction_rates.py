@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import cantera as ct
+import pickle
 from os.path import join, abspath
 from spitfire import ChemicalMechanismSpec as Mechanism
 
@@ -8,8 +9,11 @@ T_range = [300, 1200, 1800]
 p_range = [101325, 1013250]
 
 
-def verify_rates_mechanism(ctsol: ct.Solution):
+def verify_rates_mechanism(ctsol: ct.Solution, serialize_mech: bool):
     mech = Mechanism.from_solution(ctsol)
+    if serialize_mech:
+        serialized = pickle.dumps(mech)
+        mech = pickle.loads(serialized)
     tolerance = 1.e-14
 
     def verify_T_p(temp, pres):
@@ -45,8 +49,11 @@ def verify_rates_mechanism(ctsol: ct.Solution):
     return pass_test
 
 
-def verify_sensitivities_mechanism(ctsol: ct.Solution):
+def verify_sensitivities_mechanism(ctsol: ct.Solution, serialize_mech: bool):
     mech = Mechanism.from_solution(ctsol)
+    if serialize_mech:
+        serialized = pickle.dumps(mech)
+        mech = pickle.loads(serialized)
 
     tolerance = 1.e-2
 
@@ -136,16 +143,17 @@ reaction_indices = dict({
 
 xml = abspath(join('spitfire_test', 'test_mechanisms', 'reaction_test_mechanism.xml'))
 
-def create_test(reaction_key, type):
+
+def create_test(reaction_key, type, serialize_mech):
     def test(self):
         sol = ct.Solution(thermo='IdealGas',
                           kinetics='GasKinetics',
                           species=ct.Species.listFromFile(xml),
                           reactions=[ct.Reaction.listFromFile(xml)[reaction_indices[reaction_key]]])
         if type == 'rates':
-            self.assertTrue(verify_rates_mechanism(sol))
+            self.assertTrue(verify_rates_mechanism(sol, serialize_mech))
         elif type == 'sensitivities':
-            self.assertTrue(verify_sensitivities_mechanism(sol))
+            self.assertTrue(verify_sensitivities_mechanism(sol, serialize_mech))
 
     return test
 
@@ -156,7 +164,12 @@ class Accuracy(unittest.TestCase):
 
 for reaction_key in reaction_indices:
     for quantity in ['rates', 'sensitivities']:
-        setattr(Accuracy, 'test_' + quantity + '_' + reaction_key, create_test(reaction_key, quantity))
+        for serialize_mech in [False, True]:
+            setattr(Accuracy, 'test_' + quantity + '_' + reaction_key + \
+                    f'{"_serialized_mech" if serialize_mech else ""}',
+                    create_test(reaction_key,
+                                quantity,
+                                serialize_mech))
 
 if __name__ == '__main__':
     unittest.main()

@@ -27,6 +27,146 @@ from spitfire.griffon.griffon import py_btddod_full_factorize, py_btddod_full_so
     py_btddod_scale_and_add_diagonal
 
 
+class FlameletSpec(object):
+    """
+    Library slice will get the mechanism, initial condition, boundary streams, and grid from a library
+    """
+
+    def __init__(self,
+                 mech_spec=None,
+                 initial_condition=None,
+                 oxy_stream=None,
+                 fuel_stream=None,
+
+                 grid=None,
+                 grid_points=None,
+                 grid_type='clustered',
+                 grid_cluster_intensity=4.,
+                 grid_cluster_point='stoichiometric',
+
+                 library_slice=None,
+
+                 max_dissipation_rate=None,
+                 stoich_dissipation_rate=None,
+                 dissipation_rate=None,
+                 dissipation_rate_form='Peters',
+
+                 heat_transfer='adiabatic',
+                 convection_temperature=None,
+                 radiation_temperature=None,
+                 convection_coefficient=None,
+                 radiative_emissivity=None,
+                 use_scaled_heat_loss=False,
+
+                 rates_sensitivity_type='dense',
+                 sensitivity_transform_type='exact',
+
+                 include_enthalpy_flux=True,
+                 include_variable_cp=True):
+
+        if library_slice is not None:
+            lib_shape = library_slice.shape
+            if len(lib_shape) >= 1:
+                for s in lib_shape[1:]:
+                    if s > 1:
+                        raise ValueError(
+                            f'Error in Flamelet construction from library_slice. The library provided does not '
+                            f'appear to have the right dimensions: shape = {lib_shape}. '
+                            f'The library must be one-dimensional, with mixture fraction as the first dimension. '
+                            f'It can have trivial dimensions that can be squeezed to yield a one-dimensional form.')
+                if len(lib_shape) > 1:
+                    library_slice = library_slice.squeeze()
+            else:
+                raise ValueError(
+                    f'Error in Flamelet construction from library_slice. The library provided does not '
+                    f'appear to have the right dimensions: shape = {lib_shape}. '
+                    f'The library must be one-dimensional, with mixture fraction as the first dimension. '
+                    f'It can have trivial dimensions that can be squeezed to yield a one-dimensional form.')
+
+            if 'mixture_fraction' not in library_slice.dims[0].name:
+                raise ValueError(
+                    f'Error in Flamelet construction from library_slice. The library provided does not '
+                    f'appear to have mixture fraction as the first dimension. '
+                    f'The library provided is:\n {library_slice}')
+
+            self.mech_spec = library_slice.extra_attributes['mech_spec']
+            oxyY = [library_slice[f'mass fraction {s}'][0] for s in self.mech_spec.species_names]
+            fuelY = [library_slice[f'mass fraction {s}'][-1] for s in self.mech_spec.species_names]
+            oxyT = library_slice['temperature'][0]
+            fuelT = library_slice['temperature'][-1]
+            pressure = library_slice['pressure'][0]
+
+            self.oxy_stream = self.mech_spec.stream('TPY', (oxyT, pressure, oxyY))
+            self.fuel_stream = self.mech_spec.stream('TPY', (fuelT, pressure, fuelY))
+
+            self.grid = library_slice.mixture_fraction_values
+            self.grid_points = None
+            self.grid_type = None
+            self.grid_cluster_intensity = None
+            self.grid_cluster_point = None
+
+            initial_condition = np.zeros((self.grid.size - 2, self.mech_spec.n_species))
+            initial_condition[:, 0] = library_slice['temperature'][1:-1]
+            for i, s in enumerate(self.mech_spec.species_names[:-1]):
+                initial_condition[:, 1 + i] = library_slice['mass fraction ' + s][1:-1]
+            self.initial_condition = initial_condition.ravel()
+
+        else:
+            self.mech_spec = mech_spec
+            self.initial_condition = initial_condition
+            self.oxy_stream = oxy_stream
+            self.fuel_stream = fuel_stream
+
+            self.grid = grid
+            self.grid_points = grid_points
+            self.grid_type = grid_type
+            self.grid_cluster_intensity = grid_cluster_intensity
+            self.grid_cluster_point = grid_cluster_point
+            if grid is not None:
+                self.grid_points = None
+                self.grid_type = None
+                self.grid_cluster_intensity = None
+                self.grid_cluster_point = None
+            if grid_points is not None:
+                self.grid = None
+
+        self.max_dissipation_rate = max_dissipation_rate
+        self.stoich_dissipation_rate = stoich_dissipation_rate
+        self.dissipation_rate = dissipation_rate
+        self.dissipation_rate_form = dissipation_rate_form
+
+        self.heat_transfer = heat_transfer
+        self.convection_temperature = convection_temperature
+        self.radiation_temperature = radiation_temperature
+        self.convection_coefficient = convection_coefficient
+        self.radiative_emissivity = radiative_emissivity
+        self.use_scaled_heat_loss = use_scaled_heat_loss
+
+        self.rates_sensitivity_type = rates_sensitivity_type
+        self.sensitivity_transform_type = sensitivity_transform_type
+
+        self.include_enthalpy_flux = include_enthalpy_flux
+        self.include_variable_cp = include_variable_cp
+
+    def __getstate__(self):
+        d = dict(self.__dict__)
+        d.pop('oxy_stream')
+        d.pop('fuel_stream')
+        d['oxyY'] = self.oxy_stream.Y.copy()
+        d['oxyT'] = self.oxy_stream.T
+        d['fuelY'] = self.fuel_stream.Y.copy()
+        d['fuelT'] = self.fuel_stream.T
+        d['pressure'] = self.oxy_stream.P
+        return d
+
+    def __setstate__(self, state):
+        mech_spec = state['mech_spec']
+        pressure = state.pop('pressure')
+        state['oxy_stream'] = mech_spec.stream('TPY', (state.pop('oxyT'), pressure, state.pop('oxyY')))
+        state['fuel_stream'] = mech_spec.stream('TPY', (state.pop('fuelT'), pressure, state.pop('fuelY')))
+        self.__init__(**state)
+
+
 class Flamelet(object):
     """A class for solving one-dimensional non-premixed flamelets
 
@@ -87,8 +227,6 @@ class Flamelet(object):
         especially for mechanisms of more than 300 species.
     sensitivity_transform_type : str
         how the Jacobian is transformed, currently only 'exact' is supported
-    initial_time : float
-        the starting time point (in seconds) of the reactor, default to 0.0
     """
 
     _heat_transfers = ['adiabatic', 'nonadiabatic']
@@ -203,72 +341,74 @@ class Flamelet(object):
             else:
                 raise ValueError(input_name + ' was not given as a float (constant) or numpy array')
 
-    def __init__(self,
-                 mech_spec,
-                 initial_condition,
-                 pressure,
-                 oxy_stream,
-                 fuel_stream,
-                 max_dissipation_rate=None,
-                 stoich_dissipation_rate=None,
-                 dissipation_rate=None,
-                 dissipation_rate_form='Peters',
-                 grid=None,
-                 grid_points=None,
-                 grid_type='clustered',
-                 grid_cluster_intensity=4.,
-                 grid_cluster_point='stoichiometric',
-                 heat_transfer='adiabatic',
-                 convection_temperature=None,
-                 radiation_temperature=None,
-                 convection_coefficient=None,
-                 radiative_emissivity=None,
-                 rates_sensitivity_type='dense',
-                 sensitivity_transform_type='exact',
-                 include_enthalpy_flux=False,
-                 include_variable_cp=False,
-                 use_scaled_heat_loss=False,
-                 initial_time=0.):
+    _pressure_depr_warning = 'Deprecation warning in building Spitfire Flamelet instance. ' + \
+                             'Specifying pressure in flamelet construction is no longer used, ' + \
+                             'and will be removed in a future version. The pressure is now obtained from the fuel and ' + \
+                             'oxidizer streams.'
 
-        # process the mechanism
-        self._oxy_stream = oxy_stream
-        self._fuel_stream = fuel_stream
-        self._pressure = pressure
-        self._mechanism = mech_spec
+    def __init__(self,
+                 flamelet_specs=None,
+                 *args,
+                 **kwargs):
+
+        fs = flamelet_specs
+        if isinstance(flamelet_specs, dict):
+            if 'pressure' in flamelet_specs:
+                flamelet_specs.pop('pressure')
+                print(self._pressure_depr_warning)
+            fs = FlameletSpec(**flamelet_specs)
+        else:
+            if 'pressure' in kwargs:
+                kwargs.pop('pressure')
+                print(self._pressure_depr_warning)
+            if flamelet_specs is None:
+                fs = FlameletSpec(*args, **kwargs)
+
+        self._oxy_stream = fs.oxy_stream
+        self._fuel_stream = fs.fuel_stream
+        pressure_error = np.abs(self._fuel_stream.P - self._oxy_stream.P) / self._oxy_stream.P
+        if pressure_error > 1.e-6:
+            raise ValueError(f'Error in building Spitfire Flamelet instance. The pressure of the fuel and oxidizer '
+                             f'streams must be the same. Fuel pressure = {self._fuel_stream.P}, '
+                             f'oxidizer pressure = {self._oxy_stream.P}.'
+                             f'Error is |fuel.P - oxy.P|/oxy.P = {pressure_error}')
+        self._pressure = np.copy(self._oxy_stream.P)
+        self._mechanism = fs.mech_spec
         self._n_species = self._mechanism.n_species
         self._n_reactions = self._mechanism.n_reactions
         self._n_equations = self._n_species
-        self._state_fuel = np.hstack([fuel_stream.T, fuel_stream.Y[:-1]])
-        self._state_oxy = np.hstack([oxy_stream.T, oxy_stream.Y[:-1]])
+        self._state_fuel = np.hstack([self.fuel_stream.T, self.fuel_stream.Y[:-1]])
+        self._state_oxy = np.hstack([self.oxy_stream.T, self.oxy_stream.Y[:-1]])
 
         # build the grid
         # if the grid argument is given, then use that and warn if any other grid arguments ar given
         # if the grid argument is not given, then grid_points must be given, while other grid arguments are all optional
-        if grid is not None:
-            self._z = np.copy(grid)
+        if fs.grid is not None:
+            self._z = np.copy(fs.grid)
             self._dz = self._z[1:] - self._z[:-1]
 
             warning_message = lambda arg: 'Flamelet specifications: Warning! Setting the grid argument ' \
                                           'nullifies the ' + arg + ' argument.'
-            if grid_points is not None:
+            if fs.grid_points is not None:
                 print(warning_message('grid_points'))
-            if grid_type != 'clustered':
+            if fs.grid_type is not None:
                 print(warning_message('grid_type'))
-            if grid_cluster_intensity != 4.:
+            if fs.grid_cluster_intensity is not None:
                 print(warning_message('grid_cluster_intensity'))
-            if grid_cluster_point != 'stoichiometric':
+            if fs.grid_cluster_point is not None:
                 print(warning_message('grid_cluster_point'))
         else:
-            if grid_points is None:
+            if fs.grid_points is None:
                 raise ValueError('Flamelet specifications: one of either grid or grid_points must be given.')
-            if grid_type == 'uniform':
-                self._z, self._dz = self._uniform_grid(grid_points)
-            elif grid_type == 'clustered':
-                if grid_cluster_point == 'stoichiometric':
+            if fs.grid_type == 'uniform':
+                self._z, self._dz = self._uniform_grid(fs.grid_points)
+            elif fs.grid_type == 'clustered':
+                grid_cluster_point = fs.grid_cluster_point
+                if fs.grid_cluster_point == 'stoichiometric':
                     grid_cluster_point = self._mechanism.stoich_mixture_fraction(self._fuel_stream, self._oxy_stream)
-                self._z, self._dz = self._clustered_grid(grid_points, grid_cluster_point, grid_cluster_intensity)
+                self._z, self._dz = self._clustered_grid(fs.grid_points, grid_cluster_point, fs.grid_cluster_intensity)
             else:
-                error_message = 'Flamelet specifications: Bad grid_type argument detected: ' + grid_type + '\n' + \
+                error_message = 'Flamelet specifications: Bad grid_type argument detected: ' + fs.grid_type + '\n' + \
                                 '                         Acceptable values: ' + self._grid_types
                 raise ValueError(error_message)
 
@@ -276,105 +416,105 @@ class Flamelet(object):
         self._n_dof = self._n_equations * self._nz_interior
 
         # set up the heat transfer
-        if heat_transfer not in self._heat_transfers:
-            error_message = 'Flamelet specifications: Bad heat_transfer argument detected: ' + heat_transfer + '\n' + \
+        if fs.heat_transfer not in self._heat_transfers:
+            error_message = 'Flamelet specifications: Bad heat_transfer argument detected: ' + fs.heat_transfer + '\n' + \
                             '                         Acceptable values: ' + str(self._heat_transfers)
             raise ValueError(error_message)
         else:
-            self._heat_transfer = heat_transfer
+            self._heat_transfer = fs.heat_transfer
 
         self._T_conv = None
         self._T_rad = None
         self._h_conv = None
         self._h_rad = None
-        if self._heat_transfer == 'adiabatic' or (self._heat_transfer == 'nonadiabatic' and use_scaled_heat_loss):
+        if self._heat_transfer == 'adiabatic' or (self._heat_transfer == 'nonadiabatic' and fs.use_scaled_heat_loss):
             self._convection_temperature = None
             self._radiation_temperature = None
 
             warning_message = lambda arg: 'Flamelet specifications: Warning! Setting heat_transfer to adiabatic ' \
                                           'nullifies the ' + arg + ' argument.'
-            if convection_temperature is not None:
+            if fs.convection_temperature is not None:
                 print(warning_message('convection_temperature'))
-            if radiation_temperature is not None:
+            if fs.radiation_temperature is not None:
                 print(warning_message('radiation_temperature'))
 
             if self._heat_transfer == 'adiabatic':
                 self._convection_coefficient = None
                 self._radiative_emissivity = None
-                if convection_coefficient is not None:
+                if fs.convection_coefficient is not None:
                     print(warning_message('convection_coefficient'))
-                if radiative_emissivity is not None:
+                if fs.radiative_emissivity is not None:
                     print(warning_message('radiative_emissivity'))
             else:
-                self._set_heat_transfer_arg_as_np_array(convection_coefficient, 'convection_coefficient', '_h_conv')
-                self._set_heat_transfer_arg_as_np_array(radiative_emissivity, 'radiative_emissivity', '_h_rad')
+                self._set_heat_transfer_arg_as_np_array(fs.convection_coefficient, 'convection_coefficient', '_h_conv')
+                self._set_heat_transfer_arg_as_np_array(fs.radiative_emissivity, 'radiative_emissivity', '_h_rad')
         else:
-            self._set_heat_transfer_arg_as_np_array(convection_temperature, 'convection_temperature', '_T_conv')
-            self._set_heat_transfer_arg_as_np_array(radiation_temperature, 'radiation_temperature', '_T_rad')
-            self._set_heat_transfer_arg_as_np_array(convection_coefficient, 'convection_coefficient', '_h_conv')
-            self._set_heat_transfer_arg_as_np_array(radiative_emissivity, 'radiative_emissivity', '_h_rad')
+            self._set_heat_transfer_arg_as_np_array(fs.convection_temperature, 'convection_temperature', '_T_conv')
+            self._set_heat_transfer_arg_as_np_array(fs.radiation_temperature, 'radiation_temperature', '_T_rad')
+            self._set_heat_transfer_arg_as_np_array(fs.convection_coefficient, 'convection_coefficient', '_h_conv')
+            self._set_heat_transfer_arg_as_np_array(fs.radiative_emissivity, 'radiative_emissivity', '_h_rad')
 
         # set up the dissipation rate
-        if dissipation_rate is not None:
+        if fs.dissipation_rate is not None:
             warning_message = lambda arg: 'Flamelet specifications: Warning! Setting the dissipation_rate argument ' \
                                           'nullifies the ' + arg + ' argument.'
-            if max_dissipation_rate is not None:
+            if fs.max_dissipation_rate is not None:
                 warning_message('max_dissipation_rate')
 
-            if stoich_dissipation_rate is not None:
+            if fs.stoich_dissipation_rate is not None:
                 warning_message('stoich_dissipation_rate')
 
-            if dissipation_rate_form is not None:
+            if fs.dissipation_rate_form is not None:
                 warning_message('dissipation_rate_form')
 
-            self._x = np.copy(dissipation_rate)
+            self._x = np.copy(fs.dissipation_rate)
             self._max_dissipation_rate = np.max(self._x)
             self._dissipation_rate_form = 'custom'
         else:
             warning_message = lambda arg: 'Flamelet specifications: Warning! Setting the dissipation_rate_form ' \
                                           'nullifies the ' + arg + ' argument.'
-            if dissipation_rate is not None:
+            if fs.dissipation_rate is not None:
                 warning_message('dissipation_rate')
 
-            if dissipation_rate_form not in ['peters', 'Peters', 'uniform'] or \
-                    (max_dissipation_rate is None and stoich_dissipation_rate is None):
+            if fs.dissipation_rate_form not in ['peters', 'Peters', 'uniform'] or \
+                    (fs.max_dissipation_rate is None and fs.stoich_dissipation_rate is None):
                 self._x = np.zeros_like(self._z)
                 self._max_dissipation_rate = np.max(self._x)
                 self._dissipation_rate_form = 'unspecified-set-to-0'
             else:
-                if max_dissipation_rate is not None:
-                    self._max_dissipation_rate = max_dissipation_rate
-                    self._dissipation_rate_form = dissipation_rate_form
+                if fs.max_dissipation_rate is not None:
+                    self._max_dissipation_rate = fs.max_dissipation_rate
+                    self._dissipation_rate_form = fs.dissipation_rate_form
                     self._x = self._compute_dissipation_rate(self._z,
                                                              self._max_dissipation_rate,
                                                              self._dissipation_rate_form)
-                elif stoich_dissipation_rate is not None:
-                    if dissipation_rate_form in ['peters', 'Peters']:
+                elif fs.stoich_dissipation_rate is not None:
+                    if fs.dissipation_rate_form in ['peters', 'Peters']:
                         z_st = self.mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
-                        self._max_dissipation_rate = stoich_dissipation_rate / np.exp(
+                        self._max_dissipation_rate = fs.stoich_dissipation_rate / np.exp(
                             -2. * (erfinv(2. * z_st - 1.)) ** 2)
-                    elif dissipation_rate_form == 'uniform':
-                        self._max_dissipation_rate = stoich_dissipation_rate
-                    self._dissipation_rate_form = dissipation_rate_form
+                    elif fs.dissipation_rate_form == 'uniform':
+                        self._max_dissipation_rate = fs.stoich_dissipation_rate
+                    self._dissipation_rate_form = fs.dissipation_rate_form
                     self._x = self._compute_dissipation_rate(self._z,
                                                              self._max_dissipation_rate,
                                                              self._dissipation_rate_form)
         self._lewis_numbers = np.ones(self._n_species)
 
-        self._use_scaled_heat_loss = use_scaled_heat_loss
+        self._use_scaled_heat_loss = fs.use_scaled_heat_loss
         if self._use_scaled_heat_loss:
-            self._T_conv = oxy_stream.T + self._z[1:-1] * (fuel_stream.T - oxy_stream.T)
-            self._T_rad = oxy_stream.T + self._z[1:-1] * (fuel_stream.T - oxy_stream.T)
-            zst = self._mechanism.stoich_mixture_fraction(fuel_stream, oxy_stream)
+            self._T_conv = self.oxy_stream.T + self._z[1:-1] * (self.fuel_stream.T - self.oxy_stream.T)
+            self._T_rad = self.oxy_stream.T + self._z[1:-1] * (self.fuel_stream.T - self.oxy_stream.T)
+            zst = self._mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
             factor = np.max(self._x) / (1. - zst) / zst
             self._h_conv *= factor
             self._h_rad *= factor
 
         # set up the initialization
-        if isinstance(initial_condition, str):
+        if isinstance(fs.initial_condition, str):
             state_interior = np.ndarray((self._nz_interior, self._n_equations))
 
-            if initial_condition == 'unreacted':
+            if fs.initial_condition == 'unreacted':
                 for i in range(self._nz_interior):
                     z = self._z[1 + i]
                     mixed_stream = self._mechanism.mix_streams([(self._oxy_stream, 1 - z),
@@ -384,7 +524,7 @@ class Flamelet(object):
                     state_interior[i, :] = np.hstack((mixed_stream.T, mixed_stream.Y[:-1]))
                 self._initial_state = np.copy(state_interior.ravel())
 
-            elif initial_condition == 'linear-TY':
+            elif fs.initial_condition == 'linear-TY':
                 oxy_state = self._state_oxy
                 fuel_state = self._state_fuel
                 z = self._z[1:-1]
@@ -392,7 +532,7 @@ class Flamelet(object):
                     state_interior[:, i] = oxy_state[i] + (fuel_state[i] - oxy_state[i]) * z
                 self._initial_state = np.copy(state_interior.ravel())
 
-            elif initial_condition == 'equilibrium':
+            elif fs.initial_condition == 'equilibrium':
                 for i in range(self._nz_interior):
                     z = self._z[1 + i]
                     mixed_stream = self._mechanism.mix_streams([(self._oxy_stream, 1 - z),
@@ -403,7 +543,7 @@ class Flamelet(object):
                     state_interior[i, :] = np.hstack((mixed_stream.T, mixed_stream.Y[:-1]))
                 self._initial_state = np.copy(state_interior.ravel())
 
-            elif initial_condition == 'Burke-Schumann':
+            elif fs.initial_condition == 'Burke-Schumann':
                 atom_names = ['H', 'C', 'O', 'N']
                 zst = self._mechanism.stoich_mixture_fraction(self._fuel_stream, self._oxy_stream)
                 stmix = self._mechanism.mix_streams([(self._oxy_stream, 1 - zst), (self._fuel_stream, zst)],
@@ -440,14 +580,14 @@ class Flamelet(object):
 
             else:
                 msg = 'Flamelet specifications: bad string argument for initial_condition\n' + \
-                      '                         given: ' + initial_condition + '\n' + \
+                      '                         given: ' + fs.initial_condition + '\n' + \
                       '                         allowable: ' + str(self._initializations)
                 raise ValueError(msg)
-        elif isinstance(initial_condition, np.ndarray):
-            if initial_condition.size != self._n_dof:
+        elif isinstance(fs.initial_condition, np.ndarray):
+            if fs.initial_condition.size != self._n_dof:
                 raise ValueError('size of initial condition is incorrect!')
             else:
-                self._initial_state = np.copy(initial_condition)
+                self._initial_state = np.copy(fs.initial_condition)
         else:
             msg = 'Flamelet specifications: bad argument for initial_condition\n' + \
                   '                         must be either another Flamelet instance or a string\n' + \
@@ -455,14 +595,14 @@ class Flamelet(object):
             raise ValueError(msg)
         self._current_state = np.copy(self._initial_state)
 
-        self._initial_time = np.copy(initial_time)
-        self._current_time = np.copy(initial_time)
+        self._initial_time = 0.
+        self._current_time = 0.
 
         self._griffon = self._mechanism.griffon
-        self._include_enthalpy_flux = include_enthalpy_flux
-        self._include_variable_cp = include_variable_cp
-        self._rsopt = self._rates_sensitivity_option_dict[rates_sensitivity_type]
-        self._stopt = self._sensitivity_transform_option_dict[sensitivity_transform_type]
+        self._include_enthalpy_flux = fs.include_enthalpy_flux
+        self._include_variable_cp = fs.include_variable_cp
+        self._rsopt = self._rates_sensitivity_option_dict[fs.rates_sensitivity_type]
+        self._stopt = self._sensitivity_transform_option_dict[fs.sensitivity_transform_type]
         self._variable_scales = np.ones(self._n_dof)
         self._variable_scales[::self._n_equations] = 1.e3
         self._solution_times = []
@@ -870,6 +1010,10 @@ class Flamelet(object):
     def _fuel_state(self):
         return self._state_fuel
 
+    def offset_time(self, delta):
+        self._initial_time += delta
+        self._current_time += delta
+
     def _check_ignition_delay(self, state, delta_temperature_ignition):
         ne = self._n_equations
         has_ignited = np.max(state[::ne] - self._initial_state[::ne]) > delta_temperature_ignition
@@ -1022,6 +1166,7 @@ class Flamelet(object):
         time_dimension = Dimension('time', t)
         mixfrac_dimension = Dimension('mixture_fraction', self._z)
         output_library = Library(time_dimension, mixfrac_dimension)
+        output_library.extra_attributes['mech_spec'] = self._mechanism
 
         output_library['temperature'] = output_library.get_empty_dataset()
         output_library['temperature'][:, 0] = self.oxy_stream.T
@@ -1156,9 +1301,10 @@ class Flamelet(object):
         else:
             return tau_ignition
 
-    def _make_library_from_interior_state(self, state_in):
+    def make_library_from_interior_state(self, state_in):
         mixfrac_dimension = Dimension('mixture_fraction', self._z)
         output_library = Library(mixfrac_dimension)
+        output_library.extra_attributes['mech_spec'] = self._mechanism
 
         output_library['temperature'] = output_library.get_empty_dataset()
         output_library['temperature'][0] = self.oxy_stream.T
@@ -1300,7 +1446,7 @@ class Flamelet(object):
                 print('   - iter {:4}, |residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, res, maxT))
 
         state[state < 0] = 0.
-        output_library = self._make_library_from_interior_state(state)
+        output_library = self.make_library_from_interior_state(state)
 
         if iteration_count > max_iterations or res > tolerance:
             message = 'Convergence failure! ' \
@@ -1518,7 +1664,7 @@ class Flamelet(object):
                       '|residual| = {:7.2e}, max(T) = {:6.1f}'.format(iteration_count, np.max(expeig), np.min(ds),
                                                                       res, np.max(state)))
         state[state < 0] = 0.
-        output_library = self._make_library_from_interior_state(state)
+        output_library = self.make_library_from_interior_state(state)
 
         if iteration_count > max_iterations or res > tolerance:
             return None, None, False, np.min(ds)
@@ -1595,6 +1741,7 @@ class Flamelet(object):
 
                 transient_library = self.integrate_to_steady(**the_esdirk_args)
                 steady_library = Library(transient_library.dim('mixture_fraction'))
+                steady_library.extra_attributes['mech_spec'] = self._mechanism
                 for p in transient_library.props:
                     steady_library[p] = transient_library[p][-1, :].ravel()
                 return steady_library

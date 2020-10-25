@@ -2,6 +2,7 @@ import unittest
 from numpy import max, abs, ones, zeros, hstack
 from cantera import gas_constant
 from spitfire import ChemicalMechanismSpec as Mechanism
+import pickle
 import cantera as ct
 
 species_decl = list([ct.Species('A', 'H:2'),
@@ -13,9 +14,9 @@ species_decl = list([ct.Species('A', 'H:2'),
 species_dict = dict({'const': list(), 'nasa7': list()})
 for i, s in enumerate(species_decl):
     species_dict['const'].append(ct.Species(s.name, s.composition))
-    species_dict['const'][-1].thermo = ct.ConstantCp(300., 3000., 101325., (300., 0., 0., float(i+1) * 1.e4))
+    species_dict['const'][-1].thermo = ct.ConstantCp(300., 3000., 101325., (300., 0., 0., float(i + 1) * 1.e4))
     species_dict['nasa7'].append(ct.Species(s.name, s.composition))
-    coeffs = [float(i+1) * v for v in [1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-8, 1.e-10, 1.e-12]]
+    coeffs = [float(i + 1) * v for v in [1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-8, 1.e-10, 1.e-12]]
     species_dict['nasa7'][-1].thermo = ct.NasaPoly2(300., 3000., 101325., hstack([1200.] + coeffs + coeffs))
 
 mechs = [('const', Mechanism.from_solution(ct.Solution(thermo='IdealGas',
@@ -125,7 +126,10 @@ quantity_test_dict = {'mixture molecular weight': do_mmw,
 temperature_dict = {'low': 300., 'high': 1200.}
 
 
-def validate_on_mechanism(mech, temperature, quantity):
+def validate_on_mechanism(mech, temperature, quantity, serialize_mech):
+    if serialize_mech:
+        serialized = pickle.dumps(mech)
+        mech = pickle.loads(serialized)
     r = mech.griffon
     gas = mech.gas
     p = 101325.
@@ -134,9 +138,9 @@ def validate_on_mechanism(mech, temperature, quantity):
     return quantity_test_dict[quantity](r, gas, temperature, p, y)
 
 
-def create_test(m, T, quantity):
+def create_test(m, T, quantity, serialize_mech):
     def test(self):
-        self.assertTrue(validate_on_mechanism(m, T, quantity))
+        self.assertTrue(validate_on_mechanism(m, T, quantity, serialize_mech))
 
     return test
 
@@ -148,8 +152,13 @@ class Accuracy(unittest.TestCase):
 for mech in mechs:
     for quantity in quantity_test_dict.keys():
         for temperature in temperature_dict:
-            testname = 'test_' + quantity.replace(' ', '-') + '_' + mech[0] + '_' + temperature + 'T'
-            setattr(Accuracy, testname, create_test(mech[1], temperature_dict[temperature], quantity))
+            for serialize_mech in [False, True]:
+                testname = 'test_' + quantity.replace(' ', '-') + '_' + mech[0] + '_' + temperature + 'T' + \
+                           f'{"_serialized_mech" if serialize_mech else ""}'
+                setattr(Accuracy, testname, create_test(mech[1],
+                                                        temperature_dict[temperature],
+                                                        quantity,
+                                                        serialize_mech))
 
 if __name__ == '__main__':
     unittest.main()

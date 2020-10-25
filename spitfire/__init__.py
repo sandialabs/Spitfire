@@ -4,8 +4,8 @@ This is the base spitfire module directory.
 
 from .chemistry.library import Dimension, Library
 from .chemistry.analysis import get_ct_solution_array
-from .chemistry.mechanism import ChemicalMechanismSpec
-from .chemistry.flamelet import Flamelet
+from .chemistry.mechanism import ChemicalMechanismSpec, CanteraLoadError
+from .chemistry.flamelet import Flamelet, FlameletSpec
 from .chemistry.reactors import HomogeneousReactor
 from .chemistry.tabulation import build_adiabatic_eq_library, \
     build_adiabatic_bs_library, \

@@ -15,6 +15,14 @@ from numpy import sum, array
 from spitfire.griffon.griffon import PyCombustionKernels
 
 
+class CanteraLoadError(Exception):
+    def __init__(self, mech_xml_path, group_name, error):
+        super().__init__(f'Cantera failed to build a Solution object for the given XML and group name. '
+                         f'XML path provided: {mech_xml_path}, '
+                         f'group name provided: {group_name}, '
+                         f'Error: {error}')
+
+
 class _CanteraWrapper(object):
     def __init__(self, mech_xml_path, group_name, solution=None):
         self._mech_xml_path = mech_xml_path if mech_xml_path is not None else 'cantera-XML-not-given'
@@ -23,8 +31,7 @@ class _CanteraWrapper(object):
             try:
                 self._solution = ct.Solution(self._mech_xml_path, self._group_name)
             except Exception as error:
-                raise ValueError(
-                    'Cantera failed to build a Solution object for the given XML and group name. Error: ' + str(error))
+                raise CanteraLoadError(mech_xml_path, group_name, error)
         else:
             self._solution = solution
 
@@ -65,8 +72,26 @@ class ChemicalMechanismSpec(object):
         else:
             self._cantera_wrapper = _CanteraWrapper(None, None, cantera_solution)
 
+        self._mech_data = dict()
+        self._mech_data['ref_pressure'] = None
+        self._mech_data['ref_temperature'] = None
+        self._mech_data['elements'] = list()
+        self._mech_data['species'] = dict()
+        self._mech_data['reactions'] = list()
+
         self._griffon = PyCombustionKernels()
         self._populate_griffon_mechanism_data(*self._extract_cantera_mechanism_data(self._cantera_wrapper.solution))
+
+    @property
+    def mech_data(self):
+        return self._mech_data
+
+    def __getstate__(self):
+        return dict({'mech_data': self._mech_data})
+
+    def __setstate__(self, state):
+        mech_data = state['mech_data']
+        self.__init__(cantera_solution=ChemicalMechanismSpec._build_cantera_solution(mech_data))
 
     @classmethod
     def from_solution(cls, solution: ct.Solution):
@@ -81,13 +106,18 @@ class ChemicalMechanismSpec(object):
                                          spec_dict,
                                          reac_list):
         self._griffon.mechanism_set_ref_pressure(ref_pressure)
+        self._mech_data['ref_pressure'] = ref_pressure
         self._griffon.mechanism_set_ref_temperature(ref_temperature)
+        self._mech_data['ref_temperature'] = ref_temperature
 
         for e in elem_list:
             self._griffon.mechanism_add_element(e)
+            self._mech_data['elements'].append(e)
 
         for s in spec_name_list:
             self._griffon.mechanism_add_species(s, spec_dict[s]['atoms'])
+            self._mech_data['species'][s] = dict()
+            self._mech_data['species'][s]['atom_map'] = spec_dict[s]['atoms']
 
         self._griffon.mechanism_resize_heat_capacity_data()
 
@@ -95,9 +125,13 @@ class ChemicalMechanismSpec(object):
             cp = spec_dict[s]['heat-capacity']
             if cp['type'] == 'constant':
                 self._griffon.mechanism_add_const_cp(s, cp['Tmin'], cp['Tmax'], cp['T0'], cp['h0'], cp['s0'], cp['cp'])
+                self._mech_data['species'][s]['cp'] = (
+                    'constant', cp['Tmin'], cp['Tmax'], cp['T0'], cp['h0'], cp['s0'], cp['cp'])
             elif cp['type'] == 'NASA7':
                 self._griffon.mechanism_add_nasa7_cp(s, cp['Tmin'], cp['Tmid'], cp['Tmax'], cp['low-coeffs'].tolist(),
                                                      cp['high-coeffs'].tolist())
+                self._mech_data['species'][s]['cp'] = (
+                    'NASA7', cp['Tmin'], cp['Tmid'], cp['Tmax'], cp['low-coeffs'].tolist(), cp['high-coeffs'].tolist())
 
         add_smpl = self._griffon.mechanism_add_reaction_simple
         add_3bdy = self._griffon.mechanism_add_reaction_three_body
@@ -113,18 +147,31 @@ class ChemicalMechanismSpec(object):
                 if 'orders' in rx:
                     add_smpl_ord(rx['reactants'], rx['products'], rx['reversible'],
                                  rx['A'], rx['b'], rx['Ea'] / ct.gas_constant, rx['orders'])
+                    self._mech_data['reactions'].append(('simple-special', rx['reactants'], rx['products'],
+                                                         rx['reversible'], rx['A'], rx['b'], rx['Ea'],
+                                                         rx['orders']))
                 else:
                     add_smpl(rx['reactants'], rx['products'], rx['reversible'],
                              rx['A'], rx['b'], rx['Ea'] / ct.gas_constant)
+                    self._mech_data['reactions'].append(('simple', rx['reactants'], rx['products'], rx['reversible'],
+                                                         rx['A'], rx['b'], rx['Ea']))
             elif rx['type'] == 'three-body':
                 if 'orders' in rx:
                     add_3bdy_ord(rx['reactants'], rx['products'], rx['reversible'],
                                  rx['A'], rx['b'], rx['Ea'] / ct.gas_constant,
                                  rx['efficiencies'], rx['default-eff'], rx['orders'])
+                    self._mech_data['reactions'].append(('three-body-special', rx['reactants'], rx['products'],
+                                                         rx['reversible'],
+                                                         rx['A'], rx['b'], rx['Ea'],
+                                                         rx['efficiencies'], rx['default-eff'], rx['orders']))
                 else:
                     add_3bdy(rx['reactants'], rx['products'], rx['reversible'],
                              rx['A'], rx['b'], rx['Ea'] / ct.gas_constant,
                              rx['efficiencies'], rx['default-eff'])
+                    self._mech_data['reactions'].append(
+                        ('three-body', rx['reactants'], rx['products'], rx['reversible'],
+                         rx['A'], rx['b'], rx['Ea'],
+                         rx['efficiencies'], rx['default-eff']))
             elif rx['type'] == 'Lindemann':
                 if 'orders' in rx:
                     add_Lind_ord(rx['reactants'], rx['products'], rx['reversible'],
@@ -132,11 +179,21 @@ class ChemicalMechanismSpec(object):
                                  rx['efficiencies'], rx['default-eff'],
                                  rx['flf-A'], rx['flf-b'], rx['flf-Ea'] / ct.gas_constant,
                                  rx['orders'])
+                    self._mech_data['reactions'].append(('Lindemann-special', rx['reactants'], rx['products'],
+                                                         rx['reversible'],
+                                                         rx['fwd-A'], rx['fwd-b'], rx['fwd-Ea'],
+                                                         rx['efficiencies'], rx['default-eff'],
+                                                         rx['flf-A'], rx['flf-b'], rx['flf-Ea'],
+                                                         rx['orders']))
                 else:
                     add_Lind(rx['reactants'], rx['products'], rx['reversible'],
                              rx['fwd-A'], rx['fwd-b'], rx['fwd-Ea'] / ct.gas_constant,
                              rx['efficiencies'], rx['default-eff'],
                              rx['flf-A'], rx['flf-b'], rx['flf-Ea'] / ct.gas_constant)
+                    self._mech_data['reactions'].append(('Lindemann', rx['reactants'], rx['products'], rx['reversible'],
+                                                         rx['fwd-A'], rx['fwd-b'], rx['fwd-Ea'],
+                                                         rx['efficiencies'], rx['default-eff'],
+                                                         rx['flf-A'], rx['flf-b'], rx['flf-Ea']))
             elif rx['type'] == 'Troe':
                 if 'orders' in rx:
                     add_Troe_ord(rx['reactants'], rx['products'], rx['reversible'],
@@ -145,12 +202,84 @@ class ChemicalMechanismSpec(object):
                                  rx['flf-A'], rx['flf-b'], rx['flf-Ea'] / ct.gas_constant,
                                  rx['Troe-params'].tolist(),
                                  rx['orders'])
+                    self._mech_data['reactions'].append(('Troe-special', rx['reactants'], rx['products'],
+                                                         rx['reversible'],
+                                                         rx['fwd-A'], rx['fwd-b'], rx['fwd-Ea'],
+                                                         rx['efficiencies'], rx['default-eff'],
+                                                         rx['flf-A'], rx['flf-b'], rx['flf-Ea'],
+                                                         rx['Troe-params'].tolist(),
+                                                         rx['orders']))
                 else:
                     add_Troe(rx['reactants'], rx['products'], rx['reversible'],
                              rx['fwd-A'], rx['fwd-b'], rx['fwd-Ea'] / ct.gas_constant,
                              rx['efficiencies'], rx['default-eff'],
                              rx['flf-A'], rx['flf-b'], rx['flf-Ea'] / ct.gas_constant,
                              rx['Troe-params'].tolist())
+                    self._mech_data['reactions'].append(('Troe', rx['reactants'], rx['products'], rx['reversible'],
+                                                         rx['fwd-A'], rx['fwd-b'], rx['fwd-Ea'],
+                                                         rx['efficiencies'], rx['default-eff'],
+                                                         rx['flf-A'], rx['flf-b'], rx['flf-Ea'],
+                                                         rx['Troe-params'].tolist()))
+
+    @classmethod
+    def _build_cantera_solution(cls, gdata):
+        p_ref = gdata['ref_pressure']
+        species_list = list()
+        for s in gdata['species']:
+            spec = gdata['species'][s]
+            ctspec = ct.Species(s, ','.join([f'{k}:{spec["atom_map"][k]}' for k in spec['atom_map']]))
+            if spec['cp'][0] == 'constant':
+                Tmin, Tmax, T0, h0, s0, cp = spec['cp'][1:]
+                ctspec.thermo = ct.ConstantCp(Tmin, Tmax, p_ref, list([T0, h0, s0, cp]))
+            elif spec['cp'][0] == 'NASA7':
+                Tmin, Tmid, Tmax, low_coeffs, high_coeffs = spec['cp'][1:]
+                coeffs = [Tmid] + high_coeffs + low_coeffs
+                ctspec.thermo = ct.NasaPoly2(Tmin, Tmax, p_ref, coeffs)
+            species_list.append(ctspec)
+
+        reaction_list = list()
+        for rxn in gdata['reactions']:
+            type, reactants_stoich, products_stoich, reversible = rxn[:4]
+
+            fwd_pre_exp_value, fwd_temp_exponent, fwd_act_energy = rxn[4:7]
+            fwd_rate = ct.Arrhenius(fwd_pre_exp_value, fwd_temp_exponent, fwd_act_energy)
+
+            if type == 'simple' or type == 'simple-special':
+                ctrxn = ct.ElementaryReaction(reactants_stoich, products_stoich)
+                ctrxn.rate = fwd_rate
+            elif type == 'three-body' or type == 'three-body-special':
+                ctrxn = ct.ThreeBodyReaction(reactants_stoich, products_stoich)
+                ctrxn.rate = fwd_rate
+                ctrxn.efficiencies = rxn[7]
+                ctrxn.default_efficiency = rxn[8]
+            elif type == 'Lindemann' or type == 'Lindemann-special':
+                ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
+                ctrxn.efficiencies = rxn[7]
+                ctrxn.default_efficiency = rxn[8]
+                flf_pre_exp_value, flf_temp_exponent, flf_act_energy = rxn[9:12]
+                ctrxn.high_rate = fwd_rate
+                ctrxn.low_rate = ct.Arrhenius(flf_pre_exp_value, flf_temp_exponent, flf_act_energy)
+                ctrxn.falloff = ct.Falloff()
+            elif type == 'Troe' or type == 'Troe-special':
+                ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
+                ctrxn.efficiencies = rxn[7]
+                ctrxn.default_efficiency = rxn[8]
+                flf_pre_exp_value, flf_temp_exponent, flf_act_energy = rxn[9:12]
+                troe_params = rxn[12]
+                ctrxn.high_rate = fwd_rate
+                ctrxn.low_rate = ct.Arrhenius(flf_pre_exp_value, flf_temp_exponent, flf_act_energy)
+                ctrxn.falloff = ct.TroeFalloff(troe_params)
+
+            if 'special' in type:
+                ctrxn.orders = rxn[-1]
+
+            ctrxn.reversible = reversible
+            reaction_list.append(ctrxn)
+
+        return ct.Solution(thermo='IdealGas',
+                           kinetics='GasKinetics',
+                           species=species_list,
+                           reactions=reaction_list)
 
     @classmethod
     def _extract_cantera_mechanism_data(cls, ctsol: ct.Solution):

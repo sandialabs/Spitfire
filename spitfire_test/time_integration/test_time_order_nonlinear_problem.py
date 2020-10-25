@@ -63,7 +63,7 @@ for method in [ForwardEulerS1P1,
                ZonneveldS5P4Q3,
                ExpKennedyCarpetnerS6P4Q3,
                CashKarpS6P5Q4, ]:
-    setattr(TestOrderOfAccuracy, 'test_' + str(method), create_test(method()))
+    setattr(TestOrderOfAccuracy, 'test_' + str(method().name), create_test(method()))
 
 for method in [BackwardEulerS1P1Q1,
                CrankNicolsonS2P2,
@@ -72,7 +72,8 @@ for method in [BackwardEulerS1P1Q1,
                KvaernoS4P3Q2,
                KennedyCarpenterS8P5Q4, ]:
     for solver in [SimpleNewtonSolver]:
-        setattr(TestOrderOfAccuracy, 'test_' + str(method) + '_' + str(solver), create_test(method(solver())))
+        setattr(TestOrderOfAccuracy, 'test_' + str(method(solver()).name) + '_' + str(solver),
+                create_test(method(solver())))
 
 if __name__ == '__main__':
     unittest.main()

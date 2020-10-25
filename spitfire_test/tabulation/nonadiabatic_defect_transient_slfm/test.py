@@ -8,8 +8,20 @@ from spitfire.chemistry.library import Library
 
 
 class Test(unittest.TestCase):
-    def test(self):
-        output_library = run()
+    def test_serial(self):
+        output_library = run(num_procs=1)
+
+        gold_file = abspath(join('spitfire_test',
+                                 'tabulation',
+                                 'nonadiabatic_defect_transient_slfm',
+                                 'gold.pkl'))
+        gold_library = Library.load_from_file(gold_file)
+
+        for prop in gold_library.props:
+            self.assertIsNone(assert_allclose(gold_library[prop], output_library[prop], rtol=2.e-4, atol=1.e-4))
+
+    def test_parallel(self):
+        output_library = run(num_procs=2)
 
         gold_file = abspath(join('spitfire_test',
                                  'tabulation',

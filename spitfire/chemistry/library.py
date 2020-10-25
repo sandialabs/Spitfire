@@ -235,6 +235,8 @@ class Library(object):
         new_library = Library(*new_dimensions)
         for p in self.props:
             new_library[p] = self[p]
+        for ea in self.extra_attributes:
+            new_library.extra_attributes[ea] = self.extra_attributes[ea]
         return new_library
 
     def __deepcopy__(self, *args, **kwargs):
@@ -245,6 +247,8 @@ class Library(object):
         new_library = Library(*new_dimensions)
         for p in self.props:
             new_library[p] = np.copy(self[p])
+        for ea in self.extra_attributes:
+            new_library.extra_attributes[ea] = self.extra_attributes[ea]
         return new_library
 
     @classmethod
@@ -263,7 +267,7 @@ class Library(object):
             for instance after slicing, lib_new = Library.squeeze(library[:, 0]).
             Note that if all dimensions are removed, for instance in Library.squeeze(library[0, 1]),
             a dictionary of the scalar values in the following form is returned instead of a new library:
-            {'dimensions': {name1: value1, name2: value2, ...}, 'properties': {prop1: value1, ...}}"""
+            {'dimensions': {name1: value1, name2: value2, ...}, 'properties': {prop1: value1, ...}, 'extra_attributes': {...}}"""
         new_dimensions = []
         for d in library.dims:
             if d.values.size > 1:
@@ -271,11 +275,14 @@ class Library(object):
                 new_dimensions.append(new_d)
         if not new_dimensions:
             return dict(dimensions=dict({p: np.squeeze(library[p]) for p in library.props}),
-                        properties=dict({d.name: np.squeeze(d.values) for d in library.dims}))
+                        properties=dict({d.name: np.squeeze(d.values) for d in library.dims}),
+                        extra_attributes=library.extra_attributes)
         else:
             new_library = Library(*new_dimensions)
             for p in library.props:
                 new_library[p] = np.squeeze(library[p])
+            for ea in library.extra_attributes:
+                new_library.extra_attributes[ea] = library.extra_attributes[ea]
             return new_library
 
     def __setitem__(self, quantity, values):
@@ -335,6 +342,8 @@ class Library(object):
             new_library = Library(*new_dimensions)
             for p in self.props:
                 new_library[p] = self._props[p][slices].reshape(new_library.shape)
+            for ea in self.extra_attributes:
+                new_library.extra_attributes[ea] = self.extra_attributes[ea]
             return new_library
 
     def __contains__(self, prop):
@@ -345,15 +354,17 @@ class Library(object):
                f'and {len(list(self._props.keys()))} properties\n' + \
                f'------------------------------------------\n' + \
                f'\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
-               f'------------------------------------------\n' + \
+               f'\n------------------------------------------\n' + \
                f'\n'.join([f'{k:20}, min = {np.min(self._props[k])} max = {np.max(self._props[k])}' for k in
                            self._props.keys()]) + \
+               f'\nExtra attributes: {self.extra_attributes}' + \
                f'\n------------------------------------------\n'
 
     def __repr__(self):
         return f'\nSpitfire Library(ndim={len(self.dims)}, nproperties={len(list(self._props.keys()))})\n' + \
                '\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
-               f'\nProperties: [{", ".join(list(self._props.keys()))}]'
+               f'\nProperties: [{", ".join(list(self._props.keys()))}]' + \
+               f'\nExtra attributes: {self.extra_attributes}'
 
     @property
     def size(self):

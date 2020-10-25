@@ -221,7 +221,6 @@ cdef class PyCombustionKernels:
     def __dealloc__(self):
       del self.c_calculator
 
-
     @cython.nonecheck(False)
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -303,7 +302,7 @@ cdef class PyCombustionKernels:
       for spec_name in products_stoich:
         prod_map[spec_name.encode()] = products_stoich[spec_name]
       self.c_calculator.mechanism_add_reaction_simple(reac_map, prod_map, reversible,
-      fwd_pre_exp_value, fwd_temp_exponent, fwd_act_energy)
+        fwd_pre_exp_value, fwd_temp_exponent, fwd_act_energy)
 
     @cython.nonecheck(False)
     @cython.boundscheck(False)
