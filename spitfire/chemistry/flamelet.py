@@ -26,6 +26,11 @@ from numpy.linalg import norm
 from spitfire.griffon.griffon import py_btddod_full_factorize, py_btddod_full_solve, \
     py_btddod_scale_and_add_diagonal
 
+_pressure_depr_warning = 'Deprecation warning in building Spitfire Flamelet instance. ' + \
+                         'Specifying pressure in flamelet construction is no longer used, ' + \
+                         'and will be removed in a future version. The pressure is now obtained from the fuel and ' + \
+                         'oxidizer streams.'
+
 
 class FlameletSpec(object):
     """
@@ -56,13 +61,20 @@ class FlameletSpec(object):
                  radiation_temperature=None,
                  convection_coefficient=None,
                  radiative_emissivity=None,
-                 use_scaled_heat_loss=False,
+                 scale_heat_loss_by_temp_range=False,
+                 scale_convection_by_dissipation=False,
+                 use_linear_ref_temp_profile=False,
 
                  rates_sensitivity_type='dense',
                  sensitivity_transform_type='exact',
 
                  include_enthalpy_flux=True,
-                 include_variable_cp=True):
+                 include_variable_cp=True,
+
+                 pressure=None):
+
+        if pressure is not None:
+            print(_pressure_depr_warning)
 
         if library_slice is not None:
             lib_shape = library_slice.shape
@@ -140,7 +152,9 @@ class FlameletSpec(object):
         self.radiation_temperature = radiation_temperature
         self.convection_coefficient = convection_coefficient
         self.radiative_emissivity = radiative_emissivity
-        self.use_scaled_heat_loss = use_scaled_heat_loss
+        self.scale_heat_loss_by_temp_range = scale_heat_loss_by_temp_range
+        self.scale_convection_by_dissipation = scale_convection_by_dissipation
+        self.use_linear_ref_temp_profile = use_linear_ref_temp_profile
 
         self.rates_sensitivity_type = rates_sensitivity_type
         self.sensitivity_transform_type = sensitivity_transform_type
@@ -341,11 +355,6 @@ class Flamelet(object):
             else:
                 raise ValueError(input_name + ' was not given as a float (constant) or numpy array')
 
-    _pressure_depr_warning = 'Deprecation warning in building Spitfire Flamelet instance. ' + \
-                             'Specifying pressure in flamelet construction is no longer used, ' + \
-                             'and will be removed in a future version. The pressure is now obtained from the fuel and ' + \
-                             'oxidizer streams.'
-
     def __init__(self,
                  flamelet_specs=None,
                  *args,
@@ -415,45 +424,6 @@ class Flamelet(object):
         self._nz_interior = self._z.size - 2
         self._n_dof = self._n_equations * self._nz_interior
 
-        # set up the heat transfer
-        if fs.heat_transfer not in self._heat_transfers:
-            error_message = 'Flamelet specifications: Bad heat_transfer argument detected: ' + fs.heat_transfer + '\n' + \
-                            '                         Acceptable values: ' + str(self._heat_transfers)
-            raise ValueError(error_message)
-        else:
-            self._heat_transfer = fs.heat_transfer
-
-        self._T_conv = None
-        self._T_rad = None
-        self._h_conv = None
-        self._h_rad = None
-        if self._heat_transfer == 'adiabatic' or (self._heat_transfer == 'nonadiabatic' and fs.use_scaled_heat_loss):
-            self._convection_temperature = None
-            self._radiation_temperature = None
-
-            warning_message = lambda arg: 'Flamelet specifications: Warning! Setting heat_transfer to adiabatic ' \
-                                          'nullifies the ' + arg + ' argument.'
-            if fs.convection_temperature is not None:
-                print(warning_message('convection_temperature'))
-            if fs.radiation_temperature is not None:
-                print(warning_message('radiation_temperature'))
-
-            if self._heat_transfer == 'adiabatic':
-                self._convection_coefficient = None
-                self._radiative_emissivity = None
-                if fs.convection_coefficient is not None:
-                    print(warning_message('convection_coefficient'))
-                if fs.radiative_emissivity is not None:
-                    print(warning_message('radiative_emissivity'))
-            else:
-                self._set_heat_transfer_arg_as_np_array(fs.convection_coefficient, 'convection_coefficient', '_h_conv')
-                self._set_heat_transfer_arg_as_np_array(fs.radiative_emissivity, 'radiative_emissivity', '_h_rad')
-        else:
-            self._set_heat_transfer_arg_as_np_array(fs.convection_temperature, 'convection_temperature', '_T_conv')
-            self._set_heat_transfer_arg_as_np_array(fs.radiation_temperature, 'radiation_temperature', '_T_rad')
-            self._set_heat_transfer_arg_as_np_array(fs.convection_coefficient, 'convection_coefficient', '_h_conv')
-            self._set_heat_transfer_arg_as_np_array(fs.radiative_emissivity, 'radiative_emissivity', '_h_rad')
-
         # set up the dissipation rate
         if fs.dissipation_rate is not None:
             warning_message = lambda arg: 'Flamelet specifications: Warning! Setting the dissipation_rate argument ' \
@@ -501,14 +471,55 @@ class Flamelet(object):
                                                              self._dissipation_rate_form)
         self._lewis_numbers = np.ones(self._n_species)
 
-        self._use_scaled_heat_loss = fs.use_scaled_heat_loss
-        if self._use_scaled_heat_loss:
-            self._T_conv = self.oxy_stream.T + self._z[1:-1] * (self.fuel_stream.T - self.oxy_stream.T)
-            self._T_rad = self.oxy_stream.T + self._z[1:-1] * (self.fuel_stream.T - self.oxy_stream.T)
-            zst = self._mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
-            factor = np.max(self._x) / (1. - zst) / zst
-            self._h_conv *= factor
-            self._h_rad *= factor
+        # set up the heat transfer
+        if fs.heat_transfer not in self._heat_transfers:
+            error_message = 'Flamelet specifications: Bad heat_transfer argument detected: ' + fs.heat_transfer + '\n' + \
+                            '                         Acceptable values: ' + str(self._heat_transfers)
+            raise ValueError(error_message)
+        else:
+            self._heat_transfer = fs.heat_transfer
+
+        self._T_conv = None
+        self._T_rad = None
+        self._h_conv = None
+        self._h_rad = None
+
+        self._scale_heat_loss_by_temp_range = fs.scale_heat_loss_by_temp_range
+        self._scale_convection_by_dissipation = fs.scale_convection_by_dissipation
+        self._use_linear_ref_temp_profile = fs.use_linear_ref_temp_profile
+
+        if self._heat_transfer == 'adiabatic':
+            self._convection_temperature = None
+            self._radiation_temperature = None
+
+            warning_message = lambda arg: 'Flamelet specifications: Warning! Setting heat_transfer to adiabatic ' \
+                                          'nullifies the ' + arg + ' argument.'
+            if fs.convection_temperature is not None:
+                print(warning_message('convection_temperature'))
+            if fs.radiation_temperature is not None:
+                print(warning_message('radiation_temperature'))
+
+            if self._heat_transfer == 'adiabatic':
+                self._convection_coefficient = None
+                self._radiative_emissivity = None
+                if fs.convection_coefficient is not None:
+                    print(warning_message('convection_coefficient'))
+                if fs.radiative_emissivity is not None:
+                    print(warning_message('radiative_emissivity'))
+        else:
+            self._set_heat_transfer_arg_as_np_array(fs.convection_coefficient, 'convection_coefficient', '_h_conv')
+            self._set_heat_transfer_arg_as_np_array(fs.radiative_emissivity, 'radiative_emissivity', '_h_rad')
+            if self._use_linear_ref_temp_profile:
+                self._T_conv = self.oxy_stream.T + self._z[1:-1] * (self.fuel_stream.T - self.oxy_stream.T)
+                self._T_rad = self._T_conv.copy()
+            else:
+                self._set_heat_transfer_arg_as_np_array(fs.radiation_temperature, 'radiation_temperature', '_T_rad')
+                self._set_heat_transfer_arg_as_np_array(fs.radiative_emissivity, 'radiative_emissivity', '_h_rad')
+            if self._scale_convection_by_dissipation:
+                zst = self._mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
+                factor = np.max(self._x) / (1. - zst) / zst
+                self._h_conv *= factor
+                self._h_rad *= factor
 
         # set up the initialization
         if isinstance(fs.initial_condition, str):
@@ -647,7 +658,7 @@ class Flamelet(object):
                                    self._x,
                                    self._include_enthalpy_flux,
                                    self._include_variable_cp,
-                                   self._use_scaled_heat_loss,
+                                   self._scale_heat_loss_by_temp_range,
                                    rhs)
         return rhs
 
@@ -773,7 +784,7 @@ class Flamelet(object):
                                    self._x,
                                    self._include_enthalpy_flux,
                                    self._include_variable_cp,
-                                   self._use_scaled_heat_loss,
+                                   self._scale_heat_loss_by_temp_range,
                                    rhs)
         return rhs
 
@@ -799,7 +810,7 @@ class Flamelet(object):
                                         self._stopt,
                                         self._include_enthalpy_flux,
                                         self._include_variable_cp,
-                                        self._use_scaled_heat_loss,
+                                        self._scale_heat_loss_by_temp_range,
                                         null,
                                         values)
         return values
@@ -826,7 +837,7 @@ class Flamelet(object):
                                         self._stopt,
                                         self._include_enthalpy_flux,
                                         self._include_variable_cp,
-                                        self._use_scaled_heat_loss,
+                                        self._scale_heat_loss_by_temp_range,
                                         null,
                                         values)
         return values
@@ -853,7 +864,7 @@ class Flamelet(object):
                                         self._stopt,
                                         self._include_enthalpy_flux,
                                         self._include_variable_cp,
-                                        self._use_scaled_heat_loss,
+                                        self._scale_heat_loss_by_temp_range,
                                         expeig,
                                         values)
         return values, expeig

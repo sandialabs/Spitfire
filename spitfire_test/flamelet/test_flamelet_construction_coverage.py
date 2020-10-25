@@ -83,31 +83,105 @@ def construct_nonadiabatic_flamelet(initialization, grid_type, diss_rate_form):
     elif diss_rate_form == 'custom':
         drf_specs = {'dissipation_rate': np.linspace(0., 1., 8)}
 
-    flamelet_specs = {'mech_spec': mechanism,
-                      'oxy_stream': air,
-                      'fuel_stream': fuel,
-                      'initial_condition': initialization,
-                      'heat_transfer': 'nonadiabatic',
-                      'convection_temperature': 350.,
-                      'convection_coefficient': 0.,
-                      'radiation_temperature': 350.,
-                      'radiative_emissivity': 0.}
-    flamelet_specs.update(grid_specs)
-    flamelet_specs.update(drf_specs)
-    Flamelet(**flamelet_specs)
-
-    flamelet_specs = {'mech_spec': mechanism,
-                      'oxy_stream': air,
-                      'fuel_stream': fuel,
-                      'initial_condition': initialization,
-                      'heat_transfer': 'nonadiabatic',
-                      'use_scaled_heat_loss': True,
-                      'convection_coefficient': 1.e7,
-                      'radiative_emissivity': 0.}
-    flamelet_specs.update(grid_specs)
-    flamelet_specs.update(drf_specs)
-
     try:
+        flamelet_specs = {'mech_spec': mechanism,
+                          'oxy_stream': air,
+                          'fuel_stream': fuel,
+                          'initial_condition': initialization,
+                          'heat_transfer': 'nonadiabatic',
+                          'convection_temperature': 350.,
+                          'convection_coefficient': 0.,
+                          'radiation_temperature': 350.,
+                          'radiative_emissivity': 0.}
+        flamelet_specs.update(grid_specs)
+        flamelet_specs.update(drf_specs)
+        Flamelet(**flamelet_specs)
+        Flamelet(flamelet_specs=flamelet_specs)
+        fso = FlameletSpec(**flamelet_specs)
+        f = Flamelet(fso)
+
+        fso_pickle = pickle.dumps(fso)
+        fso2 = pickle.loads(fso_pickle)
+        f = Flamelet(fso2)
+
+        lib = f.make_library_from_interior_state(f.initial_interior_state)
+        Flamelet(library_slice=lib)
+
+        lib_pickle = pickle.dumps(lib)
+        lib2 = pickle.loads(lib_pickle)
+        Flamelet(library_slice=lib2)
+
+        flamelet_specs = {'mech_spec': mechanism,
+                          'oxy_stream': air,
+                          'fuel_stream': fuel,
+                          'initial_condition': initialization,
+                          'heat_transfer': 'nonadiabatic',
+                          'scale_heat_loss_by_temp_range': True,
+                          'scale_convection_by_dissipation': True,
+                          'use_linear_ref_temp_profile': True,
+                          'convection_coefficient': 1.e7,
+                          'radiative_emissivity': 0.}
+        flamelet_specs.update(grid_specs)
+        flamelet_specs.update(drf_specs)
+
+        Flamelet(**flamelet_specs)
+        Flamelet(flamelet_specs=flamelet_specs)
+        fso = FlameletSpec(**flamelet_specs)
+        f = Flamelet(fso)
+
+        fso_pickle = pickle.dumps(fso)
+        fso2 = pickle.loads(fso_pickle)
+        f = Flamelet(fso2)
+
+        lib = f.make_library_from_interior_state(f.initial_interior_state)
+        Flamelet(library_slice=lib)
+
+        lib_pickle = pickle.dumps(lib)
+        lib2 = pickle.loads(lib_pickle)
+        Flamelet(library_slice=lib2)
+
+        flamelet_specs = {'mech_spec': mechanism,
+                          'oxy_stream': air,
+                          'fuel_stream': fuel,
+                          'initial_condition': initialization,
+                          'heat_transfer': 'nonadiabatic',
+                          'scale_heat_loss_by_temp_range': False,
+                          'scale_convection_by_dissipation': False,
+                          'use_linear_ref_temp_profile': True,
+                          'convection_coefficient': 1.e7,
+                          'radiative_emissivity': 0.}
+        flamelet_specs.update(grid_specs)
+        flamelet_specs.update(drf_specs)
+
+        Flamelet(**flamelet_specs)
+        Flamelet(flamelet_specs=flamelet_specs)
+        fso = FlameletSpec(**flamelet_specs)
+        f = Flamelet(fso)
+
+        fso_pickle = pickle.dumps(fso)
+        fso2 = pickle.loads(fso_pickle)
+        f = Flamelet(fso2)
+
+        lib = f.make_library_from_interior_state(f.initial_interior_state)
+        Flamelet(library_slice=lib)
+
+        lib_pickle = pickle.dumps(lib)
+        lib2 = pickle.loads(lib_pickle)
+        Flamelet(library_slice=lib2)
+
+        flamelet_specs = {'mech_spec': mechanism,
+                          'oxy_stream': air,
+                          'fuel_stream': fuel,
+                          'initial_condition': initialization,
+                          'heat_transfer': 'nonadiabatic',
+                          'scale_heat_loss_by_temp_range': False,
+                          'scale_convection_by_dissipation': True,
+                          'use_linear_ref_temp_profile': True,
+                          'convection_coefficient': 1.e7,
+                          'radiative_emissivity': 0.}
+        flamelet_specs.update(grid_specs)
+        flamelet_specs.update(drf_specs)
+
         Flamelet(**flamelet_specs)
         Flamelet(flamelet_specs=flamelet_specs)
         fso = FlameletSpec(**flamelet_specs)
