@@ -87,7 +87,7 @@ class FlameletSpec(object):
                             f'The library must be one-dimensional, with mixture fraction as the first dimension. '
                             f'It can have trivial dimensions that can be squeezed to yield a one-dimensional form.')
                 if len(lib_shape) > 1:
-                    library_slice = library_slice.squeeze()
+                    library_slice = Library.squeeze(library_slice)
             else:
                 raise ValueError(
                     f'Error in Flamelet construction from library_slice. The library provided does not '
@@ -889,6 +889,23 @@ class Flamelet(object):
                                  self._n_equations,
                                  self._block_thomas_l_values,
                                  self._block_thomas_d_pivots)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def rhs(self, t, state_interior):
+        return getattr(self, '_' + self._heat_transfer + '_rhs')(t, state_interior)
+
+    def jac(self, state_interior):
+        return getattr(self, '_' + self._heat_transfer + '_jac')(state_interior)
+
+    def jac_csc(self, state_interior):
+        return getattr(self, '_' + self._heat_transfer + '_jac_csc')(state_interior)
+
+    def jac_and_eig(self, state_interior):
+        return getattr(self, '_' + self._heat_transfer + '_jac_and_eig')(state_interior)
+
+    def jac_csc(self, state_interior):
+        return getattr(self, '_' + self._heat_transfer + '_jac_csc_and_eig')(state_interior)
 
     # ------------------------------------------------------------------------------------------------------------------
 
