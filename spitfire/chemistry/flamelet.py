@@ -904,9 +904,6 @@ class Flamelet(object):
     def jac_and_eig(self, state_interior):
         return getattr(self, '_' + self._heat_transfer + '_jac_and_eig')(state_interior)
 
-    def jac_csc(self, state_interior):
-        return getattr(self, '_' + self._heat_transfer + '_jac_csc_and_eig')(state_interior)
-
     # ------------------------------------------------------------------------------------------------------------------
 
     # ------------------------------------------------------------------------------------------------------------------
