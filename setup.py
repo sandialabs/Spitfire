@@ -7,10 +7,9 @@
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 import os
+from glob import glob
 from distutils.core import setup
 from distutils.extension import Extension
-from sys import argv as command_line_args
-from sys import executable as python_cmd
 from Cython.Build import cythonize
 from numpy import get_include as numpy_include
 import platform
@@ -25,44 +24,52 @@ def readfile(filename):
             return f.read()
 
 
-build_ext_arg = False
-griffon_build_dir = None
-for arg in command_line_args:
-    if 'build_ext' in arg:
-        build_ext_arg = True
-    if 'griffon-build-dir' in arg:
-        griffon_build_dir = arg.split('griffon-build-dir=')[1]
-        command_line_args.remove(arg)
+def get_compile_args():
+    eca = ['-O3', '-g', '-std=c++11', '-Wno-error']
+    if platform.system() == 'Darwin':
+        eca += ['-stdlib=libc++']
+    return eca
 
-if griffon_build_dir is None and build_ext_arg:
-    raise ValueError(
-        'Error in building Spitfire extension modules. '
-        'The command line argument "--griffon-build-dir=[]" must be provided.')
 
-cython_extra_compile_args = ['-O3', '-g', '-std=c++11']
+def get_lapack():
+    is_mac = platform.system() == 'Darwin'
+    if is_mac:
+        lib = []
+        extra = ['-framework', 'Accelerate', '-mmacosx-version-min=10.12']
+    else:
+        lib = ['blas', 'lapack']
+        extra = []
+    return lib, extra
 
-is_mac = platform.system() == 'Darwin'
-if is_mac:
-    cython_lapack_lib = []
-    cython_lapack_extra = ['-framework', 'Accelerate', '-mmacosx-version-min=10.12']
-    cython_extra_compile_args += ['-stdlib=libc++']
-else:
-    cython_lapack_lib = ['blas', 'lapack']
-    cython_lapack_extra = []
 
-cython_include_directories = [numpy_include(),
-                              os.path.join(griffon_build_dir, 'include') if griffon_build_dir is not None else '']
-cython_library_directories = [os.path.join(griffon_build_dir, 'lib') if griffon_build_dir is not None else '']
-cython_libraries = ['griffon_cpp'] + cython_lapack_lib
+def make_griffon_extension():
+    lapack_lib, lapack_extra = get_lapack()
+    return cythonize(Extension(name='spitfire.griffon.griffon',
+                               sources=[os.path.join('spitfire', 'griffon', 'griffon.pyx')] + glob(
+                                   os.path.join('spitfire', 'griffon', 'src') + '/*.cpp', recursive=False),
+                               extra_compile_args=get_compile_args(),
+                               include_dirs=[numpy_include(), os.path.join('spitfire', 'griffon', 'include')],
+                               library_dirs=[os.path.join('spitfire', 'griffon')],
+                               libraries=lapack_lib,
+                               extra_link_args=lapack_extra,
+                               language='c++'))
 
-griffon_cython = cythonize(Extension(name='spitfire.griffon.griffon',
-                                     sources=[os.path.join('spitfire', 'griffon', 'griffon.pyx')],
-                                     extra_compile_args=cython_extra_compile_args,
-                                     include_dirs=cython_include_directories,
-                                     library_dirs=cython_library_directories,
-                                     libraries=cython_libraries,
-                                     extra_link_args=cython_lapack_extra,
-                                     language='c++'))
+
+def print_info():
+    print('-' * 80)
+    print(f'- Done installing Spitfire!\n')
+    print(f'- To test or build docs, an in-place build is required:\n')
+    print(f'    python3 setup.py build_ext --inplace\n')
+    print('-' * 80)
+    print(f'- Run the tests:\n')
+    print(f'    python3 -m unittest discover -s spitfire_test')
+    print('-' * 80)
+    print(f'- Build the docs:\n')
+    print(f'    cd spitfire_docs')
+    print(f'    make html')
+    print(f'    open build/html/index in a browser')
+    print('-' * 80)
+
 
 setup(name='Spitfire',
       version=readfile('version'),
@@ -72,16 +79,7 @@ setup(name='Spitfire',
       description=readfile('description_short'),
       long_description=readfile('readme.md'),
       packages=['spitfire', 'spitfire.chemistry', 'spitfire.time', 'spitfire.griffon'],
-      ext_modules=griffon_cython,
+      ext_modules=make_griffon_extension(),
       package_data={'spitfire.griffon': ['*.so']})
 
-html_path = os.path.join(os.getcwd(), 'spitfire_docs', 'build', 'html', 'index.html')
-
-print('- done installing Spitfire!')
-unit_test_line = f'{python_cmd} -m unittest discover -s spitfire_test/'
-docs_line = 'cd spitfire_docs; make html; make latexpdf; cd ..'
-docs_html = f'open in a browser: file://{html_path}'
-
-print(f'- Run the tests              : {unit_test_line}')
-print(f'- Build the documentation    : {docs_line}')
-print(f'- View the html documentation: {docs_html}\n')
+print_info()
