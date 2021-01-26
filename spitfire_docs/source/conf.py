@@ -30,7 +30,6 @@
 
 import os
 import sys
-import sphinx_rtd_theme
 
 sys.path.insert(0, os.path.abspath('../..'))
 
@@ -100,7 +99,6 @@ todo_include_todos = False
 #
 # html_theme = 'pyramid'
 html_theme = 'haiku'
-# html_theme = 'sphinx_rtd_theme'
 
 # to get rid of silly autosummary warnings
 numpydoc_show_class_members = False

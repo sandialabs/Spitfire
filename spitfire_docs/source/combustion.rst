@@ -28,7 +28,8 @@ Three types of *heat transfer* are available:
 - diathermal: a reactor whose walls allow a finite rate of heat transfer by radiative heat transfer to a nearby surface and convective heat transfer to a fluid flowing around the reactor
 
 Below we detail the equations governing isochoric and isobaric reactors with any pair of models for mass and transfer.
-In all cases the ideal gas law applies,
+In all cases, the gas is modeled as a mixture of thermally perfect gases.
+The ideal gas law applies to each species and the bulk mixture.
 
 .. math::
  p = \rho R_\mathrm{mix} T,
@@ -41,7 +42,7 @@ where the mixture specific gas constant, :math:`R_\mathrm{mix}`, is the universa
  :label: mixture_molar_mass
 
 where :math:`M_i` is the molar mass of species :math:`i` in a mixture with :math:`n` distinct species.
-Additionally for all reactors the mass fractions, of which only :math:`n-1` are independent, are related by
+Additionally, the mass fractions, of which only :math:`n-1` are independent (and only :math:`n-1` are solved for in Spitfire), are related by
 
 .. math::
  Y_n = 1 - \sum_{i=1}^{n-1}Y_i.
@@ -131,11 +132,10 @@ Governing Equations for Non-premixed Flamelets
 The unsteady flamelet equations describe the evolution of mass fractions :math:`Y_i` and temperature :math:`T`
 in a Lagrangian time :math:`t` and the mixture fraction :math:`\mathcal{Z}`.
 Equations :eq:`adiabatic_flamelet_Yi_eqn` and :eq:`adiabatic_flamelet_T_eqn` govern adiabatic flamelets,
-which evolve due to diffusion (with strength proportional the scalar dissipation rate :math:`\chi`) and chemistry.
+which evolve due to molecular mixing (with strength proportional the scalar dissipation rate :math:`\chi`) and chemistry.
 These equations include variable heat capacity effects and the full form of the heat flux including the enthalpy flux, but do not account for differential diffusion
-(although this is in plans).
-The variable heat capacity term (the term, not the thermodynamics of individual species) and enthalpy flux terms are optional in Spitfire
-(specify ``include_variable_cp=True`` and ``include_enthalpy_flux=True`` when building a flamelet object).
+(this extension is planned).
+The variable heat capacity term and enthalpy flux terms are optional in Spitfire, and are included by default.
 Steady flamelet equations are derived by simply removing the time term.
 
 .. math::
@@ -155,7 +155,8 @@ These equations are supplemented by boundary conditions defined by the oxidizer 
     Y_i(t, 1) &= Y_{i,\mathrm{fuel}}.
 
 
-The dissipation rate :math:`\chi` can be a constant or depend on the mixture fraction as
+The dissipation rate :math:`\chi` can be a constant or depend on the mixture fraction arbitrarily.
+Spitfire provides the common form of Peters:
 
 .. math::
     \chi(\mathcal{Z}) = \chi_{\mathrm{max}} \exp\left( -2\left[\mathrm{erfinv}(2\mathcal{Z}-1)\right]^2 \right).
@@ -167,16 +168,14 @@ Spitfire also supports nonadiabatic flamelets, which modifies only the temperatu
     :label: nonadiabatic_flamelet_T_eqn
 
 Spitfire allows the convection and radiation coefficients and temperatures to vary over the mixture fraction.
-A special option for building transient heat loss flamelet libraries involves the following choices
-(enabled with ``use_scaled_heat_loss=True``).
+Further, the heat loss terms can be scaled to facilitate simulation of radiative quenching.
 
 .. math::
-    T_\infty &= T_\mathrm{oxy} + \mathcal{Z}(T_\mathrm{fuel} - T_\mathrm{oxy}), \\
-    h &= h' \chi_{\mathrm{max}} \frac{1 - \mathcal{Z}_{\mathrm{st}} }{ \mathcal{Z}_{\mathrm{st}} }, \\
-    \varepsilon &= 0,
+    \frac{\partial T}{\partial t} = \left.\frac{\partial T}{\partial t}\right|_{\mathrm{adiabatic}} + \frac{1}{\rho c_p}\frac{\chi_{\mathrm{max}}}{\mathcal{Z}_{\mathrm{st}}(1 - \mathcal{Z}_{\mathrm{st}})}\left(h\frac{T_\infty - T}{T_{\mathrm{max}} - T_\infty} + \varepsilon\sigma\frac{T_\mathrm{surf}^4 - T^4}{T_{\mathrm{max}}^4 - T_\mathrm{surf}^4}\right).
+    :label: scaled_nonadiabatic_flamelet_T_eqn
 
-where :math:`\mathcal{Z}_{\mathrm{st}}` is the stoichiometric mixture fraction and
-:math:`h'` is an arbitrary parameter of order :math:`10^7` to drive a flamelet to extinction due to heat loss.
+where :math:`\mathcal{Z}_{\mathrm{st}}` is the stoichiometric mixture fraction.
+Typically we only run this with the convective (linear) term and set :math:`h'` to :math:`10^6-10^7`, which rapidly drives hydrocarbon flamelets to extinction.
 
 
 Chemical Kinetic Models

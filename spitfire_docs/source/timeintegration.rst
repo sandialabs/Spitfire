@@ -25,36 +25,33 @@ Additionally Spitfire's abstraction does not support fully-implicit Runge-Kutta 
 Finally Spitfire does not (yet!) support implicit-explicit methods such as additive Runge-Kutta or operator splitting techniques,
 but this will hopefully be tackled soon.
 
-The explicit methods provided are:
+Methods are named according to stage count (S#), order of accuracy (P#), and the order of accuracy of the embedded error estimator (Q#) if present, similarly to ARKODE's convention.
+If the embedded error order is noted, the method can be used for adaptive time-stepping based on local temporal error control.
+You can add new methods of your own, even for adaptive time stepping - demonstrations in `spitfire_demo/time_integration` show how.
 
-- Forward Euler: ``ForwardEuler``
-- Midpoint method: ``ExplicitRungeKutta2Midpoint``
-- Trapezoidal method: ``ExplicitRungeKutta2Trapezoid``
-- Ralston's two-stage method: ``ExplicitRungeKutta2Ralston``
-- Heun's three-stage method: ``ExplicitRungeKutta3Kutta``
-- The 'classical' RK4 method: ``ExplicitRungeKutta4Classical``
+The explicit methods are:
+
+- Forward Euler: ``ForwardEulerS1P1``
+- Midpoint method: ``ExpMidpointS2P2``
+- Trapezoidal method: ``ExpTrapezoidalS2P2Q1``
+- Ralston's two-stage method: ``ExpRalstonS2P2``
+- Kutta's three-stage method: ``RK3KuttaS3P3``
+- The 'classical' RK4 method: ``RK4ClassicalS4P4``
+- The Bogacki-Shampine four-stage method: ``BogackiShampineS4P3Q2``
+- A five-stage order 4 method of Zonneveld: ``ZonneveldS5P4Q3``
 - The Cash-Karp order 4 method: ``AdaptiveERK54CashKarp``
-- A general-purpose explicit RK method that can use any explicit Butcher table provided by the user: ``GeneralAdaptiveExplicitRungeKutta``
+- Kennedy & Carpenter's six-stage order 4 method: ``ExpKennedyCarpetnerS6P4Q3``
+- A general-purpose explicit RK method that can use any explicit Butcher table provided by the user: ``GeneralAdaptiveERK``
 
-Implicit methods that come with Spitfire are:
+The implicit methods are:
 
-- Backward Euler (BDF1): ``BackwardEuler``
-- Crank-Nicolson (implicit Trapezoidal): ``CrankNicolson``
-- Midpoint method: ``ImplicitMidpoint``
-- Two-stage, L-stable, order 2 method: ``SDIRK22``
-- Six-stage, L-stable, order 4 method with stage order two: ``ESDIRK64``
+- Backward Euler (BDF1): ``BackwardEulerS1P1Q1``
+- Crank-Nicolson (implicit Trapezoidal): ``CrankNicolsonS2P2``
+- Four-stage, order 3 method: ``KennedyCarpenterS4P3Q2``
+- Four-stage, order 3 method: ``KvaernoS4P3Q2``
+- Six-stage, L-stable, order 4 method with stage order two: ``KennedyCarpenterS6P4Q3``
+- Eight-stage, L-stable, order 5 method with stage order two: ``KennedyCarpenterS8P5Q4``
 
-Spitfire provides the above ODE methods 'out of the box' and also facilitates the use of additional methods defined by the user.
-In addition to the above general-purpose methods,
-Spitfire can do error-based adaptive time-stepping with the following methods:
-
-- explicit: Euler-Trapezoidal order 2 method: ``AdaptiveERK21HeunEuler``
-- explicit: Cash-Karp order 4 method: ``AdaptiveERK54CashKarp``
-- explicit: general-purpose explicit Runge-Kutta method: ``GeneralAdaptiveExplicitRungeKutta``
-- implicit: backward Euler: ``BackwardEulerWithError``
-- implicit: six-stage, L-stable, order 4 method: ``ESDIRK64``
-
-With the time-steppers listed above, Spitfire provides several means of driving a simulation in time.
 All simulations, whether with explicit or implicit methods, with a constant or adaptive time step, are driven by Spitfire's ``odesolve`` method.
 This method manages the logging of information and in-situ post-processing of user data as the simulation proceeds,
 evaluation of the Jacobian/preconditioning matrix used in implicit methods, depending upon performance
@@ -81,3 +78,21 @@ Nonlinear solution procedures typically require the repeated action of the inver
 The linear problem is a subset of the nonlinear problem, which itself is a subset of each single time step (:math:`t^n\to t^{n+1}`), which is a subset of a time integration loop with possibly adaptive time stepping (varying :math:`h` in time).
 These five pieces form the backbone of time integration with implicit methods - this is referred to as the 'solver stack.'
 In Spitfire the stack consists of ``odesolve`` (time loop), ``StepController`` (:math:`h` adaptation), ``TimeStepper`` (single step method), ``NonlinearSolver`` (solve :math:`\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}`), and finally the ``setup`` and ``solve`` procedures for the linear solve (building the inverse of the approximate linear operator and repeatedly applying it, respectively).
+
+Python & Performance Optimality
+-------------------------------
+Composing the solver stack in Python makes it more easily extensible, but it brings performance optimality into doubt.
+Similar questions arise in development of HPC codes with C++, where virtual functions are 'slow' (and have other issues).
+The key factor in performance is the cost of evaluating the nonlinear residual and the various operations in the linear solve.
+In solving large, one-dimensional diffusion-reaction problems (flamelets), for which Spitfire is most often used, the large majority of time is spent evaluating the residual and Jacobian matrix and solving the linear system.
+Performance improvements have come from optimizing the evaluation code and leveraging adaptive time-steppers that evaluate and factorize (the "setup" phase) fewer Jacobian matrices.
+Early on we prototyped moving the entire solver stack, specializg it for a single time integration method, step control strategy, nonlinear solver, and linear solver to Griffon (Spitfire's internal C++ engine).
+On even the smallest practical flamelet problems, this made no real difference in the end-to-end runtime, and the use of Python in the solver stack is entirely justified.
+Now, if you're solving a single exponential decay ODE, Spitfire will be terribly slow compared to an optimized compiled application.
+You may not care about performance as it will still be pretty fast, but certainly there are many-query applications that might want every last bit of performance on relatively small problems.
+An option there is to combine ensembles of ODEs into one large system with optimized residual and Jacobian evaluation and linear solvers.
+Solving many systems at once scales down the Python overhead and puts performance optimization in the hands of the user.
+As a serial, single-threaded code meant for typical CPU hardware and a general problem space, our perspective with Spitfire is simply that performance is good enough on very small problems,
+and is the user's responsibility in large problems (in computing the residual, Jacobian, and linear solver).
+Thus, we write abstract numerical algorithms in Spitfire with extensibility and algorithmic optimality in mind.
+
