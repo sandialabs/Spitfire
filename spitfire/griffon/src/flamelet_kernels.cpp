@@ -142,7 +142,6 @@ void CombustionKernels::flamelet_rhs_test1(const double *state, const double &pr
   double Tz[nzi];
   double yz[nzi * ns];
   double cpz[nzi];
-  double Mz[nzi];
   double yzcpi[nzi];
 
   double kf[nzi];
@@ -875,7 +874,6 @@ void CombustionKernels::flamelet_rhs_test1(const double *state, const double &pr
         const double &hr = h_radiation[i];
         const double &Tc = T_convection[i];
         const double &Tr = T_radiation[i];
-        const double Tr4 = Tr * Tr * Tr * Tr;
         out_rhs[i * ns] += (hc * (Tc - T[i]) + hr * 5.67e-8 * (Tr * Tr * Tr * Tr - T[i] * T[i] * T[i] * T[i])) / (rho[i] * cp[i]);
       }
     }
@@ -886,7 +884,6 @@ void CombustionKernels::flamelet_rhs_test1(const double *state, const double &pr
     for (int i = 1; i < nzi - 1; ++i)
     {
       Tz[i] = mcoeff[i] * T[i - 1] + ncoeff[i] * T[i + 1];
-      Mz[i] = mcoeff[i] * M[i - 1] + ncoeff[i] * M[i + 1];
       cpz[i] = mcoeff[i] * cp[i - 1] + ncoeff[i] * cp[i + 1];
     }
     for (int k = 0; k < ns; ++k)
@@ -924,7 +921,6 @@ void CombustionKernels::flamelet_rhs_test1(const double *state, const double &pr
       const double maxT = cpMaxTs[k];
       const double minT = cpMinTs[k];
 
-      const int offset = k * nzi;
       const double minvk = minv[k];
       double t;
 
@@ -985,7 +981,6 @@ void CombustionKernels::flamelet_rhs_test1(const double *state, const double &pr
     {
       const int i = 0;
       Tz[i] = mcoeff[0] * oxyState[0] + ncoeff[0] * T[1];
-      Mz[i] = mcoeff[0] * Moxy + ncoeff[0] * M[1];
       cpz[i] = mcoeff[0] * cpoxy + ncoeff[0] * cp[1];
       for (int k = 0; k < ns; ++k)
       {
@@ -995,7 +990,6 @@ void CombustionKernels::flamelet_rhs_test1(const double *state, const double &pr
     {
       const int i = nzi - 1;
       Tz[i] = mcoeff[nzi - 1] * T[nzi - 2] + ncoeff[nzi - 1] * fuelState[0];
-      Mz[i] = mcoeff[nzi - 1] * M[nzi - 2] + ncoeff[nzi - 1] * Mfuel;
       cpz[i] = mcoeff[nzi - 1] * cp[nzi - 2] + ncoeff[nzi - 1] * cpfuel;
       for (int k = 0; k < ns; ++k)
       {
@@ -1091,8 +1085,6 @@ void CombustionKernels::flamelet_rhs(const double *state, const double &pressure
       }
       else
       {
-        const double *state_nm1 = &state[(i - 1) * nSpec];
-        const double *state_np1 = &state[(i + 1) * nSpec];
         cpz_grid[i] = mcoeff[i] * cp_grid[i - 1] + ncoeff[i] * cp_grid[i + 1];
       }
     }
@@ -1320,7 +1312,7 @@ void CombustionKernels::flamelet_jacobian(const double *state, const double &pre
       primJac[0] -= q / rho;
 
       const double cpn = cpi[nSpec - 1];
-      for (std::size_t k = 0; k < nSpec + 1; ++k)
+      for (int k = 0; k < nSpec + 1; ++k)
       {
         primJac[(2 + k) * nSpec] += invCp * q * (cpn - cpi[k]);
       }

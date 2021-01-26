@@ -23,8 +23,6 @@ void btddod_full_factorize(double *out_d_factors, const int num_blocks, const in
   const int nelem_offdiagonal = (num_blocks - 1) * block_size;
   const int nelem_blockdiagonals = num_blocks * nelem_block;
 
-  double d_local_tmp[nelem_block];
-
   double identity_matrix[nelem_block];
   for (int i = 0; i < nelem_block; ++i)
   {
@@ -39,7 +37,6 @@ void btddod_full_factorize(double *out_d_factors, const int num_blocks, const in
   const double *sup = &out_d_factors[nelem_blockdiagonals + nelem_offdiagonal];
 
   int info;
-  const int one = 1;
   char trans = 'N';
   griffon::lapack::dgetrf_(&block_size, &block_size, out_d_factors, &block_size, out_d_pivots, &info);
 
@@ -55,7 +52,6 @@ void btddod_full_factorize(double *out_d_factors, const int num_blocks, const in
     griffon::lapack::dgetrs_(&trans, &block_size, &block_size, &out_d_factors[om], &block_size,
                              &out_d_pivots[(i - 1) * block_size], &out_l_values[o1], &block_size, &info);
 
-    const int i_base = i * block_size;
     const int im1_base = (i - 1) * block_size;
     for (int j = 0; j < block_size; ++j)
     {
@@ -128,7 +124,6 @@ void btddod_full_matvec(const double *matrix_values, const double *vec, const in
   const int nelem_block = block_size * block_size;
   const int nelem_offdiagonal = (num_blocks - 1) * block_size;
   const int nelem_blockdiagonals = num_blocks * nelem_block;
-  const int nelem_vector = num_blocks * block_size;
 
   // block diagonal contribution
   for (int i = 0; i < num_blocks; ++i)
@@ -230,9 +225,7 @@ void btddod_lowerfulltriangle_matvec(const double *matrix_values, const double *
                                      const int block_size, double *out_matvec)
 {
   const int nelem_block = block_size * block_size;
-  const int nelem_offdiagonal = (num_blocks - 1) * block_size;
   const int nelem_blockdiagonals = num_blocks * nelem_block;
-  const int nelem_vector = num_blocks * block_size;
 
   // block diagonal contribution
   for (int i = 0; i < num_blocks; ++i)
@@ -242,14 +235,12 @@ void btddod_lowerfulltriangle_matvec(const double *matrix_values, const double *
   }
 
   const double *sub = &matrix_values[nelem_blockdiagonals];
-  const double *sup = &matrix_values[nelem_blockdiagonals + nelem_offdiagonal];
 
   // off diagonal contributions
   for (int iz = 1; iz < num_blocks - 1; ++iz)
   {
     const int i_base = iz * block_size;
     const int im1_base = (iz - 1) * block_size;
-    const int ip1_base = (iz + 1) * block_size;
     for (int iq = 0; iq < block_size; ++iq)
     {
       out_matvec[i_base + iq] += sub[im1_base + iq] * vec[im1_base + iq];
@@ -271,7 +262,6 @@ void btddod_upperfulltriangle_matvec(const double *matrix_values, const double *
   const int nelem_block = block_size * block_size;
   const int nelem_offdiagonal = (num_blocks - 1) * block_size;
   const int nelem_blockdiagonals = num_blocks * nelem_block;
-  const int nelem_vector = num_blocks * block_size;
 
   // block diagonal contribution
   for (int i = 0; i < num_blocks; ++i)
@@ -280,14 +270,12 @@ void btddod_upperfulltriangle_matvec(const double *matrix_values, const double *
                                           &matrix_values[i * nelem_block], &vec[i * block_size], 0.);
   }
 
-  const double *sub = &matrix_values[nelem_blockdiagonals];
   const double *sup = &matrix_values[nelem_blockdiagonals + nelem_offdiagonal];
 
   // off diagonal contributions
   for (int iz = 1; iz < num_blocks - 1; ++iz)
   {
     const int i_base = iz * block_size;
-    const int im1_base = (iz - 1) * block_size;
     const int ip1_base = (iz + 1) * block_size;
     for (int iq = 0; iq < block_size; ++iq)
     {
@@ -308,7 +296,6 @@ void btddod_lowerofftriangle_matvec(const double *matrix_values, const double *v
                                     const int block_size, double *out_matvec)
 {
   const int nelem_block = block_size * block_size;
-  const int nelem_offdiagonal = (num_blocks - 1) * block_size;
   const int nelem_blockdiagonals = num_blocks * nelem_block;
   const int nelem_vector = num_blocks * block_size;
 
@@ -318,14 +305,12 @@ void btddod_lowerofftriangle_matvec(const double *matrix_values, const double *v
   }
 
   const double *sub = &matrix_values[nelem_blockdiagonals];
-  const double *sup = &matrix_values[nelem_blockdiagonals + nelem_offdiagonal];
 
   // off diagonal contributions
   for (int iz = 1; iz < num_blocks - 1; ++iz)
   {
     const int i_base = iz * block_size;
     const int im1_base = (iz - 1) * block_size;
-    const int ip1_base = (iz + 1) * block_size;
     for (int iq = 0; iq < block_size; ++iq)
     {
       out_matvec[i_base + iq] += sub[im1_base + iq] * vec[im1_base + iq];
@@ -354,14 +339,12 @@ void btddod_upperofftriangle_matvec(const double *matrix_values, const double *v
     out_matvec[i] = 0.;
   }
 
-  const double *sub = &matrix_values[nelem_blockdiagonals];
   const double *sup = &matrix_values[nelem_blockdiagonals + nelem_offdiagonal];
 
   // off diagonal contributions
   for (int iz = 1; iz < num_blocks - 1; ++iz)
   {
     const int i_base = iz * block_size;
-    const int im1_base = (iz - 1) * block_size;
     const int ip1_base = (iz + 1) * block_size;
     for (int iq = 0; iq < block_size; ++iq)
     {

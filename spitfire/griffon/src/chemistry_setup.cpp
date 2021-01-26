@@ -101,11 +101,11 @@ void CombustionKernels::mechanism_add_nasa7_cp(const std::string &spec_name, con
   auto &coeffs = mechanismData.heatCapacityData.coefficients[i];
   coeffs[0] = Tmid;
   const double R = mechanismData.phaseData.Ru;
-  for (int i = 0; i < high_coeffs.size(); ++i)
+  for (std::size_t i = 0; i < high_coeffs.size(); ++i)
   {
     coeffs[1 + i] = high_coeffs[i] * R;
   }
-  for (int i = 0; i < low_coeffs.size(); ++i)
+  for (std::size_t i = 0; i < low_coeffs.size(); ++i)
   {
     coeffs[8 + i] = low_coeffs[i] * R;
   }
@@ -428,10 +428,6 @@ void CombustionKernels::ReactionData<NSR>::ReactionRateData::finalize(const Phas
   {
     sumStoich = 0;
     std::map<int, std::tuple<int, double>> net_indices_stoichs; // spec idx to stoich, mw, invmw
-    std::array<int, 2 * NSR> temp_net_indices;
-    std::array<int, 2 * NSR> temp_net_stoich;
-    std::array<int, 2 * NSR> temp_net_mw;
-    std::array<int, 2 * NSR> temp_net_invmw;
 
     for (int i = 0; i < n_reactants; ++i)
     {

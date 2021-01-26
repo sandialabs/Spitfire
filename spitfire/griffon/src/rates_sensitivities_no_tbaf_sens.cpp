@@ -43,10 +43,10 @@ void CombustionKernels::prod_rates_sens_no_tbaf(const double &temperature, const
   const auto Msp = mechanismData.phaseData.molecularWeights.data();
   const auto invMsp = mechanismData.phaseData.inverseMolecularWeights.data();
 
-  double kf, Kc, kr, Rr, Rnet, q, Ctbaf, pr, fCent, flfConc, fTroe, gTroe;
-  double dRnetdrho, dRnetdT, dKcdToverKc;
-  double dqdrho, dqdT, aTroe, bTroe;
-  double nsTmp;
+  double kf = 0, Kc = 0, kr = 0, Rr = 0, Rnet = 0, q = 0, Ctbaf = 0, pr = 0, fCent = 0, flfConc = 0, fTroe = 0, gTroe = 0;
+  double dRnetdrho = 0, dRnetdT = 0, dKcdToverKc = 0;
+  double dqdrho = 0, dqdT = 0, aTroe = 0, bTroe = 0;
+  double nsTmp = 0;
 
   double specG[ns];
   double dBdTSpec[ns];
@@ -685,15 +685,12 @@ void CombustionKernels::prod_rates_sens_no_tbaf(const double &temperature, const
       }
     }
 
-    double t1exp;
-    double t2exp;
-    double t3exp;
-    double log10pr;
-    double log10fcent;
-    double logfcent;
-    double ln10;
-    double rho_baseeff;
-    double kp_over_kf;
+    double t1exp = 0;
+    double t2exp = 0;
+    double t3exp = 0;
+    double log10pr = 0;
+    double log10fcent = 0;
+    double kp_over_kf = 0;
     switch (rxnData.type)
     {
     case RateType::SIMPLE:
@@ -758,8 +755,6 @@ void CombustionKernels::prod_rates_sens_no_tbaf(const double &temperature, const
 
       log10pr = std::log10(std::max(pr, 1.e-300));
       log10fcent = std::log10(std::max(fCent, 1.e-300));
-      logfcent = std::log(std::max(fCent, 1.e-300));
-      ln10 = std::log(10.);
 
       aTroe = log10pr - 0.67 * log10fcent - 0.4;
       bTroe = -0.14 * log10pr - 1.1762 * log10fcent + 0.806;

@@ -48,7 +48,7 @@ void CombustionKernels::cp_mix_and_species(const double &temperature, const doub
   const auto invMolecularWeights = mechanismData.phaseData.inverseMolecularWeights.data();
   const double t = temperature;
   *out_cpmix = 0.;
-  for (size_t i = 0; i < nSpec; ++i)
+  for (int i = 0; i < nSpec; ++i)
   {
     const auto polyType = mechanismData.heatCapacityData.types[i];
     const auto &c = mechanismData.heatCapacityData.coefficients[i];
@@ -151,7 +151,7 @@ void CombustionKernels::cp_sens_T(const double &temperature, const double *y, do
   const auto invMolecularWeights = mechanismData.phaseData.inverseMolecularWeights.data();
   const double t = temperature;
   *out_cpmixsens = 0.;
-  for (size_t i = 0; i < nSpec; ++i)
+  for (int i = 0; i < nSpec; ++i)
   {
     const auto polyType = mechanismData.heatCapacityData.types[i];
     const auto &c = mechanismData.heatCapacityData.coefficients[i];
@@ -203,7 +203,7 @@ void CombustionKernels::species_enthalpies(const double &temperature, double *ou
   const auto invMolecularWeights = mechanismData.phaseData.inverseMolecularWeights.data();
   const double temp = temperature;
 
-  for (size_t i = 0; i < nSpec; ++i)
+  for (int i = 0; i < nSpec; ++i)
   {
     const auto polyType = mechanismData.heatCapacityData.types[i];
     const auto &c = mechanismData.heatCapacityData.coefficients[i];

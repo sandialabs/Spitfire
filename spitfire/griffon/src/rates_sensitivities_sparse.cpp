@@ -43,15 +43,14 @@ void CombustionKernels::prod_rates_sens_sparse(const double &temperature, const 
   const auto Msp = mechanismData.phaseData.molecularWeights.data();
   const auto invMsp = mechanismData.phaseData.inverseMolecularWeights.data();
 
-  double kf, Kc, kr, Rr, Rnet, q, Ctbaf, pr, fCent, flfConc, fTroe, gTroe;
-  double dRnetdrho, dRnetdT, dKcdToverKc, dCtbafdrho, dCtbafdT;
-  double dqdrho, dqdT, dfTroedT, dfCentdT, aTroe, bTroe;
-  double nsTmp;
+  double kf = 0, Kc = 0, kr = 0, Rr = 0, Rnet = 0, q = 0, Ctbaf = 0, pr = 0, fCent = 0, flfConc = 0, fTroe = 0, gTroe = 0;
+  double dRnetdrho = 0, dRnetdT = 0, dKcdToverKc = 0, dCtbafdrho = 0, dCtbafdT = 0;
+  double dqdrho = 0, dqdT = 0, dfTroedT = 0, dfCentdT = 0, aTroe = 0, bTroe = 0;
+  double nsTmp = 0;
 
   double specG[ns];
   double dBdTSpec[ns];
   double dCtbafdY[ns];
-  double dfTroedY[ns];
   double dRnetdY[ns - 1];
   double dqdY[ns - 1];
 
@@ -59,7 +58,6 @@ void CombustionKernels::prod_rates_sens_sparse(const double &temperature, const 
   {
     out_prodrates[i] = 0.;
     specG[i] = 0.;
-    dfTroedY[i] = 0.;
   }
   for (int i = 0; i < ns - 1; ++i)
   {
@@ -802,15 +800,15 @@ void CombustionKernels::prod_rates_sens_sparse(const double &temperature, const 
 #undef C_R
 #undef C_P
 
-    double t1exp;
-    double t2exp;
-    double t3exp;
-    double log10pr;
-    double log10fcent;
-    double logfcent;
-    double ln10;
-    double rho_baseeff;
-    double kp_over_kf;
+    double t1exp = 0;
+    double t2exp = 0;
+    double t3exp = 0;
+    double log10pr = 0;
+    double log10fcent = 0;
+    double logfcent = 0;
+    double ln10 = 0;
+    double rho_baseeff = 0;
+    double kp_over_kf = 0;
     switch (rxnData.type)
     {
     case RateType::SIMPLE:

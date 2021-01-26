@@ -79,7 +79,7 @@ void CombustionKernels::production_rates(const double &temperature, const double
     }
   }
 
-  double k;
+  double k = 0;
   double kr;
   double m;
   double pr;

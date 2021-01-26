@@ -198,13 +198,9 @@ void CombustionKernels::flamelet2d_factored_block_diag_jacobian(const double *st
       griffon::lapack::lu_factorize_with_copy(nq, jac, &out_pivots[ij], &out_factors[ijjac]);
     }
     const int ij_1 = ix * nyq;
-    const int im1j_1 = ij_1 - nyq;
-    const int ip1j_1 = ij_1 + nyq;
     const int ijac_1 = ix * nyqq;
     const int ijjac_1 = ijac_1;
     const int ij_2 = ix * nyq + (ny - 1) * nq;
-    const int im1j_2 = ij_2 - nyq;
-    const int ip1j_2 = ij_2 + nyq;
     const int ijac_2 = ix * nyqq;
     const int ijjac_2 = ijac_2 + (ny - 1) * nqq;
 
@@ -274,13 +270,9 @@ void CombustionKernels::flamelet2d_factored_block_diag_jacobian(const double *st
     const int ijac_1 = 0;
     const int ijjac_1 = ijac_1 + iy * nqq;
     const int ij_1 = iy * nq;
-    const int ijm1_1 = ij_1 - nq;
-    const int ijp1_1 = ij_1 + nq;
     const int ijac_2 = (nx - 1) * nyqq;
     const int ijjac_2 = ijac_2 + iy * nqq;
     const int ij_2 = (nx - 1) * nyq + iy * nq;
-    const int ijm1_2 = ij_2 - nq;
-    const int ijp1_2 = ij_2 + nq;
 
     {
       double rho, cp, cpsensT;
@@ -487,12 +479,10 @@ void CombustionKernels::flamelet2d_matvec(const double *vec, const int &nx, cons
     const int ijac_1 = 0;
     const int ijjac_1 = ijac_1 + iy * nqq;
     const int ij_1 = iy * nq;
-    const int ijm1_1 = ij_1 - nq;
     const int ijp1_1 = ij_1 + nq;
     const int ijac_2 = (nx - 1) * nyqq;
     const int ijjac_2 = ijac_2 + iy * nqq;
     const int ij_2 = (nx - 1) * nyq + iy * nq;
-    const int ijm1_2 = ij_2 - nq;
     const int ijp1_2 = ij_2 + nq;
 
     griffon::blas::matrix_vector_multiply(nq, &out_vec[ij_1], 1., &block_diag_values[ijjac_1], &vec[ij_1], 1.);
