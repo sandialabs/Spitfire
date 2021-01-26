@@ -51,19 +51,20 @@ class _CanteraWrapper(object):
 class ChemicalMechanismSpec(object):
     """A class that loads chemical mechanisms and mixes streams.
 
-    This class facilitates some simple way of specifying the fuel and oxidizer streams for flamelets
-    and of blending these streams to make mixtures for zero-dimensional simulations.
+        This class facilitates some simple way of specifying the fuel and oxidizer streams for flamelets
+        and of blending these streams to make mixtures for zero-dimensional simulations.
 
-    **Constructor**: specify a chemical mechanism file in cantera XML format
+        **Constructor**: specify a chemical mechanism file in cantera XML format
 
-    Parameters
-    ----------
-    cantera_xml : str
-        a cantera XML file describing the thermochemistry and (optionally) transport properties
-    group_name : str
-        the phase to use (e.g. a phase with transport properties vs without, if such a split exists in the XML file)
-    cantera_solution: ct.Solution
-        a ct.Solution object to use directly (optional, if specified the xml and group name are ignored if given)
+        Parameters
+        ----------
+        cantera_xml : str
+            a cantera XML file describing the thermochemistry and (optionally) transport properties
+        group_name : str
+            the phase to use (e.g. a phase with transport properties vs without, if such a split exists in the XML file)
+        cantera_solution: ct.Solution
+            a ct.Solution object to use directly (optional, if specified the xml and group name are ignored if given)
+
     """
 
     def __init__(self, cantera_xml=None, group_name=None, cantera_solution=None):
@@ -419,11 +420,7 @@ class ChemicalMechanismSpec(object):
         return array([self._cantera_wrapper.solution.molecular_weights[ni] for ni in range(self.n_species)])
 
     def molecular_weight(self, ni):
-        """
-        Obtain the molecular weight of a single species
-
-        :param ni: either the name or integer index of the species
-        :return: molecular weight of the given species
+        """Obtain the molecular weight of a single species from its string name or integer index
         """
         if isinstance(ni, str):
             return self._cantera_wrapper.solution.molecular_weights[self._cantera_wrapper.solution.species_index(ni)]
@@ -433,14 +430,22 @@ class ChemicalMechanismSpec(object):
             raise TypeError('ChemicalMechanismSpec.molecular_weight(ni) takes a string or integer, given ' + str(ni))
 
     def stream(self, properties=None, values=None, stp_air=False):
-        """
-        Build a mixture of species with certain properties
+        """Build a mixture of species with certain properties
 
-        :param properties: a string of keys used in building a cantera Quantity (e.g., 'TPX' or 'TP' or 'X', etc.)
-        :param values: the values of the properties
-        :param stp_air: special option to make a stream of air at standard temperature and pressure
+        Parameters
+        ----------
+        properties : str
+            a string of keys used in building a cantera Quantity (e.g., 'TPX' or 'TP' or 'X', etc.)
+        values : tuple
+            the values of the properties
+        stp_air : bool
+            special option to make a stream of air at standard temperature and pressure (default: False)
             This produces a stream of 3.74 mol N2 per mole O2 at 300 K and one atmosphere
-        :return: a cantera Quantity object with the specified properties
+        Returns
+        -------
+        mix : cantera.Quantity
+            a cantera Quantity object with the specified properties
+
         """
         q = ct.Quantity(self._cantera_wrapper.solution)
         if stp_air:
@@ -471,13 +476,21 @@ class ChemicalMechanismSpec(object):
 
     @staticmethod
     def mix_streams(streams, basis, constant='HP'):
-        """
-        Mix a number of streams by mass/mole and at constant HP, TP, UV, etc. (as supported by Cantera)
+        """Mix a number of streams by mass/mole and at constant HP, TP, UV, etc. (as supported by Cantera)
 
-        :param streams: a list of tuples as [(stream, amount)] where amount is the mass/moles (depending on the basis)
-        :param basis: whether amounts are masses or moles
-        :param constant: property pair held constant, such as HP, TP, UV - any combination supported by Cantera
-        :return: the requested mixture
+        Parameters
+        ----------
+        streams : list(tuple)
+            a list of tuples as [(stream, amount)] where amount is the mass/moles (depending on the basis)
+        basis : str
+            whether amounts are masses ('mass') or moles ('mole')
+        constant : str
+            property pair held constant, such as HP (default), TP, UV - any combination supported by Cantera
+        Returns
+        -------
+        mix : cantera.Quantity
+            the requested mixture
+
         """
         q_list = []
         for stream, amount in streams:
@@ -521,7 +534,7 @@ class ChemicalMechanismSpec(object):
             fuel_atoms['C'] = 0
             oxy_atoms['C'] = 0
         return -(oxy_atoms['O'] - 0.5 * oxy_atoms['H'] - 2.0 * oxy_atoms['C']) / (
-            fuel_atoms['O'] - 0.5 * fuel_atoms['H'] - 2.0 * fuel_atoms['C'])
+                fuel_atoms['O'] - 0.5 * fuel_atoms['H'] - 2.0 * fuel_atoms['C'])
 
     def stoich_mass_fuel_to_oxy_ratio(self, fuel_stream, oxy_stream):
         """Get the mass ratio of fuel to oxidizer at stoichiometric conditions.

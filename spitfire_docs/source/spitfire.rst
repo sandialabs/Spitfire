@@ -5,9 +5,9 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    spitfire.chemistry
-   spitfire.griffon
    spitfire.time
 
 Module contents

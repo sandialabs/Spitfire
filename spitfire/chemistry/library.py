@@ -104,6 +104,7 @@ class Library(object):
     ----------
     dimensions : argument list of Dimension instances and/or (name, values) tuples
         the dimensions that define the grid
+
     """
 
     def __init__(self, *dimensions):
@@ -170,10 +171,16 @@ class Library(object):
         This method of dumping data does not natively support reloading data from the text files,
         and is simply meant to provide data that is easy to load in other codes (e.g., C++, Fortran, or Matlab codes).
 
-        :param output_directory: where to save the files (a new directory will be made, removed with permission if already exists)
-        :param ravel_order: row-major ('C') or column-major ('F') flattening of multidimensional property arrays, default is 'F' for column-major,
+        Parameters
+        ----------
+        output_directory: str
+            where to save the files (a new directory will be made, and an existing one will be removed with permission)
+        ravel_order: str
+            row-major ('C') or column-major ('F') flattening of multidimensional property arrays, default is 'F' for column-major,
             which flattens the first dimension first, second dimension second, and so on
-        :param format: string format for numbers sent to NumPy savetxt function, default is '%.14e'
+        format: str
+            string format for numbers sent to NumPy savetxt function, default is '%.14e'
+
         """
         out_dir_exists = os.path.isdir(output_directory)
         proceed = input(
@@ -353,7 +360,7 @@ class Library(object):
         return f'\nSpitfire Library with {len(self.dims)} dimensions ' + \
                f'and {len(list(self._props.keys()))} properties\n' + \
                f'------------------------------------------\n' + \
-               f'\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
+               f'\n'.join([f'{i + 1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
                f'\n------------------------------------------\n' + \
                f'\n'.join([f'{k:20}, min = {np.min(self._props[k])} max = {np.max(self._props[k])}' for k in
                            self._props.keys()]) + \
@@ -362,7 +369,7 @@ class Library(object):
 
     def __repr__(self):
         return f'\nSpitfire Library(ndim={len(self.dims)}, nproperties={len(list(self._props.keys()))})\n' + \
-               '\n'.join([f'{i+1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
+               '\n'.join([f'{i + 1}. {str(d)}' for (i, d) in enumerate(self.dims)]) + \
                f'\nProperties: [{", ".join(list(self._props.keys()))}]' + \
                f'\nExtra attributes: {self.extra_attributes}'
 

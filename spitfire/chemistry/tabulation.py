@@ -48,12 +48,20 @@ def _write_library_footer(cput0, verbose):
 
 
 def build_unreacted_library(flamelet_specs, verbose=True):
-    """
-    Build a flamelet library with the unreacted state (linear enthalpy and mass fractions)
+    """Build a flamelet library with the unreacted state (linear enthalpy and mass fractions)
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param verbose: whether or not to show progress of the library construction
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    verbose : bool
+        whether or not to show progress of the library construction
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
 
     if isinstance(flamelet_specs, dict):
@@ -75,12 +83,20 @@ def build_unreacted_library(flamelet_specs, verbose=True):
 
 
 def build_adiabatic_eq_library(flamelet_specs, verbose=True):
-    """
-    Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption
+    """Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param verbose: whether or not to show progress of the library construction
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    verbose : bool
+        whether or not to show progress of the library construction
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
 
     if isinstance(flamelet_specs, dict):
@@ -102,12 +118,20 @@ def build_adiabatic_eq_library(flamelet_specs, verbose=True):
 
 
 def build_adiabatic_bs_library(flamelet_specs, verbose=True):
-    """
-    Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions
+    """Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param verbose: whether or not to show progress of the library construction
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    verbose : bool
+        whether or not to show progress of the library construction
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
 
     if isinstance(flamelet_specs, dict):
@@ -212,14 +236,23 @@ def _build_nonadiabatic_defect_unstrained_library(initialization,
 def build_nonadiabatic_defect_eq_library(flamelet_specs,
                                          n_defect_st=16,
                                          verbose=True):
-    """
-    Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption and with
+    """Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions and with
     heat loss effects with a presumed (triangular) form of the enthalpy defect.
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the table (default: 16)
-    :param verbose: whether or not to show progress of the library construction
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    n_defect_st : Int
+        the number of stoichiometric enthalpy defect values to include in the table (default: 16)
+    verbose : bool
+        whether or not to show progress of the library construction
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
     return _build_nonadiabatic_defect_unstrained_library('equilibrium',
                                                          flamelet_specs,
@@ -230,14 +263,23 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs,
 def build_nonadiabatic_defect_bs_library(flamelet_specs,
                                          n_defect_st=16,
                                          verbose=True):
-    """
-    Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions and with
+    """Build a flamelet library with the Burke-Schumann (idealized combustion) assumptions and with
     heat loss effects with a presumed (triangular) form of the enthalpy defect.
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the table (default: 16)
-    :param verbose: whether or not to show progress of the library construction
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    n_defect_st : Int
+        the number of stoichiometric enthalpy defect values to include in the table (default: 16)
+    verbose : bool
+        whether or not to show progress of the library construction
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
     return _build_nonadiabatic_defect_unstrained_library('Burke-Schumann',
                                                          flamelet_specs,
@@ -251,15 +293,25 @@ def build_adiabatic_slfm_library(flamelet_specs,
                                  verbose=True,
                                  solver_verbose=False,
                                  _return_intermediates=False):
-    """
-    Build a flamelet library with an adiabatic strained laminar flamelet model
+    """Build a flamelet library with an adiabatic strained laminar flamelet model
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param diss_rate_values: the np.array of reference dissipation rate values in the table (note that if the flamelet
-     extinguishes at any point, the extinguished flamelet and larger dissipation rates are not included in the library)
-    :param diss_rate_ref: the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
-    :param verbose: whether or not to show progress of the library construction
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    diss_rate_values : np.array
+        reference dissipation rate values in the table (note that if the flamelet extinguishes at any point,
+        the extinguished flamelet and larger dissipation rates are not included in the library)
+    diss_rate_ref : str
+        the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
+    verbose : bool
+        whether or not to show progress of the library construction
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
 
     if isinstance(flamelet_specs, dict):
@@ -731,23 +783,38 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                      integration_args=None,
                                                      n_defect_st=32,
                                                      extend_defect_dim=False):
-    """
-    Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
+    """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through rapid, transient extinction (as opposed to quasisteady heat loss)
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param diss_rate_values: the np.array of reference dissipation rate values in the table (note that if the flamelet
-     extinguishes at any point, the extinguished flamelet and larger dissipation rates are not included in the library)
-    :param diss_rate_ref: the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
-    :param verbose: whether or not to show progress of the library construction
-    :param solver_verbose: whether or not to show detailed progress of sub-solvers in generating the library
-    :param h_stoich_spacing: the stoichiometric enthalpy spacing used in subsampling the transient solution history
-     of each extinction solve
-    :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the library
-    :param integration_args: extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
-    :param num_procs: how many processors over which to distribute the parallel extinction solves
-    :param extend_defect_dim: whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    diss_rate_values : np.array
+        reference dissipation rate values in the table (note that if the flamelet extinguishes at any point,
+        the extinguished flamelet and larger dissipation rates are not included in the library)
+    diss_rate_ref : str
+        the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
+    verbose : bool
+        whether or not to show progress of the library construction
+    solver_verbose : bool
+        whether or not to show detailed progress of sub-solvers in generating the library
+    h_stoich_spacing : float
+        the stoichiometric enthalpy spacing used in subsampling the transient solution history of each extinction solve
+    n_defect_st : Int
+        the number of stoichiometric enthalpy defect values to include in the library
+    integration_args : kwargs
+        extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
+    num_procs : Int
+        how many processors over which to distribute the parallel extinction solves
+    extend_defect_dim : bool
+        whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
 
     return _build_nonadiabatic_defect_slfm_library(flamelet_specs,
@@ -773,23 +840,38 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
                                                   integration_args=None,
                                                   n_defect_st=32,
                                                   extend_defect_dim=False):
-    """
-    Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
+    """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through quasisteady extinction
 
-    :param flamelet_specs: dictionary or FlameletSpec instance with mech_spec, fuel_stream, oxy_stream, grid, ...
-    :param diss_rate_values: the np.array of reference dissipation rate values in the table (note that if the flamelet
-     extinguishes at any point, the extinguished flamelet and larger dissipation rates are not included in the library)
-    :param diss_rate_ref: the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
-    :param verbose: whether or not to show progress of the library construction
-    :param solver_verbose: whether or not to show detailed progress of sub-solvers in generating the library
-    :param h_stoich_spacing: the stoichiometric enthalpy spacing used in subsampling the transient solution history
-     of each extinction solve
-    :param n_defect_st: the number of stoichiometric enthalpy defect values to include in the library
-    :param integration_args: extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
-    :param num_procs: how many processors over which to distribute the parallel extinction solves
-    :param extend_defect_dim: whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
-    :return: the library instance
+    Parameters
+    ----------
+    flamelet_specs : dictionary or FlameletSpec instance
+        data for the mechanism, streams, mixture fraction grid, etc.
+    diss_rate_values : np.array
+        reference dissipation rate values in the table (note that if the flamelet extinguishes at any point,
+        the extinguished flamelet and larger dissipation rates are not included in the library)
+    diss_rate_ref : str
+        the reference point of the specified dissipation rate values, either 'stoichiometric' or 'maximum'
+    verbose : bool
+        whether or not to show progress of the library construction
+    solver_verbose : bool
+        whether or not to show detailed progress of sub-solvers in generating the library
+    h_stoich_spacing : float
+        the stoichiometric enthalpy spacing used in subsampling the transient solution history of each extinction solve
+    n_defect_st : Int
+        the number of stoichiometric enthalpy defect values to include in the library
+    integration_args : kwargs
+        extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
+    num_procs : Int
+        how many processors over which to distribute the parallel extinction solves
+    extend_defect_dim : bool
+        whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
+
+    Returns
+    -------
+    library : spitfire.chemistry.library.Library instance
+        the structured chemistry library
+
     """
 
     return _build_nonadiabatic_defect_slfm_library(flamelet_specs,

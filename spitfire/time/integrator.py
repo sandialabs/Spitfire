@@ -69,7 +69,7 @@ def _check_state_update(debug_verbose, state, dstate,
         _print_debug_mode(debug_verbose, 'check_state_update(): NaN or Inf detected')
         return False
     elif nonlinear_solve_converged is not None and (
-                not nonlinear_solve_converged and nonlinear_solve_must_converge):
+            not nonlinear_solve_converged and nonlinear_solve_must_converge):
         _print_debug_mode(debug_verbose, 'check_state_update(): required nonlinear solve failed to converge')
         return False
     elif custom_update_check is not None:
@@ -250,53 +250,97 @@ def odesolve(right_hand_side,
              show_solver_stats_in_situ=False,
              return_info=False,
              throw_on_failure=True):
-    """
-    Solve a time integration problem with a wide variety of solvers, termination options, etc.
+    """Solve a time integration problem with a wide variety of solvers, termination options, etc.
 
-    :param right_hand_side: the right-hand side of the ODE system, in the form f(t, y)
-    :param initial_state: the initial state vector
-    :param output_times: a collection of times at which the state will be returned
-    :param save_each_step: set to True to save all data at each time step, or set to a positive integer to specify a step frequency of saving data
-    :param initial_time: the initial time
-    :param stop_criteria: any data with a call operator (state, t, dt, nt, residual) that returns True to stop time integration
-    :param stop_at_time: force time integration to stop at exactly the provided final time
-    :param stop_at_steady: force time integration to stop when a steady state is identified, provide either a boolean or a float for the tolerance
-    :param minimum_time_step_count: minimum number of time steps that can be run (default: 0)
-    :param maximum_time_step_count: maximum number of time steps that can be run (default: Inf)
-    :param pre_step_callback: method of the form f(current_time, current_state, number_of_time_steps) called before each step (default: None)
-    :param post_step_callback: method of the form f(current_time, current_state, residual, number_of_time_steps) called after each step, that can optionally return a modified state vector (default: None)
-    :param step_update_callback: method of the form f(state, dstate, time_error, target_error, nonlinear_solve_converged) that checks validity of a state update (default: None)
-    :param method: the time stepping method (a spitfire.time.methods.TimeStepper object), defaults to KennedyCarpenterS6P4Q3(SimpleNewtonSolver())
-    :param step_size: the time step controller, either a float (for constant time step) or spitfire.time.stepcontrol class
-    :param linear_setup: the linear system setup method, in the form f(t, y, scale), to set up scale * J - M
-    :param linear_solve: the linear system solve method, in the form f(residual), to solve (scale * J - M)x = b
-    :param linear_setup_rate: the largest number of steps that can occur before setting up the linear projector (default: 1 (every step))
-    :param mass_setup: the setup method for the mass matrix/operator, in the form f(t, y), not supported yet, but hopefully soon...
-    :param mass_matvec: the matrix-vector product operator for the mass matrix, in the form f(x) to produce M.dot(x), not supported yet, but hopefully soon...
-    :param verbose: whether or not to continually write out the integrator status and some statistics, turn off for best performance (default: False)
-    :param debug_verbose: whether or not to write A LOT of information during integration, do not use in any normal situation (default: True)
-    :param log_rate: how frequently verbose output should be written, increase or turn off output for best performance (default: 1 = every step)
-    :param log_lines_per_header: how many log lines are written between rewriting the header (default: 10)
-    :param extra_logger_title_line1: the first line to place above the extra_logger_log text
-    :param extra_logger_title_line2: the second line to place above the extra_logger_log text
-    :param extra_logger_log: a method of form f(state, time, n_steps, number_nonlinear_iter, number_linear_iter) that adds to the log output
-    :param return_info: whether or not to return solver statistics (default: False)
-    :param norm_weighting: how the temporal error estimate is weighted in its norm calculation, can be a float or np.array (default: 1)
-    :param strict_temporal_error_control: whether or not to enforce that error-controlled adaptive time stepping keeps the error estimate below the target (default: False)
-    :param nonlinear_solve_must_converge: whether or not the nonlinear solver in each time step of implicit methods must converge (default: False)
-    :param warn_on_failed_step: whether or not to print a warning when a step fails (default: False)
-    :param return_on_failed_step: whether or not to return and stop integrating when a step fails (default: False)
-    :param time_step_reduction_factor_on_failure: factor used in reducing the step size after a step fails, if not returning on failure (default: 0.8)
-    :param time_step_reduction_factor_on_slow_solve: factor used in reducing the step size after a step is deemed slow by the nonlinear solver (default: 0.8)
-    :param time_step_increase_factor_to_force_jacobian: how much the time step size must increase on a time step to force setup of the projector (default: 1.05)
-    :param time_step_decrease_factor_to_force_jacobian: how much the time step size must decrease on a time step to force setup of the projector (default: 0.9)
-    :param show_solver_stats_in_situ: whether or not to include the number of nonlinear iterations per step, linear iterations per nonlinear iteration, number of time steps per Jacobian evaluation (projector setup) in the logged output (default: False)
-    :param return_info: whether or not to return a dictionary of solver statistics
-    :param throw_on_failure: whether or not to throw an exception on integrator/model failure (default: True)
-    :return this method returns a variety of options:
-        1. output_times is provided: returns an array of output states, and the solver stats dictionary if return_info is True
-        2. save_each_step is True (or a positive integer frequency): returns an array of times, and an array of output states, and the solver stats dictionary if return_info is True
-        3. else: returns an the final state vector, final time, and final time step, and the solver stats dictionary if return_info is True
+        Parameters
+        ----------
+        right_hand_side : callable f(t,q)->r
+            the right-hand side of the ODE system, in the form f(t, y)
+        initial_state : np.ndarray
+            the initial state vector
+        output_times : np.array
+            a collection of times at which the state will be returned
+        save_each_step : bool/Int
+        set to True to save all data at each time step, or set to a positive integer to specify a step frequency of saving data
+        initial_time : float
+            the initial time
+        stop_criteria : callable(q, t, dt, nt, res)->bool
+            any data with a call operator (state, t, dt, nt, residual) that returns True to stop time integration
+        stop_at_time : bool
+            force time integration to stop at exactly the provided final time
+        stop_at_steady : bool
+            force time integration to stop when a steady state is identified, provide either a boolean or a float for the tolerance
+        minimum_time_step_count : Int
+            minimum number of time steps that can be run (default: 0)
+        maximum_time_step_count : Int
+            maximum number of time steps that can be run (default: Inf)
+        pre_step_callback : callable f(t,q,nt)
+            method of the form f(current_time, current_state, number_of_time_steps) called before each step (default: None)
+        post_step_callback : callable f(t,q,r,nt)
+            method of the form f(current_time, current_state, residual, number_of_time_steps) called after each step, that can optionally return a modified state vector (default: None)
+        step_update_callback : callable f(q,dq,e,te,nsc)
+            method of the form f(state, dstate, time_error, target_error, nonlinear_solve_converged) that checks validity of a state update (default: None)
+        method : spitfire.time.methods.TimeStepper instance
+            the time stepper method, defaults to KennedyCarpenterS6P4Q3(SimpleNewtonSolver())
+        step_size : float/spitfire.time.stepcontrol
+            the time step controller, either a float (for constant time step) or spitfire.time.stepcontrol class
+        linear_setup : callable f(t,y,scale)
+            the linear system setup method, in the form f(t, y, scale), to set up a (scale * J - M) operator
+        linear_solve : callable f(res)->sol
+            the linear system solve method, in the form f(residual), to solve (scale * J - M)x = b
+        linear_setup_rate : Int
+            the largest number of steps that can occur before setting up the linear projector (default: 1 (every step))
+        mass_setup : callable f(t,y)
+            the setup method for the mass matrix/operator, in the form f(t, y), not supported yet, but hopefully soon...
+        mass_matvec : callabele f(x)->b
+            the matrix-vector product operator for the mass matrix, in the form f(x) to produce M.dot(x), not supported yet, but hopefully soon...
+        verbose : bool
+            whether or not to continually write out the integrator status and some statistics, turn off for best performance (default: False)
+        debug_verbose : bool
+            whether or not to write A LOT of information during integration, do not use in any normal situation (default: True)
+        log_rate : Int
+            how frequently verbose output should be written, increase or turn off output for best performance (default: 1 = every step)
+        log_lines_per_header : Int
+            how many log lines are written between rewriting the header (default: 10)
+        extra_logger_title_line1 : str
+            the first line to place above the extra_logger_log text
+        extra_logger_title_line2 : str
+            the second line to place above the extra_logger_log text
+        extra_logger_log : callable f(q,t,nt,nni,nli)
+            a method of form f(state, time, n_steps, number_nonlinear_iter, number_linear_iter) that adds to the log output
+        return_info : bool
+            whether or not to return solver statistics (default: False)
+        norm_weighting : float/np.ndarray
+            how the temporal error estimate is weighted in its norm calculation, can be a float or np.array (default: 1)
+        strict_temporal_error_control : bool
+            whether or not to enforce that error-controlled adaptive time stepping keeps the error estimate below the target (default: False)
+        nonlinear_solve_must_converge : bool
+            whether or not the nonlinear solver in each time step of implicit methods must converge (default: False)
+        warn_on_failed_step : bool
+            whether or not to print a warning when a step fails (default: False)
+        return_on_failed_step : bool
+            whether or not to return and stop integrating when a step fails (default: False)
+        time_step_reduction_factor_on_failure : float
+            factor used in reducing the step size after a step fails, if not returning on failure (default: 0.8)
+        time_step_reduction_factor_on_slow_solve : float
+            factor used in reducing the step size after a step is deemed slow by the nonlinear solver (default: 0.8)
+        time_step_increase_factor_to_force_jacobian : float
+            how much the time step size must increase on a time step to force setup of the projector (default: 1.05)
+        time_step_decrease_factor_to_force_jacobian : float
+            how much the time step size must decrease on a time step to force setup of the projector (default: 0.9)
+        show_solver_stats_in_situ : bool
+            whether or not to include the number of nonlinear iterations per step, linear iterations per nonlinear iteration, number of time steps per Jacobian evaluation (projector setup) in the logged output (default: False)
+        return_info : bool
+            whether or not to return a dictionary of solver statistics
+        throw_on_failure : bool
+            whether or not to throw an exception on integrator/model failure (default: True)
+
+        Returns
+        -------
+            Depending on the inputs:
+            1. output_times is provided: returns an array of output states, and the solver stats dictionary if return_info is True
+            2. save_each_step is True (or a positive integer frequency): returns an array of times, and an array of output states, and the solver stats dictionary if return_info is True
+            3. else: returns an the final state vector, final time, and final time step, and the solver stats dictionary if return_info is True
     """
 
     if not isinstance(initial_state, np.ndarray):

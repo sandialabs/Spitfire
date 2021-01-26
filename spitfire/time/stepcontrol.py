@@ -188,7 +188,7 @@ class CascadeController(object):
             mod = min([self._max_ramp,
                        (self._target_error / error) ** self._ki * (self._err_history[-1] / error) ** self._kp])
             err_mod = min([self._max_ramp, (self._target_ratio / ratio) ** self._ratio_ki * (
-                self._ratio_history[-1] / ratio) ** self._ratio_kp])
+                    self._ratio_history[-1] / ratio) ** self._ratio_kp])
         self._target_error *= err_mod
         return min([step * mod, self._max_step])
 

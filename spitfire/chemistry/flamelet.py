@@ -241,6 +241,7 @@ class Flamelet(object):
         especially for mechanisms of more than 300 species.
     sensitivity_transform_type : str
         how the Jacobian is transformed, currently only 'exact' is supported
+
     """
 
     _heat_transfers = ['adiabatic', 'nonadiabatic']
@@ -305,7 +306,7 @@ class Flamelet(object):
         z = np.linspace(0., 1., grid_points)
         zo = 1.0 / (2.0 * grid_cluster_intensity) * np.log(
             (1. + (np.exp(grid_cluster_intensity) - 1.) * grid_cluster_point) / (
-                1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
+                    1. + (np.exp(-grid_cluster_intensity) - 1.) * grid_cluster_point))
         a = np.sinh(grid_cluster_intensity * zo)
         for i in range(grid_points):
             z[i] = grid_cluster_point / a * (np.sinh(grid_cluster_intensity * (z[i] - zo)) + a)
@@ -1070,51 +1071,52 @@ class Flamelet(object):
                   save_first_and_last_only=False):
         """Base method for flamelet integration
 
-        Parameters
-        ----------
-        stop_at_time : float
-            The final time to stop the simulation at
-        stop_at_steady : float
-            The tolerance at which a steady state is decided upon and stopped at
-        stop_criteria : callable (t, state, residual, n_steps)
-            Any callable that returns True when the simulation should stop
-        first_time_step : float
-            The time step size initially used by the time integrator
-        max_time_step : float
-            The maximum time step allowed by the integrator
-        minimum_time_step_count : int
-            The minimum number of time steps to run, (default: 40) (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        nonlinear_solve_tolerance : float
-            tolerance for the nonlinear solver
-        linear_solver : str
-            which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
-        stepper_type : spitfire.time.TimeStepper
-            which (single step) stepper method to use (optional, default: ESDIRK64)
-        nlsolver_type : spitfire.time.NonlinearSolver
-            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
-        stepcontrol_type : spitfire.time.StepControl
-            which time step adaptation method to use (optional, default: PIController)
-        extra_integrator_args : dict
-            any extra arguments to specify to the time integrator - arguments passed to the odesolve method
-        extra_stepper_args : dict
-            extra arguments to specify on the spitfire.time.TimeStepper object
-        extra_nlsolver_args : dict
-            extra arguments to specify on the spitfire.time.NonlinearSolver object
-        extra_stepcontrol_args : dict
-            extra arguments to specify on the spitfire.time.StepControl object
-        save_first_and_last_only : bool
-            whether or not to retain all data (False, default) or only the first and last solutions
-        Returns
-        -------
-            a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
+            Parameters
+            ----------
+            stop_at_time : float
+                The final time to stop the simulation at
+            stop_at_steady : float
+                The tolerance at which a steady state is decided upon and stopped at
+            stop_criteria : callable (t, state, residual, n_steps)
+                Any callable that returns True when the simulation should stop
+            first_time_step : float
+                The time step size initially used by the time integrator
+            max_time_step : float
+                The maximum time step allowed by the integrator
+            minimum_time_step_count : int
+                The minimum number of time steps to run, (default: 40) (helpful for slowly evolving simulations, for instance those with low starting temperatures)
+            transient_tolerance : float
+                the target temporal error for transient integration
+            write_log : bool
+                whether or not to print integration statistics and status during the simulation
+            log_rate : int
+                how often to print log information
+            maximum_steps_per_jacobian : int
+                maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
+            nonlinear_solve_tolerance : float
+                tolerance for the nonlinear solver
+            linear_solver : str
+                which linear solver to use - only 'block thomas' (default, heavily recommended) or 'superlu' are supported
+            stepper_type : spitfire.time.TimeStepper
+                which (single step) stepper method to use (optional, default: ESDIRK64)
+            nlsolver_type : spitfire.time.NonlinearSolver
+                which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+            stepcontrol_type : spitfire.time.StepControl
+                which time step adaptation method to use (optional, default: PIController)
+            extra_integrator_args : dict
+                any extra arguments to specify to the time integrator - arguments passed to the odesolve method
+            extra_stepper_args : dict
+                extra arguments to specify on the spitfire.time.TimeStepper object
+            extra_nlsolver_args : dict
+                extra arguments to specify on the spitfire.time.NonlinearSolver object
+            extra_stepcontrol_args : dict
+                extra arguments to specify on the spitfire.time.StepControl object
+            save_first_and_last_only : bool
+                whether or not to retain all data (False, default) or only the first and last solutions
+
+            Returns
+            -------
+                a library containing temperature, mass fractions, and pressure over time and mixture fraction, respectively
         """
 
         def post_step_callback(t, state, *args):
@@ -1214,24 +1216,24 @@ class Flamelet(object):
     def integrate_to_steady(self, steady_tolerance=1.e-4, **kwargs):
         """Integrate a flamelet until steady state is reached
 
-        Parameters
-        ----------
-        steady_tolerance : float
-            residual tolerance below which steady state is defined
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
+            Parameters
+            ----------
+            steady_tolerance : float
+                residual tolerance below which steady state is defined
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
         """
         return self.integrate(stop_at_steady=steady_tolerance, **kwargs)
 
     def integrate_to_time(self, final_time, **kwargs):
         """Integrate a flamelet until it reaches a specified simulation time
 
-        Parameters
-        ----------
-        final_time : float
-            time at which integration stops
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
+            Parameters
+            ----------
+            final_time : float
+                time at which integration stops
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
         """
         return self.integrate(stop_at_time=final_time, **kwargs)
 
@@ -1242,14 +1244,14 @@ class Flamelet(object):
         """Integrate a flamelet until steady state is reached after ignition (based on temperature) has occurred.
             This is helpful in slowly-evolving systems whose initial residual may be lower than the prescribed tolerance.
 
-        Parameters
-        ----------
-        steady_tolerance : float
-            residual tolerance below which steady state is defined
-        delta_temperature_ignition : float
-            how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
+            Parameters
+            ----------
+            steady_tolerance : float
+                residual tolerance below which steady state is defined
+            delta_temperature_ignition : float
+                how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
         """
 
         def stop_at_steady_after_ignition(t, state, residual, *args, **kwargs):
@@ -1266,14 +1268,14 @@ class Flamelet(object):
             which may simply indicate that the heat transfer settings were insufficient to
             drive the temperature to a linear enough profile.
 
-        Parameters
-        ----------
-        temperature_tolerance : float
-            tolerance for termination, where max(T) <= (1 + tolerance) max(T_oxy, T_fuel)
-        steady_tolerance : float
-            residual tolerance below which steady state is defined
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
+            Parameters
+            ----------
+            temperature_tolerance : float
+                tolerance for termination, where max(T) <= (1 + tolerance) max(T_oxy, T_fuel)
+            steady_tolerance : float
+                residual tolerance below which steady state is defined
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
         """
 
         def stop_at_linear_temperature_or_steady(t, state, residual, *args, **kwargs):
@@ -1291,16 +1293,16 @@ class Flamelet(object):
                                **kwargs):
         """Integrate in time until ignition (exceeding a specified threshold of the increase in temperature)
 
-        Parameters
-        ----------
-        delta_temperature_ignition : float
-            how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-        minimum_allowable_residual : float
-            how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
-        return_solution : bool
-            whether or not to return the solution trajectory in addition to the ignition delay, as a tuple, (t, library)
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
+            Parameters
+            ----------
+            delta_temperature_ignition : float
+                how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
+            minimum_allowable_residual : float
+                how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
+            return_solution : bool
+                whether or not to return the solution trajectory in addition to the ignition delay, as a tuple, (t, library)
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
         """
 
         def stop_at_ignition(t, state, residual, *args, **kwargs):
@@ -1361,31 +1363,32 @@ class Flamelet(object):
         """Use Newton's method to solve for the steady state of this flamelet.
             Note that Newton's method is unlikely to converge unless an accurate initial guess is given.
 
-        Parameters
-        ----------
-        initial_guess : np.ndarray
-            the initial guess - obtain this from a Flamelet
-        tolerance : float
-            residual tolerance below which the solution has converged
-        max_iterations : int
-            maximum number of iterations before failure is detected
-        max_factor_line_search : float
-            the maximum factor by which the residual is allowed to increase in the line search algorithm
-        max_allowed_residual : float
-            the maximum allowable value of the residual
-        min_allowable_state_var : float
-            the lowest value (negative or zero) that a state variable can take during the solution process
-        norm_order : int or np.Inf
-            the order of the norm used in measuring the residual
-        log_rate : int
-            how often a message about the solution status is written
-        verbose : bool
-            whether to write out the solver status (log messages) or write out failure descriptions
-        Returns
-        -------
-            a tuple of a library containing temperature, mass fractions, and pressure over mixture fraction,
-            and the required iteration count, and whether or not the system converged,
-            although if convergence is not obtained, then the library and iteration count output will both be None
+            Parameters
+            ----------
+            initial_guess : np.ndarray
+                the initial guess - obtain this from a Flamelet
+            tolerance : float
+                residual tolerance below which the solution has converged
+            max_iterations : int
+                maximum number of iterations before failure is detected
+            max_factor_line_search : float
+                the maximum factor by which the residual is allowed to increase in the line search algorithm
+            max_allowed_residual : float
+                the maximum allowable value of the residual
+            min_allowable_state_var : float
+                the lowest value (negative or zero) that a state variable can take during the solution process
+            norm_order : int or np.Inf
+                the order of the norm used in measuring the residual
+            log_rate : int
+                how often a message about the solution status is written
+            verbose : bool
+                whether to write out the solver status (log messages) or write out failure descriptions
+
+            Returns
+            -------
+                a tuple of a library containing temperature, mass fractions, and pressure over mixture fraction,
+                and the required iteration count, and whether or not the system converged,
+                although if convergence is not obtained, then the library and iteration count output will both be None
         """
 
         def verbose_print(message):
@@ -1504,49 +1507,51 @@ class Flamelet(object):
                            verbose=True):
         """Use an adaptive pseudotransient continuation method to compute the steady state of this flamelet
 
-        Parameters
-        ----------
-        initial_guess : np.ndarray
-            the initial guess - obtain this from a Flamelet
-        tolerance : float
-            residual tolerance below which the solution has converged
-        max_iterations : int
-            maximum number of iterations before failure is detected
-        max_factor_line_search : float
-            the maximum factor by which the residual is allowed to increase in the line search algorithm
-        max_allowed_residual : float
-            the maximum allowable value of the residual
-        min_allowable_state_var : float
-            the lowest value (negative or zero) that a state variable can take during the solution process
-        ds_init : float
-            the initial pseudo time step (default: 1.), decrease to 1e-1 or 1e-2 for more robustness
-        ds_init_decrease : float
-            how the initial dual time step is decreased upon failure if adaptive_restart is used (default: 4)
-        adaptive_restart : bool
-            whether or not the solver restarts with decreased ds_init upon failure (default: True)
-        diffusion_factor : float
-            how strongly diffusion is weighted in the pseudo time step adaptation (default: 4) (expert parameter)
-        global_ds : bool
-            whether or not to use a global pseudo time step (default: False) (setting to True not recommended)
-        ds_safety : float
-            the 'safety factor' in the pseudo time step adaptation (default: 0.1), increase for speed, decrease for robustness
-        ds_ramp : float
-            how quickly the pseudo time step is allowed to increase (default: 1.1), increase for speed, decrease for robustness
-        ds_max : flaot
-            maximum allowable value of the pseudo time step (default: 1.e4)
-        max_recursion_depth : int
-            how many adaptive restarts may be attempted
-        norm_order : int or np.Inf
-            the order of the norm used in measuring the residual
-        log_rate : int
-            how often a message about the solution status is written
-        verbose : bool
-            whether to write out the solver status (log messages) or write out failure descriptions
-        Returns
-        -------
-            a tuple of a library containing temperature, mass fractions, and pressure over mixture fraction,
-            and the required iteration count, whether or not the system converged, and the final minimum dual time step value,
-            although if convergence is not obtained, then the library and iteration count output will both be None
+            Parameters
+            ----------
+            initial_guess : np.ndarray
+                the initial guess - obtain this from a Flamelet
+            tolerance : float
+                residual tolerance below which the solution has converged
+            max_iterations : int
+                maximum number of iterations before failure is detected
+            max_factor_line_search : float
+                the maximum factor by which the residual is allowed to increase in the line search algorithm
+            max_allowed_residual : float
+                the maximum allowable value of the residual
+            min_allowable_state_var : float
+                the lowest value (negative or zero) that a state variable can take during the solution process
+            ds_init : float
+                the initial pseudo time step (default: 1.), decrease to 1e-1 or 1e-2 for more robustness
+            ds_init_decrease : float
+                how the initial dual time step is decreased upon failure if adaptive_restart is used (default: 4)
+            adaptive_restart : bool
+                whether or not the solver restarts with decreased ds_init upon failure (default: True)
+            diffusion_factor : float
+                how strongly diffusion is weighted in the pseudo time step adaptation (default: 4) (expert parameter)
+            global_ds : bool
+                whether or not to use a global pseudo time step (default: False) (setting to True not recommended)
+            ds_safety : float
+                the 'safety factor' in the pseudo time step adaptation (default: 0.1), increase for speed, decrease for robustness
+            ds_ramp : float
+                how quickly the pseudo time step is allowed to increase (default: 1.1), increase for speed, decrease for robustness
+            ds_max : flaot
+                maximum allowable value of the pseudo time step (default: 1.e4)
+            max_recursion_depth : int
+                how many adaptive restarts may be attempted
+            norm_order : int or np.Inf
+                the order of the norm used in measuring the residual
+            log_rate : int
+                how often a message about the solution status is written
+            verbose : bool
+                whether to write out the solver status (log messages) or write out failure descriptions
+
+            Returns
+            -------
+                a tuple of a library containing temperature, mass fractions, and pressure over mixture fraction,
+                and the required iteration count, whether or not the system converged, and the final minimum dual time step value,
+                although if convergence is not obtained, then the library and iteration count output will both be None
+
         """
         original_args = locals()
         del original_args['self']
@@ -1727,10 +1732,12 @@ class Flamelet(object):
         psitc_args : dict
             extra arguments such as max_iterations to pass to the PsiTC solver
         transient_args : dict
-            extra arguments such as max_iterations to pass to the ESDIRK solver
+            extra arguments such as max_iterations to pass to the ESDI RK solver
+
         Returns
         -------
             a library containing temperature, mass fractions, and pressure over mixture fraction
+
         """
 
         the_newton_args = {'tolerance': tolerance, 'log_rate': 1, 'verbose': verbose, 'max_iterations': 38}

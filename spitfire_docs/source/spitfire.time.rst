@@ -4,12 +4,38 @@ spitfire.time package
 Submodules
 ----------
 
-.. toctree::
+spitfire.time.integrator module
+-------------------------------
 
-   spitfire.time.governor
-   spitfire.time.methods
-   spitfire.time.nonlinear
-   spitfire.time.stepcontrol
+.. automodule:: spitfire.time.integrator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+spitfire.time.methods module
+----------------------------
+
+.. automodule:: spitfire.time.methods
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+spitfire.time.nonlinear module
+------------------------------
+
+.. automodule:: spitfire.time.nonlinear
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+spitfire.time.stepcontrol module
+--------------------------------
+
+.. automodule:: spitfire.time.stepcontrol
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

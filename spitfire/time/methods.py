@@ -55,6 +55,7 @@ class TimeStepperBase:
         the nonlinear solver used by an implicit method at each time step
     implicit_coefficient : list[float]
         the coefficient in the implicit method that pre-multiplies the Jacobian matrix in the linear system
+
     """
     __slots__ = ['name',
                  'order',
@@ -104,6 +105,7 @@ class StepOutput:
         the number of times the linear system was set up (e.g. Jacobian evaluation-factorization)
     extra_errors : list[float]
         a list of additional embedded temporal error estimates - for adaptive time stepping through new ratio control
+
     """
     __slots__ = ['solution_update',
                  'temporal_error',
@@ -155,6 +157,7 @@ class ExpTrapezoidalS2P2Q1(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, norm_weighting=1., norm_order=Inf):
@@ -188,6 +191,7 @@ class BogackiShampineS4P3Q2(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, norm_weighting=1., norm_order=Inf):
@@ -226,6 +230,7 @@ class CashKarpS6P5Q4(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, norm_weighting=1., norm_order=Inf):
@@ -259,6 +264,7 @@ class ZonneveldS5P4Q3(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, norm_weighting=1., norm_order=Inf):
@@ -290,6 +296,7 @@ class ExpKennedyCarpetnerS6P4Q3(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, norm_weighting=1., norm_order=Inf):
@@ -341,6 +348,7 @@ class BackwardEulerS1P1Q1(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
@@ -398,6 +406,7 @@ class CrankNicolsonS2P2(TimeStepperBase):
     ----------
     nonlinear_solver : spitfire.time.nonlinear.NonlinearSolver
         the solver used in each implicit stage
+
     """
 
     def __init__(self, nonlinear_solver):
@@ -441,6 +450,7 @@ class KennedyCarpenterS6P4Q3(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43', 'a51', 'a52', 'a53', 'a54',
                  'a61', 'a62', 'a63', 'a64', 'a65',
@@ -490,15 +500,6 @@ class KennedyCarpenterS6P4Q3(TimeStepperBase):
         self.c = sum(self.A, axis=1)
 
     def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
-        """
-        Take a single step with this stepper method
-
-        :param state: the current state
-        :param t: the current time
-        :param dt: the size of the time step
-        :param rhs: the right-hand side of the ODE in the form f(t, y)
-        :return: a StepOutput object
-        """
         nonlinear_iter = 0
         linear_iter = 0
         nonlinear_converged = True
@@ -623,6 +624,7 @@ class KvaernoS4P3Q2(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43',
                  'b1', 'b2', 'b3', 'b4',
@@ -656,15 +658,6 @@ class KvaernoS4P3Q2(TimeStepperBase):
         self.c = sum(self.A, axis=1)
 
     def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
-        """
-        Take a single step with this stepper method
-
-        :param state: the current state
-        :param t: the current time
-        :param dt: the size of the time step
-        :param rhs: the right-hand side of the ODE in the form f(t, y)
-        :return: a StepOutput object
-        """
         nonlinear_iter = 0
         linear_iter = 0
         nonlinear_converged = True
@@ -758,6 +751,7 @@ class KennedyCarpenterS4P3Q2(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43',
                  'b1', 'b2', 'b3', 'b4',
@@ -792,15 +786,6 @@ class KennedyCarpenterS4P3Q2(TimeStepperBase):
         self.c = sum(self.A, axis=1)
 
     def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
-        """
-        Take a single step with this stepper method
-
-        :param state: the current state
-        :param t: the current time
-        :param dt: the size of the time step
-        :param rhs: the right-hand side of the ODE in the form f(t, y)
-        :return: a StepOutput object
-        """
         nonlinear_iter = 0
         linear_iter = 0
         nonlinear_converged = True
@@ -894,6 +879,7 @@ class KennedyCarpenterS8P5Q4(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43', 'a51', 'a52', 'a53', 'a54',
                  'a61', 'a62', 'a63', 'a64', 'a65',
@@ -964,15 +950,6 @@ class KennedyCarpenterS8P5Q4(TimeStepperBase):
         self.c = sum(self.A, axis=1)
 
     def single_step(self, state, t, dt, rhs, lhs_setup, lhs_solve, *args, **kwargs):
-        """
-        Take a single step with this stepper method
-
-        :param state: the current state
-        :param t: the current time
-        :param dt: the size of the time step
-        :param rhs: the right-hand side of the ODE in the form f(t, y)
-        :return: a StepOutput object
-        """
         nonlinear_iter = 0
         linear_iter = 0
         nonlinear_converged = True
@@ -1140,6 +1117,7 @@ class GeneralAdaptiveERK(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, name, order, A, b, bhat=None, norm_weighting=1., norm_order=Inf):
@@ -1203,6 +1181,7 @@ class GeneralAdaptiveERKMultipleEmbedded(TimeStepperBase):
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
     norm_order : int or np.Inf
         order of the norm of the error estimate (default: np.Inf)
+
     """
 
     def __init__(self, name, order, A, b, bhats, norm_weighting=1., norm_order=Inf):

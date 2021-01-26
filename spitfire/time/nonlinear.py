@@ -21,12 +21,23 @@ def finite_difference_jacobian(residual_func, residual_value, state, offset_rel=
     """
     Compute a simple one-sided finite difference approximation to the Jacobian of a residual function.
 
-    :param residual_func: residual function of the state vector, r(q)
-    :param residual_value: value of the residual function at the specified state vector
-    :param state: the state vector
-    :param offset_rel: the relative contribution to the finite difference delta (optional, default: 1e-5)
-    :param offset_abs: the absolute contribution to the finite difference delta (optional, default: 1e-8)
-    :return: np.ndarray of the approximate Jacobian matrix
+    Parameters
+    ----------
+    residual_func : callable f(q)->r
+        residual function of the state vector, r(q)
+    residual_value : np.array
+        value of the residual function at the specified state vector
+    state : np.array
+        the state vector
+    offset_rel : float
+        the relative contribution to the finite difference delta (optional, default: 1e-5)
+    offset_abs : float
+        the absolute contribution to the finite difference delta (optional, default: 1e-8)
+    Returns
+    -------
+    j : np.ndarray
+        the approximate Jacobian matrix
+
     """
     neq = state.size
     j = np.ndarray((neq, neq))
@@ -59,6 +70,7 @@ class SolverOutput(object):
         the number of times the linear projector was set up (e.g. Jacobian evaluation-factorization)
     rhs_at_converged : np.ndarray
         the right-hand side of the ODE system at the converged solution
+
     """
 
     __slots__ = ['solution',
@@ -97,6 +109,7 @@ class NonlinearSolver(object):
         a function of the solution that executes custom checks for solution validity (default: None)
     setup_projector_in_governor : bool
         whether or not the linear projector is set up outside of the solver (default: True)
+
     """
 
     defaults = {'max_nonlinear_iter': 20,
@@ -152,6 +165,7 @@ class SimpleNewtonSolver(NonlinearSolver):
         a function of the solution that executes custom checks for solution validity (default: None)
     setup_projector_in_governor : bool
         whether or not the linear projector is set up outside of the solver (default: True)
+
     """
 
     def __init__(self, evaluate_jacobian_every_iter=False, *args, **kwargs):
@@ -177,14 +191,25 @@ class SimpleNewtonSolver(NonlinearSolver):
         """
         Solve a nonlinear problem and return the result.
 
-        :param residual_method: residual function of the solution that returns both the residual and right-hand side of an ODE,
+        Parameters
+        ----------
+        residual_method : callable f(x)->(res,rhs)
+            residual function of the solution that returns both the residual and right-hand side of an ODE,
             to use this on a non-ODE problem simply have your residual method return as residual, None
-        :param setup_method: setup function of the solution for the linear projector (e.g. Jacobian eval and factorize)
-        :param solve_method: linear projector solver function of a residual alone,
+        setup_method : callable f(x)
+            setup function of the solution for the linear projector (e.g. Jacobian eval and factorize)
+        solve_method : callabe f(x)->b
+            linear projector solver function of a residual alone,
             which returns the state update, linear solver iterations, and whether or not the linear solver converged
-        :param initial_guess: initial guess for the solution
-        :param initial_rhs: ODE right-hand side for the problem at the initial guess (to avoid re-evaluating)
-        :return: solution to the nonlinear problem
+        initial_guess : np.array
+            initial guess for the solution
+        initial_rhs : np.array
+            ODE right-hand side for the problem at the initial guess (to avoid re-evaluation)
+        Returns
+        -------
+        sol : np.array
+            solution to the nonlinear problem
+
         """
 
         solution = numpy_copy(initial_guess)

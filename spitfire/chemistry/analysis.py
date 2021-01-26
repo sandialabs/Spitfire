@@ -20,12 +20,22 @@ from scipy.linalg import eig, eigvals
 
 
 def get_ct_solution_array(mechanism, library):
-    """
-    Obtain a Cantera SolutionArray object representative of an arbitrary library
-    :param mechanism: a spitfire.chemistry.mechanism ChemicalMechanismSpec instance
-    :param library: a spitfire.chemistry.library Library instance with T, Y, and either density or pressure (pressure is used if both are present)
-    :return: (solution_array, lib_shape) the SolutionArray instance and the shape of the library to reshape(lib_shape) resultant SolutionArray calculations for reinsertion into the library
-    """
+    """Obtain a Cantera SolutionArray object representative of an arbitrary library
+
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+
+        Returns
+        -------
+        solution_array : cantera.SolutionArray instance
+            a SolutionArray filled with the library data
+        library_shape : tuple
+            shape of the original library
+        """
 
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to get_ct_solution_array() must be a ChemicalMechanismSpec')
@@ -56,11 +66,19 @@ def get_ct_solution_array(mechanism, library):
 
 
 def compute_specific_enthalpy(mechanism, output_library):
-    """
-    Add the total specific enthalpy to a library (Cantera "enthalpy_mass"), named 'enthalpy'
-    :param mechanism: a ChemicalMechanismSpec instance
-    :param output_library: a Library object with temperature, mass fractions, and density or pressure
-    :return: the library with the computed quantity added in
+    """Add the total specific enthalpy to a library (Cantera "enthalpy_mass"), named 'enthalpy'
+
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        output_library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+
+        Returns
+        -------
+        output_library : cantera.SolutionArray instance
+            the library with the 'enthalpy' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
@@ -72,11 +90,19 @@ def compute_specific_enthalpy(mechanism, output_library):
 
 
 def compute_density(mechanism, output_library):
-    """
-    Add the total mass density to a library (Cantera "density"), named 'density'
-    :param mechanism: a ChemicalMechanismSpec instance
-    :param output_library: a Library object with temperature, mass fractions, and density or pressure
-    :return: the library with the computed quantity added in
+    """Add the total mass density to a library (Cantera "density"), named 'density'
+
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        output_library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+
+        Returns
+        -------
+        output_library : cantera.SolutionArray instance
+            the library with the 'density' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
@@ -88,11 +114,19 @@ def compute_density(mechanism, output_library):
 
 
 def compute_pressure(mechanism, output_library):
-    """
-    Add the pressure to a library (Cantera "P"), named 'pressure'
-    :param mechanism: a ChemicalMechanismSpec instance
-    :param output_library: a Library object with temperature, mass fractions, and density or pressure
-    :return: the library with the computed quantity added in
+    """Add the pressure to a library (Cantera "P"), named 'pressure'
+
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        output_library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+
+        Returns
+        -------
+        output_library : cantera.SolutionArray instance
+            the library with the 'pressure' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
@@ -104,11 +138,19 @@ def compute_pressure(mechanism, output_library):
 
 
 def compute_viscosity(mechanism, output_library):
-    """
-    Add the dynamic viscosity to a library (Cantera "viscosity"), named 'viscosity'
-    :param mechanism: a ChemicalMechanismSpec instance
-    :param output_library: a Library object with temperature, mass fractions, and density or pressure
-    :return: the library with the computed quantity added in
+    """Add the dynamic viscosity to a library (Cantera "viscosity"), named 'viscosity'
+
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        output_library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+
+        Returns
+        -------
+        output_library : cantera.SolutionArray instance
+            the library with the 'viscosity' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
@@ -120,11 +162,19 @@ def compute_viscosity(mechanism, output_library):
 
 
 def compute_isobaric_specific_heat(mechanism, output_library):
-    """
-    Add the constant-pressure specific heat capacity to a library (Cantera "cp_mass"), named 'heat capacity cp'
-    :param mechanism: a ChemicalMechanismSpec instance
-    :param output_library: a Library object with temperature, mass fractions, and density or pressure
-    :return: the library with the computed quantity added in
+    """Add the constant-pressure specific heat capacity to a library (Cantera "cp_mass"), named 'heat capacity cp'
+
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        output_library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+
+        Returns
+        -------
+        output_library : cantera.SolutionArray instance
+            the library with the 'heat capacity cp' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
@@ -136,11 +186,19 @@ def compute_isobaric_specific_heat(mechanism, output_library):
 
 
 def compute_isochoric_specific_heat(mechanism, output_library):
-    """
-    Add the constant-volume specific heat capacity to a library (Cantera "cv_mass"), named 'heat capacity cv'
-    :param mechanism: a ChemicalMechanismSpec instance
-    :param output_library: a Library object with temperature, mass fractions, and density or pressure
-    :return: the library with the computed quantity added in
+    """Add the constant-volume specific heat capacity to a library (Cantera "cv_mass"), named 'heat capacity cv'
+
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        output_library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+
+        Returns
+        -------
+        output_library : cantera.SolutionArray instance
+            the library with the 'heat capacity cv' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
@@ -152,37 +210,48 @@ def compute_isochoric_specific_heat(mechanism, output_library):
 
 
 def explosive_mode_analysis(mechanism,
-                            library,
+                            output_library,
                             configuration='isobaric',
                             heat_transfer='adiabatic',
                             compute_explosion_indices=False,
                             compute_participation_indices=False,
                             include_secondary_mode=False):
-    """
-    Perform chemical explosive mode analysis across a range of states in a library.
-    The fields added are (if requested)
+    """Perform chemical explosive mode analysis across a range of states in a library.
 
-    - 'cema-lexp1': the primary explosive eigenvalue (always computed)
-    - 'cema-lexp2': the secondary explosive eigenvalue (default: off)
-    - 'cema-ei1 [name]': the primary explosion indices for species (name) or temperature (T) (default: off)
-    - 'cema-ei2 [name]': the secondary explosion indices for species (name) or temperature (T) (default: off)
-    - 'cema-pi1 [#]': the primary participation indices of each reaction (numbered) (default: off)
-    - 'cema-pi2 [#]': the secondary participation indices of each reaction (numbered) (default: off)
+        Parameters
+        ----------
+        mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
+            the mechanism
+        output_library: a spitfire.chemistry.library Library instance
+            a library with T, Y, and either density or pressure (pressure is used if both are present)
+        configuration: str
+            whether to analyze the system as "isobaric" (default) or "isochoric"
+        heat_transfer: str
+            whether to analyze the system as "adiabatic" (default) or "isothermal"
+        compute_explosion_indices: bool
+            whether or not (default: False) to include explosion index analysis
+        compute_participation_indices: bool
+            whether or not (default: False) to include participation index analysis
+        include_secondary_mode: bool
+            whether or not (default: False) to include secondary explosive mode analysis
 
-    :param mechanism: a ChemicalMechanismSpec object
-    :param library: a Library object with temperature, mass fractions, and density or pressure
-    :param configuration: an "isobaric" or "isochoric" system
-    :param heat_transfer: an "adiabatic" or "isothermal" system
-    :param compute_explosion_indices: whether or not (default: False) to include explosion index analysis
-    :param compute_participation_indices: whether or not (default: False) to include participation index analysis
-    :param include_secondary_mode: whether or not (default: False) to include secondary explosive mode analysis
-    :return: the library with requested chemical explosive mode analysis quantities included
+        Returns
+        -------
+        output_library : cantera.SolutionArray instance
+            The library with the following fields added (if requested)
+
+            - 'cema-lexp1': the primary explosive eigenvalue (always computed)
+            - 'cema-lexp2': the secondary explosive eigenvalue (default: off)
+            - 'cema-ei1 [name]': the primary explosion indices for species (name) or temperature (T) (default: off)
+            - 'cema-ei2 [name]': the secondary explosion indices for species (name) or temperature (T) (default: off)
+            - 'cema-pi1 [#]': the primary participation indices of each reaction (numbered) (default: off)
+            - 'cema-pi2 [#]': the secondary participation indices of each reaction (numbered) (default: off)
     """
 
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
-    if not isinstance(library, Library):
-        raise TypeError('Input argument "library" to explosive_mode_analysis() must be a Library')
+    if not isinstance(output_library, Library):
+        raise TypeError('Input argument "output_library" to explosive_mode_analysis() must be a Library')
 
     gas = mechanism.gas
     griffon = mechanism.griffon
@@ -196,8 +265,8 @@ def explosive_mode_analysis(mechanism,
     cema_Vmod[Tidx + 1:, :] = np.copy(V_stoich[:-1, :])
     cema_Vmod[Tidx, :] = (gas.standard_enthalpies_RT * ct.gas_constant * 298.).T.dot(V_stoich)
 
-    library_shape = library['temperature'].shape
-    nstates = library['temperature'].size
+    library_shape = output_library['temperature'].shape
+    nstates = output_library['temperature'].size
 
     lexp1 = np.zeros(nstates)
     if compute_explosion_indices:
@@ -211,16 +280,16 @@ def explosive_mode_analysis(mechanism,
         if compute_participation_indices:
             pi2_list = np.zeros((nr, nstates))
 
-    Tflat = library['temperature'].ravel()
+    Tflat = output_library['temperature'].ravel()
     Yflat = []
     for name in mechanism.species_names:
-        Yflat.append(library['mass fraction ' + name].ravel())
+        Yflat.append(output_library['mass fraction ' + name].ravel())
 
     if configuration == 'isochoric':
-        rhoflat = library['density'].ravel()
+        rhoflat = output_library['density'].ravel()
 
     if configuration == 'isobaric':
-        pflat = library['pressure'].ravel()
+        pflat = output_library['pressure'].ravel()
 
     for i in range(nstates):
         # get the state
@@ -302,21 +371,21 @@ def explosive_mode_analysis(mechanism,
                 pi2_list[:, i] = pi2 / np.sum(np.abs(pi2))
 
     # insert quantities into the library
-    library['cema-lexp1'] = lexp1.reshape(library_shape)
+    output_library['cema-lexp1'] = lexp1.reshape(library_shape)
     if compute_explosion_indices:
-        library['cema-ei1 T'] = ei1_list[0].reshape(library_shape)
+        output_library['cema-ei1 T'] = ei1_list[0].reshape(library_shape)
         for ispec in range(ns - 1):
-            library['cema-ei1 ' + mechanism.species_names[ispec]] = ei1_list[1 + ispec].reshape(library_shape)
+            output_library['cema-ei1 ' + mechanism.species_names[ispec]] = ei1_list[1 + ispec].reshape(library_shape)
     if compute_participation_indices:
         for ireac in range(nr):
-            library['cema-pi1 ' + str(ireac)] = pi1_list[ireac].reshape(library_shape)
+            output_library['cema-pi1 ' + str(ireac)] = pi1_list[ireac].reshape(library_shape)
     if include_secondary_mode:
-        library['cema-lexp2'] = lexp2.reshape(library_shape)
+        output_library['cema-lexp2'] = lexp2.reshape(library_shape)
         if compute_explosion_indices:
-            library['cema-ei2 T'] = ei2_list[0].reshape(library_shape)
+            output_library['cema-ei2 T'] = ei2_list[0].reshape(library_shape)
             for ispec in range(ns - 1):
-                library['cema-ei2 ' + mechanism.species_names[ispec]] = ei2_list[1 + ispec].reshape(library_shape)
+                output_library['cema-ei2 ' + mechanism.species_names[ispec]] = ei2_list[1 + ispec].reshape(library_shape)
         if compute_participation_indices:
             for ireac in range(nr):
-                library['cema-pi2 ' + str(ireac)] = pi2_list[ireac].reshape(library_shape)
-    return library
+                output_library['cema-pi2 ' + str(ireac)] = pi2_list[ireac].reshape(library_shape)
+    return output_library

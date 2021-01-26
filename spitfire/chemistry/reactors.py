@@ -94,7 +94,7 @@ class HomogeneousReactor(object):
                                   'v->sov': lambda v: 3. * sqrt(6.) / np.power(3. * v / np.sqrt(2.), 1. / 3.)},
                    'icosahedron': {'l->sov': lambda a: 12. * sqrt(3.) / ((3. + sqrt(5.)) * a),
                                    'v->sov': lambda v: 12. * sqrt(3.) / (
-                                       (3. + sqrt(5.)) * np.power(12. * v / 5. / (3. + sqrt(5.)), 1. / 3.))}}
+                                           (3. + sqrt(5.)) * np.power(12. * v / 5. / (3. + sqrt(5.)), 1. / 3.))}}
     _shapes = list(_shape_dict.keys())
 
     @classmethod
@@ -361,7 +361,7 @@ class HomogeneousReactor(object):
     def _extra_logger_log(self, state, *args, **kwargs):
         T = state[self._temperature_index]
         T0 = self.initial_temperature
-        return f'{T:>10.2f} | {T-T0:>10.2f}|'
+        return f'{T:>10.2f} | {T - T0:>10.2f}|'
 
     @property
     def initial_state(self):
@@ -450,56 +450,57 @@ class HomogeneousReactor(object):
                   save_first_and_last_only=False):
         """Base method for reactor integration
 
-        Parameters
-        ----------
-        stop_at_time : float
-            The final time to stop the simulation at
-        stop_at_steady : float
-            The tolerance at which a steady state is decided upon and stopped at
-        stop_criteria : callable (t, state, residual, n_steps)
-            Any callable that returns True when the simulation should stop
-        first_time_step : float
-            The time step size initially used by the time integrator
-        max_time_step : float
-            The largest time step the time stepper is allowed to take
-        minimum_time_step_count : int
-            The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
-        transient_tolerance : float
-            the target temporal error for transient integration
-        write_log : bool
-            whether or not to print integration statistics and status during the simulation
-        log_rate : int
-            how often to print log information
-        maximum_steps_per_jacobian : int
-            maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
-        nonlinear_solve_tolerance : float
-            tolerance for the nonlinear solver used in implicit time stepping (optional, default: 1e-12)
-        linear_solver : str
-            which linear solver to use, at the moment either 'lapack' (dense, direct) or 'superlu' (sparse, direct) are available
-        plot : list
-            List of variables (temperature and/or specific species names) to be plotted after the time integration completes.
-            No plot is shown if a list is not provided.
-            Temperature is plotted in the first subplot if any list of variables is provided for plotting (even if temperature is not specified in the list of variables).
-            Species mass fractions will be plotted in a second subplot if any species names are provided in the list of variables.
-        stepper_type : spitfire.time.TimeStepper
-            which (single step) stepper method to use (optional, default: ESDIRK64)
-        nlsolver_type : spitfire.time.NonlinearSolver
-            which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
-        stepcontrol_type : spitfire.time.StepControl
-            which time step adaptation method to use (optional, default: PIController)
-        extra_integrator_args : dict
-            any extra arguments to specify to the time integrator - arguments passed to the odesolve method
-        extra_stepper_args : dict
-            extra arguments to specify on the spitfire.time.TimeStepper object
-        extra_nlsolver_args : dict
-            extra arguments to specify on the spitfire.time.NonlinearSolver object
-        extra_stepcontrol_args : dict
-            extra arguments to specify on the spitfire.time.StepControl object
-        save_first_and_last_only : bool
-            whether or not to retain all data (False, default) or only the first and last solutions
-        Returns
-        -------
-            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
+            Parameters
+            ----------
+            stop_at_time : float
+                The final time to stop the simulation at
+            stop_at_steady : float
+                The tolerance at which a steady state is decided upon and stopped at
+            stop_criteria : callable (t, state, residual, n_steps)
+                Any callable that returns True when the simulation should stop
+            first_time_step : float
+                The time step size initially used by the time integrator
+            max_time_step : float
+                The largest time step the time stepper is allowed to take
+            minimum_time_step_count : int
+                The minimum number of time steps to run (helpful for slowly evolving simulations, for instance those with low starting temperatures)
+            transient_tolerance : float
+                the target temporal error for transient integration
+            write_log : bool
+                whether or not to print integration statistics and status during the simulation
+            log_rate : int
+                how often to print log information
+            maximum_steps_per_jacobian : int
+                maximum number of steps Spitfire allows before the Jacobian must be re-evaluated - keep low for robustness, try to increase for performance on large mechanisms
+            nonlinear_solve_tolerance : float
+                tolerance for the nonlinear solver used in implicit time stepping (optional, default: 1e-12)
+            linear_solver : str
+                which linear solver to use, at the moment either 'lapack' (dense, direct) or 'superlu' (sparse, direct) are available
+            plot : list
+                List of variables (temperature and/or specific species names) to be plotted after the time integration completes.
+                No plot is shown if a list is not provided.
+                Temperature is plotted in the first subplot if any list of variables is provided for plotting (even if temperature is not specified in the list of variables).
+                Species mass fractions will be plotted in a second subplot if any species names are provided in the list of variables.
+            stepper_type : spitfire.time.TimeStepper
+                which (single step) stepper method to use (optional, default: ESDIRK64)
+            nlsolver_type : spitfire.time.NonlinearSolver
+                which nonlinear solver method to use (optional, default: SimpleNewtonSolver)
+            stepcontrol_type : spitfire.time.StepControl
+                which time step adaptation method to use (optional, default: PIController)
+            extra_integrator_args : dict
+                any extra arguments to specify to the time integrator - arguments passed to the odesolve method
+            extra_stepper_args : dict
+                extra arguments to specify on the spitfire.time.TimeStepper object
+            extra_nlsolver_args : dict
+                extra arguments to specify on the spitfire.time.NonlinearSolver object
+            extra_stepcontrol_args : dict
+                extra arguments to specify on the spitfire.time.StepControl object
+            save_first_and_last_only : bool
+                whether or not to retain all data (False, default) or only the first and last solutions
+
+            Returns
+            -------
+                a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
 
         def post_step_callback(t, state, *args):
@@ -679,30 +680,31 @@ class HomogeneousReactor(object):
     def integrate_to_steady(self, steady_tolerance=1.e-6, **kwargs):
         """Integrate a reactor until steady state is reached
 
-        Parameters
-        ----------
-        steady_tolerance : float
-            residual tolerance below which steady state is defined
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
-        Returns
-        -------
-            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
+            Parameters
+            ----------
+            steady_tolerance : float
+                residual tolerance below which steady state is defined
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
+
+            Returns
+            -------
+                a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         return self.integrate(stop_at_steady=steady_tolerance, **kwargs)
 
     def integrate_to_time(self, final_time, **kwargs):
         """Integrate a reactor until it reaches a specified simulation time
 
-        Parameters
-        ----------
-        final_time : float
-            time at which integration ceases
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
-        Returns
-        -------
-            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
+            Parameters
+            ----------
+            final_time : float
+                time at which integration ceases
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
+            Returns
+            -------
+                a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         return self.integrate(stop_at_time=final_time, **kwargs)
 
@@ -713,17 +715,18 @@ class HomogeneousReactor(object):
         """Integrate a reactor until steady state is reached after ignition (based on temperature) has occurred.
             This is helpful in slowly-evolving systems whose initial residual may be lower than the prescribed tolerance.
 
-        Parameters
-        ----------
-        steady_tolerance : float
-            residual tolerance below which steady state is defined
-        delta_temperature_ignition : float
-            how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
-        Returns
-        -------
-            a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
+            Parameters
+            ----------
+            steady_tolerance : float
+                residual tolerance below which steady state is defined
+            delta_temperature_ignition : float
+                how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
+
+            Returns
+            -------
+                a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         if self._heat_transfer == 'isothermal':
             raise ValueError(
@@ -746,19 +749,20 @@ class HomogeneousReactor(object):
                                **kwargs):
         """Integrate in time until ignition (exceeding a specified threshold of the increase in temperature)
 
-        Parameters
-        ----------
-        delta_temperature_ignition : float
-            how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
-        minimum_allowable_residual : float
-            how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
-        return_solution : bool
-            whether or not to return the solution trajectory in addition to the ignition delay, as a tuple, (t, library)
-        **kwargs
-            Arbitrary keyword arguments - see the integrate() method documentation
-        Returns
-        -------
-            the ignition delay of the reactor, in seconds, and optionally a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
+            Parameters
+            ----------
+            delta_temperature_ignition : float
+                how much the temperature of the reactor must have increased for ignition to have occurred, default is 400 K
+            minimum_allowable_residual : float
+                how small the residual can be before the reactor is deemed to 'never' ignite, default is 1.e-12
+            return_solution : bool
+                whether or not to return the solution trajectory in addition to the ignition delay, as a tuple, (t, library)
+            **kwargs
+                Arbitrary keyword arguments - see the integrate() method documentation
+
+            Returns
+            -------
+                the ignition delay of the reactor, in seconds, and optionally a library containing temperature, mass fractions, and density (isochoric) or pressure (isobaric) over time
         """
         if self._heat_transfer == 'isothermal':
             raise ValueError(
