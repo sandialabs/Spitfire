@@ -8,8 +8,8 @@
 
 import os
 from glob import glob
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup
+from setuptools.extension import Extension
 from Cython.Build import cythonize
 from numpy import get_include as numpy_include
 import platform
@@ -78,8 +78,20 @@ setup(name='Spitfire',
       license=readfile('license.md'),
       description=readfile('description_short'),
       long_description=readfile('readme.md'),
+      url='https://github.com/sandialabs/Spitfire/',
       packages=['spitfire', 'spitfire.chemistry', 'spitfire.time', 'spitfire.griffon'],
       ext_modules=make_griffon_extension(),
-      package_data={'spitfire.griffon': ['*.so']})
+      package_data={'spitfire.griffon': ['*.so']},
+      classifiers=[
+          'Programming Language :: Python :: 3',
+          'Programming Language :: C++',
+          'License :: OSI Approved :: BSD License',
+          'Operating System :: OS Independent',
+          'Intended Audience :: Science/Research',
+          'Topic :: Scientific/Engineering',
+          'Topic :: Scientific/Engineering :: Chemistry',
+          'Topic :: Scientific/Engineering :: Mathematics',
+      ],
+      python_requires='>=3.6')
 
 print_info()
