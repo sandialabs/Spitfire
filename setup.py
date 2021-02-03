@@ -65,9 +65,9 @@ def print_info():
     print(f'    python3 -m unittest discover -s spitfire_test')
     print('-' * 80)
     print(f'- Build the docs:\n')
-    print(f'    cd spitfire_docs')
+    print(f'    cd docs')
     print(f'    make html')
-    print(f'    open build/html/index in a browser')
+    print(f'    open build/html/index.html in a browser')
     print('-' * 80)
 
 
