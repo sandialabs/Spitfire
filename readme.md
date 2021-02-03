@@ -103,16 +103,15 @@ After installing Spitfire or developing code it is a great idea to run these tes
 To do this, go to the base repository directory and enter `python3 -m unittest discover -s spitfire_test/`.
 
 ## Building the Documentation
-To build HTML documentation that provides some background theory and an API reference for the entire code, enter the following commands (from the base repository directory).
-Documentation is always in progress and could always be improved - please don't hesitate to make issues on the GitHub page to ask questions or point out confusing parts.
-
+First, be aware that static documentation for Spitfire is hosted by [Read the Docs](https://spitfire.readthedocs.io/en/latest/).
+Second, documenting multi-language software in scientific applications, especially when extensibility is an explicit aim, is hard!
+Any questions, suggestions, or help you could provide would be appreciated greatly.
+Now, if you want your own copy of the docs, or if you're developing in Spitfire and want to make sure your new documentation looks good, you can simply run the following commands,
 ```
 cd docs
 make html
 ```
-
-Then point your favorite web browser to the `build/html/index.html` file.
-For Mac OS X you can simply run `open build/html/index.html` and on Linux you could run `firefox build/html/index.html`
+and then point your favorite web browser to the `build/html/index.html` file.
 
 
 # Using Spitfire

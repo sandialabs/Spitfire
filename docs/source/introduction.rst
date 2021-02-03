@@ -37,7 +37,11 @@ In this paradigm Python is used to drive abstract numerical algorithms at a high
 
 Access
 ------
-Spitfire is a BSD(3) open-sourced code that is hosted publicly on Sandia's GitHub page: https://github.com/sandialabs/Spitfire
+Spitfire is a BSD(3) open-sourced code that is hosted publicly on Sandia National Laboratory's GitHub page: https://github.com/sandialabs/Spitfire
+
+Static documentation for Spitfire is hosted by Read the Docs: https://spitfire.readthedocs.io/en/latest/
+
+A few demonstrations can be seen on the "Using Spitfire"'" portion of the readme: https://github.com/sandialabs/Spitfire#using-spitfire
 
 Authors
 -------
