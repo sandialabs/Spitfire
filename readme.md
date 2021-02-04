@@ -131,6 +131,7 @@ and then point your favorite web browser to the `build/html/index.html` file.
 ## Homogeneous Reactors 
   - [Introduction to Cantera and Spitfire](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/thermochemistry_Cantera_Spitfire_griffon.html)
   - [Creation of a One-Step Reaction Mechanism and Ignition Comparison](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/one_step_heptane_ignition.html)
+  - [Plotting Ignition Delay Profiles for a Two-Stage Ignition Fuel](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/ignition_delay_NTC_DME.html)
   - guide is in progress... for now see the scripts and notebooks in the spitfire_demo/reactors directory
 
 ## Non-premixed Flamelets and Tabulated Chemistry
