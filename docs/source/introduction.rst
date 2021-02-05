@@ -41,7 +41,7 @@ Spitfire is a BSD(3) open-sourced code that is hosted publicly on Sandia Nationa
 
 Static documentation for Spitfire is hosted by Read the Docs: https://spitfire.readthedocs.io/en/latest/
 
-A few demonstrations can be seen on the "Using Spitfire" portion of the readme: https://github.com/sandialabs/Spitfire#using-spitfire
+A number of demonstrations can be seen on the "Using Spitfire" portion of the readme: https://github.com/sandialabs/Spitfire#using-spitfire
 
 Authors
 -------
