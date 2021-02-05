@@ -3,7 +3,7 @@ This is the base spitfire module directory.
 """
 
 from .chemistry.library import Dimension, Library
-from .chemistry.analysis import get_ct_solution_array
+from .chemistry.analysis import get_ct_solution_array, explosive_mode_analysis
 from .chemistry.mechanism import ChemicalMechanismSpec, CanteraLoadError
 from .chemistry.flamelet import Flamelet, FlameletSpec
 from .chemistry.reactors import HomogeneousReactor

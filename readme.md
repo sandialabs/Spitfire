@@ -133,6 +133,7 @@ and then point your favorite web browser to the `build/html/index.html` file.
   - [Creation of a One-Step Reaction Mechanism and Ignition Comparison](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/one_step_heptane_ignition.html)
   - [Computing Ignition Delay Profiles for a Two-Stage Ignition Fuel](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/ignition_delay_NTC_DME.html)
   - [Time-dependent Flow Reactor with Periodic Ignition/Extinction](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/oscillating_ignition_extinction.html)
+  - [Chemical Explosive Mode Analysis of Isothermal/Adiabatic Reactors](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/isothermal_reactors_with_mode_analysis.html)
   - guide is in progress... for now see the scripts and notebooks in the spitfire_demo/reactors directory
 
 ## Non-premixed Flamelets and Tabulated Chemistry
