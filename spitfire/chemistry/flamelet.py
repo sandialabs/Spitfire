@@ -447,7 +447,7 @@ class Flamelet(object):
             if fs.dissipation_rate is not None:
                 warning_message('dissipation_rate')
 
-            if fs.dissipation_rate_form not in ['peters', 'Peters', 'uniform'] or \
+            if fs.dissipation_rate_form not in ['peters', 'Peters', 'constant'] or \
                     (fs.max_dissipation_rate is None and fs.stoich_dissipation_rate is None):
                 self._x = np.zeros_like(self._z)
                 self._max_dissipation_rate = np.max(self._x)
@@ -464,7 +464,7 @@ class Flamelet(object):
                         z_st = self.mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
                         self._max_dissipation_rate = fs.stoich_dissipation_rate / np.exp(
                             -2. * (erfinv(2. * z_st - 1.)) ** 2)
-                    elif fs.dissipation_rate_form == 'uniform':
+                    elif fs.dissipation_rate_form == 'constant':
                         self._max_dissipation_rate = fs.stoich_dissipation_rate
                     self._dissipation_rate_form = fs.dissipation_rate_form
                     self._x = self._compute_dissipation_rate(self._z,

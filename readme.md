@@ -137,4 +137,5 @@ and then point your favorite web browser to the `build/html/index.html` file.
   - [Multiple Steady States in n-heptane/air Mixtures](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/reactors/ignition_extinction_heptane.html)
 
 ## Non-premixed Flamelets and Tabulated Chemistry
+  - [Introduction to Flamelets in Spitfire](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/flamelets/introduction_to_flamelets.html)
   - guide is in progress... for now see the scripts and notebooks in the spitfire_demo/flamelet directory
