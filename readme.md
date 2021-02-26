@@ -141,5 +141,6 @@ and then point your favorite web browser to the `build/html/index.html` file.
   - [Introduction to the Tabulation Methods](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/flamelet/high_level_tabulation_api_adiabatic.html)
   - [Model Generation for a Methane Shear Layer](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/flamelet/methane_shear_layer_tabulation.html)
   - [Transient Ignition with Advanced Time Integration Options](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/flamelet/transient_ignition_stepper_details.html)
+  - [Simple Rate Sensitivity Study with Flamelet Ignition](https://nbviewer.jupyter.org/github/sandialabs/Spitfire/blob/master/spitfire_demo/flamelet/example_transient_flamelet_rate_sensitivity.html)
   - guide is in progress... for now see the scripts and notebooks in the `spitfire_demo/flamelet` directory
   
