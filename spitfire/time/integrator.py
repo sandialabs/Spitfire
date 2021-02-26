@@ -340,7 +340,7 @@ def odesolve(right_hand_side,
             Depending on the inputs:
             1. output_times is provided: returns an array of output states, and the solver stats dictionary if return_info is True
             2. save_each_step is True (or a positive integer frequency): returns an array of times, and an array of output states, and the solver stats dictionary if return_info is True
-            3. else: returns an the final state vector, final time, and final time step, and the solver stats dictionary if return_info is True
+            3. else: returns the final state vector, final time, and final time step, and the solver stats dictionary if return_info is True
     """
 
     if not isinstance(initial_state, np.ndarray):
