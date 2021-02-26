@@ -515,7 +515,7 @@ class Flamelet(object):
                 self._T_rad = self._T_conv.copy()
             else:
                 self._set_heat_transfer_arg_as_np_array(fs.radiation_temperature, 'radiation_temperature', '_T_rad')
-                self._set_heat_transfer_arg_as_np_array(fs.radiative_emissivity, 'radiative_emissivity', '_h_rad')
+                self._set_heat_transfer_arg_as_np_array(fs.convection_temperature, 'convection_temperature', '_T_conv')
             if self._scale_convection_by_dissipation:
                 zst = self._mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
                 factor = np.max(self._x) / (1. - zst) / zst
