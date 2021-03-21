@@ -1,3 +1,9 @@
+
+
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Travis CI w/ Logo](https://img.shields.io/travis/tterb/yt2mp3/master.svg?logo=travis)](https://travis-ci.com/github/sandialabs/Spitfire)
+[![Read the Docs](https://readthedocs.org/projects/yt2mp3/badge/?version=latest)](https://spitfire.readthedocs.io/en/latest/)
+
 # Introduction
 
 Spitfire is a Python/C++ library for solving complex chemistry and reaction-diffusion problems used in constructing tabulated chemistry models, built atop a variety of methods for solving nonlinear systems and differential equations.
