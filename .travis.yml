@@ -17,7 +17,7 @@ before_install:
 install:
   - conda create -y -n test python=$TRAVIS_PYTHON_VERSION
   - conda activate test
-  - conda install -c conda-forge lapack blas
+  - conda install -c anaconda gxx_linux-64
   - conda install -y numpy scipy matplotlib Cython sphinx numpydoc
   - conda install -y -c cantera cantera=$CANTERA
   - python3 setup.py build_ext --inplace
