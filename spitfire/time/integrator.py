@@ -151,8 +151,8 @@ def _write_log(verbose,
     log_count += 1
     sim_time_lines = [
         (f'{"number of":<10}', f'{"time steps":<10}', f' {number_of_time_steps:<9}'),
-        (f'{"simulation":<10}', f'{"time (s)":<10}', f'{current_time:<10.2e}'),
-        (f'{"time step":<10}', f'{"size (s)":<10}', f'{time_step_size:<10.2e}'), ]
+        (f'{"simulation":<10}', f'{"time (s)":<10}', f'{float(current_time):<10.2e}'),
+        (f'{"time step":<10}', f'{"size (s)":<10}', f'{float(time_step_size):<10.2e}'), ]
     if number_nonlinear_iter == 'n/a':
         nni_over_nts = 'n/a'
         nli_over_nni = 'n/a'

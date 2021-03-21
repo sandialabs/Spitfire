@@ -57,10 +57,10 @@ Spitfire requires a C++11-compliant compiler and the BLAS/LAPACK libraries, whic
 ### Prerequisite installation using Conda
 Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface.
 It is probably best to make an environment for Spitfire.
-At the moment, stick to Python 3.6, as it is unclear if Spitfire and its dependencies run properly on Python 3.7.
-To make an environment named `spitfire` which will use Python 3.6, enter
+At the moment, stick to Python 3.6 or 3.7, as it is unclear if Spitfire and its dependencies run properly on Python 3.8.
+To make an environment named `spitfire` which will use Python 3.7, enter
 ```
-conda create -n spitfire python=3.6
+conda create -n spitfire python=3.7
 ```
 and then to activate it:
 ```
@@ -75,7 +75,6 @@ conda install -c cantera cantera
 Also recommended are the following optional packages:
 ```
 conda install -c anaconda jupyter
-conda install -c conda-forge dash
 ```
 
 ### Prerequisite installation without Conda
@@ -92,7 +91,7 @@ Run the following command to install Spitfire for use in Python.
 ```
 python3 setup.py install
 ```
-If you want to run tests and build the documentation yourself, an in-place build is required:
+If you want to run tests and build the documentation yourself, an in-place build is also required:
 ```
 python3 setup.py build_ext --inplace
 ```

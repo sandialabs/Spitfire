@@ -564,10 +564,9 @@ class Flamelet(object):
                 aw = 0.5 * stat['H']
                 ad = stat['C']
                 at = stat['N']
-                mole_fraction_str = 'N2: ' + str(at / 2) + ', H2O: ' + str(aw)
+                mole_fraction_str = 'N2: ' + str(at / 2) + ' H2O: ' + str(aw)
                 if 'CO2' in self._mechanism.species_names:
-                    mole_fraction_str += ', CO2: ' + str(ad)
-
+                    mole_fraction_str += ' CO2: ' + str(ad)
                 sw = self._mechanism.stream('HPX', (stmix.H, self._pressure,
                                                     mole_fraction_str))
 
