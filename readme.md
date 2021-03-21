@@ -1,8 +1,9 @@
 
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Travis CI w/ Logo](https://img.shields.io/travis/tterb/yt2mp3/master.svg?logo=travis)](https://travis-ci.com/github/sandialabs/Spitfire)
-[![Read the Docs](https://readthedocs.org/projects/yt2mp3/badge/?version=latest)](https://spitfire.readthedocs.io/en/latest/)
+[![Travis CI w/ Logo](https://img.shields.io/travis/tterb/yt2mp3/master.svg?logo=travis)](https://api.travis-ci.com/sandialabs/Spitfire.svg?branch=master)
+[![Read the Docs](https://readthedocs.org/projects/yt2mp3/badge/?version=latest)](https://spitfire.readthedocs.io/en/latest/?badge=latest)
+(note: Travis CI badges are unstable - you can check the build by simply clicking on the `passing`/`failing` text...)
 
 # Introduction
 
@@ -58,7 +59,8 @@ Spitfire requires Python3 (developed and tested with version 3.6) and the follow
 We also highly recommend installing `jupyter` and `dash`.
 
 ### C++ Dependencies
-Spitfire requires a C++11-compliant compiler and the BLAS/LAPACK libraries, which are commonly available on many systems.
+Spitfire requires a C++11-compliant compiler and the BLAS/LAPACK libraries, which are commonly available on many systems
+and entirely conda-based toolchains can provide these. Often simply installing NumPy, as already required, is sufficient.
 
 ### Prerequisite installation using Conda
 Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface.
