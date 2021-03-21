@@ -24,53 +24,6 @@ def readfile(filename):
             return f.read()
 
 
-def get_compile_args():
-    eca = ['-O3', '-g', '-std=c++11', '-Wno-error']
-    if platform.system() == 'Darwin':
-        eca += ['-stdlib=libc++']
-    return eca
-
-
-def get_lapack():
-    is_mac = platform.system() == 'Darwin'
-    if is_mac:
-        lib = []
-        extra = ['-framework', 'Accelerate', '-mmacosx-version-min=10.12']
-    else:
-        lib = ['blas', 'lapack']
-        extra = []
-    return lib, extra
-
-
-def make_griffon_extension():
-    lapack_lib, lapack_extra = get_lapack()
-    return cythonize(Extension(name='spitfire.griffon.griffon',
-                               sources=[os.path.join('spitfire', 'griffon', 'griffon.pyx')] + glob(
-                                   os.path.join('spitfire', 'griffon', 'src') + '/*.cpp', recursive=False),
-                               extra_compile_args=get_compile_args(),
-                               include_dirs=[numpy_include(), os.path.join('spitfire', 'griffon', 'include')],
-                               library_dirs=[os.path.join('spitfire', 'griffon')],
-                               libraries=lapack_lib,
-                               extra_link_args=lapack_extra,
-                               language='c++'))
-
-
-def print_info():
-    print('-' * 80)
-    print(f'- Done installing Spitfire!\n')
-    print(f'- To test or build docs, an in-place build is required:\n')
-    print(f'    python3 setup.py build_ext --inplace\n')
-    print('-' * 80)
-    print(f'- Run the tests:\n')
-    print(f'    python3 -m unittest discover -s spitfire_test')
-    print('-' * 80)
-    print(f'- Build the docs:\n')
-    print(f'    cd docs')
-    print(f'    make html')
-    print(f'    open build/html/index.html in a browser')
-    print('-' * 80)
-
-
 setup(name='Spitfire',
       version=readfile('version'),
       author='Michael A. Hansen',
@@ -80,7 +33,15 @@ setup(name='Spitfire',
       long_description=readfile('readme.md'),
       url='https://github.com/sandialabs/Spitfire/',
       packages=['spitfire', 'spitfire.chemistry', 'spitfire.time', 'spitfire.griffon'],
-      ext_modules=make_griffon_extension(),
+      ext_modules=cythonize(Extension(name='spitfire.griffon.griffon',
+                                      sources=[os.path.join('spitfire', 'griffon', 'griffon.pyx')] + glob(
+                                          os.path.join('spitfire', 'griffon', 'src') + '/*.cpp', recursive=False),
+                                      extra_compile_args=['-O3', '-g', '-std=c++11', '-Wno-error'] + [
+                                          '-stdlib=libc++'] if platform.system() == 'Darwin' else [],
+                                      include_dirs=[numpy_include(), os.path.join('spitfire', 'griffon', 'include')],
+                                      library_dirs=[os.path.join('spitfire', 'griffon')],
+                                      libraries=['blas', 'lapack'],
+                                      language='c++')),
       package_data={'spitfire.griffon': ['*.so']},
       classifiers=[
           'Programming Language :: Python :: 3',
@@ -94,4 +55,18 @@ setup(name='Spitfire',
       ],
       python_requires='>=3.6')
 
-print_info()
+print(f"""
+{'-' * 80}
+- Done installing Spitfire!
+- To test or build docs, an in-place build is also required:
+    python3 setup.py build_ext --inplace
+{'-' * 80}
+- Run the tests:
+    python3 -m unittest discover -s spitfire_test
+{'-' * 80}
+- Build the docs:
+    cd docs
+    make html
+    open build/html/index.html in a browser
+{'-' * 80}
+""")
