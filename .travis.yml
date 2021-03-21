@@ -6,17 +6,19 @@ matrix:
       env: CANTERA=2.3
 
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - source "$HOME/miniconda/etc/profile.d/conda.sh"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
 
 install:
   - conda create -y -n test python=$TRAVIS_PYTHON_VERSION
-  - source activate test
+  - conda activate test
   - conda install -y numpy scipy matplotlib Cython sphinx numpydoc
-  - conda install -y -c cantera cantera
+  - conda install -y -c cantera cantera=$CANTERA
   - python3 setup.py build_ext --inplace
   - python3 setup.py install
 
