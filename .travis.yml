@@ -1,12 +1,10 @@
 language: python
 
-os:
-  - osx
-  - linux
-
 matrix:
   include:
     - python: 3.6
+      env: CANTERA=2.3
+    - python: 3.7
       env: CANTERA=2.3
 
 before_install:
@@ -21,8 +19,9 @@ before_install:
 install:
   - conda create -y -n test python=$TRAVIS_PYTHON_VERSION
   - conda activate test
-  - conda install -c anaconda gxx_linux-64
-  - conda install -y numpy scipy matplotlib Cython sphinx numpydoc
+  - conda install -y -c anaconda gxx_linux-64
+  - conda install -y -c conda-forge numpy scipy
+  - conda install -y matplotlib Cython sphinx numpydoc
   - conda install -y -c cantera cantera=$CANTERA
   - python3 setup.py build_ext --inplace
   - python3 setup.py install
