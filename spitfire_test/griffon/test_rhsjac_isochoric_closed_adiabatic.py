@@ -48,7 +48,7 @@ def validate_on_mechanism(mech, temperature, pressure, test_rhs=True, test_jac=T
     rhsCN = cantera_rhs(rho, T, y)
 
     if test_rhs:
-        pass_rhs = max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) < sqrt(np.finfo(float).eps)
+        pass_rhs = max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) < 100. * sqrt(np.finfo(float).eps)
 
     if test_jac:
         jacFD = zeros((ns + 1, ns + 1))

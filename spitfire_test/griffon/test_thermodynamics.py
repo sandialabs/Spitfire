@@ -1,5 +1,5 @@
 import unittest
-from numpy import max, abs, ones, zeros, hstack
+from numpy import max, abs, ones, zeros, hstack, sqrt, finfo
 from cantera import gas_constant
 from spitfire import ChemicalMechanismSpec as Mechanism
 import pickle
@@ -29,7 +29,6 @@ mechs = [('const', Mechanism.from_solution(ct.Solution(thermo='IdealGas',
                                                        reactions=[])))]
 
 tolerance = 1.e-14
-
 
 def do_mmw(griffon, gas, T, p, y):
     gas.TPY = T, p, y

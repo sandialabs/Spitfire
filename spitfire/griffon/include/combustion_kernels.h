@@ -134,7 +134,7 @@ public:
     std::vector<double> inverseMolecularWeights;
     double referenceTemperature;
     double referencePressure;
-    static constexpr double Ru = 8314.4621; // universal gas constant
+    double Ru;
   };
 
   /*
@@ -278,13 +278,14 @@ public:
      * mechanism data setter methods
      *
      * To set mechanism data:
-     * 0. set the elemental molecular weight map (mechanism_set_element_mw_map)
-     * 1. add elements (mechanism_add_element)
-     * 2. set reference pressure and temperature (mechanism_set_ref_pressure, mechanism_set_ref_temperature)
-     * 3. add species with atom maps (mechanism_add_species)
-     * 4. call mechanism_resize_heat_capacity_data()
-     * 5. add the heat capacity polynomials with either mechanism_add_const_cp or mechanism_add_nasa7_cp
-     * 6. add reactions with the methods below. The *_with_special_orders methods are for nonelementary reactions.
+     * 0. set the reference temperature, pressure, and universal gas constant
+     * 1. set the elemental molecular weight map (mechanism_set_element_mw_map)
+     * 2. add elements (mechanism_add_element)
+     * 3. set reference pressure and temperature (mechanism_set_ref_pressure, mechanism_set_ref_temperature)
+     * 4. add species with atom maps (mechanism_add_species)
+     * 5. call mechanism_resize_heat_capacity_data()
+     * 6. add the heat capacity polynomials with either mechanism_add_const_cp or mechanism_add_nasa7_cp
+     * 7. add reactions with the methods below. The *_with_special_orders methods are for nonelementary reactions.
      */
   void
   mechanism_set_element_mw_map(const std::map<std::string, double> element_mw_map);
@@ -292,6 +293,8 @@ public:
   mechanism_add_element(const std::string &element_name);
   void
   mechanism_add_species(const std::string &species_name, const std::map<std::string, double> atom_map);
+  void
+  mechanism_set_gas_constant(const double &Ru);
   void
   mechanism_set_ref_pressure(const double &p_ref);
   void

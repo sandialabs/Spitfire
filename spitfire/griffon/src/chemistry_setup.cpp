@@ -66,6 +66,11 @@ void CombustionKernels::mechanism_set_ref_pressure(const double &p_ref)
   mechanismData.phaseData.referencePressure = p_ref;
 }
 
+void CombustionKernels::mechanism_set_gas_constant(const double &Ru)
+{
+  mechanismData.phaseData.Ru = Ru;
+}
+
 void CombustionKernels::mechanism_set_ref_temperature(const double &T_ref)
 {
   mechanismData.phaseData.referenceTemperature = T_ref;

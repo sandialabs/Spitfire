@@ -111,6 +111,9 @@ class ChemicalMechanismSpec(object):
         self._mech_data['ref_pressure'] = ref_pressure
         self._griffon.mechanism_set_ref_temperature(ref_temperature)
         self._mech_data['ref_temperature'] = ref_temperature
+        gas_constant = ct.gas_constant
+        self._griffon.mechanism_set_gas_constant(gas_constant)
+        self._mech_data['gas_constant'] = gas_constant
 
         self._griffon.mechanism_set_element_mw_map(ct_element_mw_map)
         self._mech_data['element_mw_map'] = ct_element_mw_map
@@ -273,7 +276,10 @@ class ChemicalMechanismSpec(object):
                 troe_params = rxn[12]
                 ctrxn.high_rate = fwd_rate
                 ctrxn.low_rate = ct.Arrhenius(flf_pre_exp_value, flf_temp_exponent, flf_act_energy)
-                ctrxn.falloff = ct.TroeFalloff(troe_params)
+                if len(troe_params) == 4 and troe_params[3] < 1e-300:
+                    ctrxn.falloff = ct.TroeFalloff(troe_params[:3])
+                else:
+                    ctrxn.falloff = ct.TroeFalloff(troe_params)
 
             if 'special' in type:
                 ctrxn.orders = rxn[-1]

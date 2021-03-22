@@ -58,7 +58,7 @@ def validate_on_mechanism(mech, temperature, pressure, tau, do_rhs, do_jac):
     r.reactor_rhs_isochoric(state, rhoin, Tin, yin, tau, 0, 0, 0, 0, 0, 0, True, rhsGR)
 
     if do_rhs:
-        return max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) < sqrt(np.finfo(float).eps)
+        return max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) < 100. * sqrt(np.finfo(float).eps)
 
     if do_jac:
         jacGR = np.empty((ns + 1) * (ns + 1))

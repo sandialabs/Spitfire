@@ -32,6 +32,7 @@ cdef extern from "combustion_kernels.h" namespace "griffon":
     void mechanism_add_species(const string& species_name, const map[string, double] atom_map)
     void mechanism_set_ref_pressure(const double& p_ref)
     void mechanism_set_ref_temperature(const double& T_ref)
+    void mechanism_set_gas_constant(const double& Ru)
     void mechanism_resize_heat_capacity_data()
     void mechanism_add_const_cp(const string& spec_name,
       const double& Tmin,
@@ -257,6 +258,12 @@ cdef class PyCombustionKernels:
     @cython.wraparound(False)
     def mechanism_set_ref_temperature(self, double T):
       self.c_calculator.mechanism_set_ref_temperature(T)
+
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def mechanism_set_gas_constant(self, double Ru):
+      self.c_calculator.mechanism_set_gas_constant(Ru)
 
     @cython.nonecheck(False)
     @cython.boundscheck(False)

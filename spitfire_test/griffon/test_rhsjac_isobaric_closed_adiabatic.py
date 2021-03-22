@@ -65,7 +65,7 @@ def validate_on_mechanism(mech, temperature, pressure, test_rhs=True, test_jac=T
     rhsCN = zeros(ns)
     rhsCN[1:] = w[:-1] / gas.density
     rhsCN[0] = - sum(w * h) / gas.density / gas.cp_mass
-    pass_rhs = max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) < 10. * sqrt(np.finfo(float).eps)
+    pass_rhs = max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) < 100. * sqrt(np.finfo(float).eps)
 
     if test_rhs and test_jac:
         return pass_rhs and pass_jac
