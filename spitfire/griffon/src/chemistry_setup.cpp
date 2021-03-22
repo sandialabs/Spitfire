@@ -18,6 +18,11 @@
 namespace griffon
 {
 
+void CombustionKernels::mechanism_set_element_mw_map(const std::map<std::string, double> element_mw_map)
+{
+  element_mw_map_ = element_mw_map;
+}
+
 void CombustionKernels::mechanism_add_element(const std::string &element_name)
 {
   const auto &en = mechanismData.phaseData.elementNames;
@@ -44,11 +49,10 @@ void CombustionKernels::mechanism_add_species(const std::string &species_name,
       throw std::logic_error("cannot find atom " + atom_num.first);
     }
   }
-  const auto element_mw_map = get_element_mw_map();
   double mw = 0.;
   for (const auto &atom_num : atom_map)
   {
-    mw += element_mw_map.at(atom_num.first) * atom_num.second;
+    mw += this->element_mw_map_.at(atom_num.first) * atom_num.second;
   }
   mechanismData.phaseData.speciesIndices.insert(std::make_pair(species_name, mechanismData.phaseData.nSpecies));
   mechanismData.phaseData.speciesNames.push_back(species_name);

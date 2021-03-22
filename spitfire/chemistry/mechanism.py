@@ -100,6 +100,7 @@ class ChemicalMechanismSpec(object):
         return ChemicalMechanismSpec(cantera_solution=solution)
 
     def _populate_griffon_mechanism_data(self,
+                                         ct_element_mw_map,
                                          elem_list,
                                          ref_temperature,
                                          ref_pressure,
@@ -110,6 +111,9 @@ class ChemicalMechanismSpec(object):
         self._mech_data['ref_pressure'] = ref_pressure
         self._griffon.mechanism_set_ref_temperature(ref_temperature)
         self._mech_data['ref_temperature'] = ref_temperature
+
+        self._griffon.mechanism_set_element_mw_map(ct_element_mw_map)
+        self._mech_data['element_mw_map'] = ct_element_mw_map
 
         for e in elem_list:
             self._griffon.mechanism_add_element(e)
@@ -277,13 +281,19 @@ class ChemicalMechanismSpec(object):
             ctrxn.reversible = reversible
             reaction_list.append(ctrxn)
 
-        return ct.Solution(thermo='IdealGas',
-                           kinetics='GasKinetics',
-                           species=species_list,
-                           reactions=reaction_list)
+        return ct.Solution(thermo='IdealGas', kinetics='GasKinetics', species=species_list, reactions=reaction_list)
+
+    @classmethod
+    def _get_cantera_element_mw_map(cls, ctsol: ct.Solution):
+        species_list = [ct.Species(element_name, f'{element_name}: 1') for element_name in ctsol.element_names]
+        for i in range(len(species_list)):
+            species_list[i].thermo = ct.ConstantCp(300., 3000., 101325., (300., 0., 0., 1.e4))
+        element_only_ctsol = ct.Solution(thermo='IdealGas', kinetics='GasKinetics', species=species_list, reactions=[])
+        return {name: mw for name, mw in zip(element_only_ctsol.species_names, element_only_ctsol.molecular_weights)}
 
     @classmethod
     def _extract_cantera_mechanism_data(cls, ctsol: ct.Solution):
+        ct_element_mw_map = cls._get_cantera_element_mw_map(ctsol)
         elem_list = ctsol.element_names
         ref_temperature = 298.15
         ref_pressure = ctsol.reference_pressure
@@ -374,7 +384,7 @@ class ChemicalMechanismSpec(object):
                 if rx.orders:
                     reac_temporary_list[-1][1]['orders'] = rx.orders
         reac_list = [y[1] for y in sorted(reac_temporary_list, key=lambda x: x[0])]
-        return elem_list, ref_temperature, ref_pressure, spec_name_list, spec_dict, reac_list
+        return ct_element_mw_map, elem_list, ref_temperature, ref_pressure, spec_name_list, spec_dict, reac_list
 
     @property
     def gas(self):

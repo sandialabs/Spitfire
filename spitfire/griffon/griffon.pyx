@@ -27,6 +27,7 @@ cdef extern from "combustion_kernels.h" namespace "griffon":
     CombustionKernels() except +
 
     # mechanism data setters
+    void mechanism_set_element_mw_map(const map[string, double] element_mw_map)
     void mechanism_add_element(const string& element_name)
     void mechanism_add_species(const string& species_name, const map[string, double] atom_map)
     void mechanism_set_ref_pressure(const double& p_ref)
@@ -220,6 +221,15 @@ cdef class PyCombustionKernels:
 
     def __dealloc__(self):
       del self.c_calculator
+
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def mechanism_set_element_mw_map(self, element_mw_map):
+      cdef map[string, double] am
+      for a in element_mw_map:
+        am[a.encode()] = element_mw_map[a]
+      self.c_calculator.mechanism_set_element_mw_map(am)
 
     @cython.nonecheck(False)
     @cython.boundscheck(False)

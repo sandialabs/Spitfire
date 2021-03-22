@@ -278,6 +278,7 @@ public:
      * mechanism data setter methods
      *
      * To set mechanism data:
+     * 0. set the elemental molecular weight map (mechanism_set_element_mw_map)
      * 1. add elements (mechanism_add_element)
      * 2. set reference pressure and temperature (mechanism_set_ref_pressure, mechanism_set_ref_temperature)
      * 3. add species with atom maps (mechanism_add_species)
@@ -285,6 +286,8 @@ public:
      * 5. add the heat capacity polynomials with either mechanism_add_const_cp or mechanism_add_nasa7_cp
      * 6. add reactions with the methods below. The *_with_special_orders methods are for nonelementary reactions.
      */
+  void
+  mechanism_set_element_mw_map(const std::map<std::string, double> element_mw_map);
   void
   mechanism_add_element(const std::string &element_name);
   void
@@ -505,6 +508,8 @@ public:
 private:
   using MechData = MechanismData<8, 15>;
   MechData mechanismData; // note: moving the template integers to CombustionKernels causes Cython problems...
+
+  std::map<std::string, double> element_mw_map_;
 
   static constexpr int NSR = MechData::NSR;
   static constexpr int NCP = MechData::NCP;
