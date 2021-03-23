@@ -1,4 +1,4 @@
-language: generic
+language: python
 
 matrix:
   include:
@@ -7,8 +7,6 @@ matrix:
     - { os: linux, python: 3.7, env: CANTERA=2.4 }
     - { os: linux, python: 3.6, env: CANTERA=2.5 }
     - { os: linux, python: 3.7, env: CANTERA=2.5 }
-    - { os: osx,   python: 3.6, env: CANTERA=2.5 }
-    - { os: osx,   python: 3.7, env: CANTERA=2.5 }
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
