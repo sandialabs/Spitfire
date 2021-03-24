@@ -6,23 +6,7 @@
 
 # Introduction
 
-Spitfire is a Python/C++ library for solving complex chemistry and reaction-diffusion problems used in constructing tabulated chemistry models, built atop a variety of methods for solving nonlinear systems and differential equations.
-
-Spitfire has several key objectives:
-- Solve canonical combustion problems with complex chemical kinetics using advanced time integration and continuation techniques.
-- Build tabulated chemistry models for use in reacting flow simulation.
-- Design and rapidly prototype solvers and time integration techniques for general-purpose ordinary and partial differential equations.
-
-
-Spitfire has been used by researchers at Sandia National Laboratories and the University of Utah for a number of applications:
-- construct adiabatic and nonadiabatic flamelet libraries (tabulated chemistry) for simulation of single- and multi-phase combustion, 
-  similarly to how the FlameMaster code has been used
-- investigate the design of specialized embedded pairs of explicit Runge-Kutta methods and advanced adaptive time stepping techniques
-- generate homogeneous reactor, non-premixed flamelet, and simple reaction-diffusion datasets for the training of low-dimensional surrogate models of chemical kinetics
-- perform fundamental studies of combustion in the MILD regime
-- study chemical explosive modes and low-temperature oxidation pathways of complex fuels in non-premixed systems
-- study the formulation of state vectors and analytical Jacobian matrices for combustion simulation
-
+Spitfire is a Python/C++ library for solving complex chemistry and reaction-diffusion problems. It is most often used to construct tabulated chemistry models for reacting flow simulations. It also solves canonical reactor models and provides efficient, extensible numerical time integration capabilities. Spitfire has been used and developed primarily at Sandia National Laboratories and the University of Utah.
 
 # Contents
 - [Introduction](#introduction)
@@ -59,13 +43,13 @@ We also highly recommend installing `jupyter` and `dash`.
 
 ### C++ Dependencies
 Spitfire requires a C++11-compliant compiler and the BLAS/LAPACK libraries, which are commonly available on many systems
-and entirely conda-based toolchains can provide these. Often simply installing NumPy, as already required, is sufficient.
+and conda-based toolchains can provide these. Often simply installing NumPy, as already required, is sufficient.
 
-### Prerequisite installation using Conda
-Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface.
+### Prerequisite Installation
+Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface easily.
 It is probably best to make an environment for Spitfire.
 At the moment, stick to Python 3.6 or 3.7, as it is unclear if Spitfire and its dependencies run properly on Python 3.8.
-To make an environment named `spitfire` which will use Python 3.7, enter
+To make a Python 3.7 environment named `spitfire` enter
 ```
 conda create -n spitfire python=3.7
 ```
@@ -84,7 +68,6 @@ Also recommended are the following optional packages:
 conda install -c anaconda jupyter
 ```
 
-### Prerequisite installation without Conda
 The pip package manager may also be used although this is more difficult because you'll have to install the Cantera Python interface yourself (see their [GitHub repository](https://github.com/Cantera/cantera) for guidance).
 Before installing Cantera, install the packages noted above, most of which can be done with `pip3`.
 
@@ -100,27 +83,33 @@ python3 setup.py install
 ```
 If you want to run tests and build the documentation yourself, an in-place build is also required:
 ```
-python3 setup.py build_ext --inplace
+python3 setup.py build_ext --inplace install
 ```
 
 ## Running the Tests
 Spitfire has a number of tests that verify correctness or regression of the code.
 After installing Spitfire or developing code it is a great idea to run these tests.
-To do this, go to the base repository directory and enter `python3 -m unittest discover -s spitfire_test/`.
+To do this, go to the base repository directory and enter the following command:
+```
+python3 -m unittest discover -s spitfire_test/
+```
 
 ## Building the Documentation
 First, be aware that static documentation for Spitfire is hosted by [Read the Docs](https://spitfire.readthedocs.io/en/latest/).
 Second, documenting multi-language software in scientific applications, especially when extensibility is an explicit aim, is hard!
 Any questions, suggestions, or help you could provide would be appreciated greatly.
-Now, if you want your own copy of the docs, or if you're developing in Spitfire and want to make sure your new documentation looks good, you can simply run the following commands,
+If you want your own copy of the docs, or if you're developing in Spitfire and want to make sure your new documentation looks good, you can simply run the following commands,
 ```
 cd docs
 make html
 ```
 and then point your favorite web browser to the `build/html/index.html` file.
+Sphinx enables other forms of documentation but the HTML has been our primary target.
 
 
 # Using Spitfire
+These annotated Jupyter notebooks show many key features and capabilities of Spitfire, split in the three categories below.
+They've been `nbconvert`ed to HTML files and the links use `nbviewer` hosted on `jupyter.org` to show typeset documents.
 
 ## General-Purpose Time Integration
 - Explicit methods
