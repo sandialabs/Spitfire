@@ -1,9 +1,8 @@
 
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Travis CI w/ Logo](https://img.shields.io/travis/tterb/yt2mp3/master.svg?logo=travis)](https://api.travis-ci.com/sandialabs/Spitfire.svg?branch=master)
+[![Build Status](https://travis-ci.org/sandialabs/Spitfire.svg?branch=master)](https://travis-ci.org/sandialabs/Spitfire)
 [![Read the Docs](https://readthedocs.org/projects/yt2mp3/badge/?version=latest)](https://spitfire.readthedocs.io/en/latest/?badge=latest)
-(note: Travis CI badges are unstable - you can check the build by simply clicking on the `passing`/`failing` text...)
 
 # Introduction
 
