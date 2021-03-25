@@ -1,8 +1,21 @@
 Time Integration
-================
+----------------
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Demonstrations:
+
+    demo/time_integration/explicit/explicit_exponential_decay_simple
+    demo/time_integration/explicit/explicit_exponential_decay_custom_methods
+    demo/time_integration/explicit/adaptive_stepping_and_custom_termination
+    demo/time_integration/explicit/customized_adaptive_stepping
+    demo/time_integration/explicit/lid_driven_cavity_scalar_mixing
+    demo/time_integration/implicit/implicit_exponential_decay_simple
+    demo/time_integration/implicit/implicit_advection_diffusion_linear_solvers_advanced
+    demo/time_integration/implicit/implicit_diffusion_reaction
 
 Methods for First-Order Ordinary Differential Equations
--------------------------------------------------------
+=======================================================
 
 Spitfire can solve general explicit ordinary differential equations
 
@@ -59,7 +72,7 @@ of nonlinear and linear solvers in each implicit time step.
 
 
 Spitfire's Abstraction of the Implicit Solver Stack
----------------------------------------------------
+===================================================
 When ODEs such as :eq:`general_explicit_ode` are solved with implicit time integration methods, a nonlinear system of equations must be solved at each time step.
 The nonlinear system can be written in terms of a nonlinear operator :math:`\boldsymbol{\mathcal{N}}`,
 
@@ -80,7 +93,7 @@ These five pieces form the backbone of time integration with implicit methods - 
 In Spitfire the stack consists of ``odesolve`` (time loop), ``StepController`` (:math:`h` adaptation), ``TimeStepper`` (single step method), ``NonlinearSolver`` (solve :math:`\boldsymbol{\mathcal{N}}(\boldsymbol{q}) = \boldsymbol{0}`), and finally the ``setup`` and ``solve`` procedures for the linear solve (building the inverse of the approximate linear operator and repeatedly applying it, respectively).
 
 Python & Performance Optimality
--------------------------------
+===============================
 Composing the solver stack in Python makes it more easily extensible, but it brings performance optimality into doubt.
 Similar questions arise in development of HPC codes with C++, where virtual functions are 'slow' (and have other issues).
 The key factor in performance is the cost of evaluating the nonlinear residual and the various operations in the linear solve.

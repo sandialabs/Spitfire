@@ -16,7 +16,7 @@ For example, the forward Euler method with class ``ForwardEuler`` computes this 
 
 In Spitfire's unit testing we verify the order of accuracy of most of these methods.
 If you add a new one be sure to add it to the unit tester.
-See the file: ``spitfire_test/time/test_time_order_of_accuracy.py``.
+See the file: ``tests/time/test_time_order_of_accuracy.py``.
 
 """
 

@@ -1,8 +1,8 @@
 Introduction
-============
+------------
 
 Objectives & Applications
--------------------------
+=========================
 Spitfire is a Python/C++ code for scientific computing that has several objectives:
 
 - Solve canonical combustion problems with complex chemical kinetics using advanced time integration and continuation techniques.
@@ -36,7 +36,7 @@ In this paradigm Python is used to drive abstract numerical algorithms at a high
 
 
 Access
-------
+======
 Spitfire is a BSD(3) open-sourced code that is hosted publicly on Sandia National Laboratory's GitHub page: https://github.com/sandialabs/Spitfire
 
 Static documentation for Spitfire is hosted by Read the Docs: https://spitfire.readthedocs.io/en/latest/
@@ -44,6 +44,6 @@ Static documentation for Spitfire is hosted by Read the Docs: https://spitfire.r
 A number of demonstrations can be seen on the "Using Spitfire" portion of the readme: https://github.com/sandialabs/Spitfire#using-spitfire
 
 Authors
--------
+=======
 Mike Hansen (mahanse@sandia.gov) is Spitfire's primary author and point of contact.
 Others who have contributed to Spitfire are Elizabeth Armstrong, James Sutherland, Josh McConnell, John Hewson, and Robert Knaus.

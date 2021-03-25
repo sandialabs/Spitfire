@@ -57,17 +57,21 @@ setup(name='Spitfire',
       python_requires='>=3.6')
 
 print(f"""
-{'-' * 80}
 - Done installing Spitfire!
+{'-' * 80}
 - To test or build docs, an in-place build is also required:
     python3 setup.py build_ext --inplace
 {'-' * 80}
 - Run the tests:
-    python3 -m unittest discover -s spitfire_test
+    python3 -m unittest discover -s tests
 {'-' * 80}
 - Build the docs:
     cd docs
     make html
     open build/html/index.html in a browser
+{'-' * 80}
+- Update docs from Jupyter demos
+    cd docs/source/demo
+    find . -name *ipynb | xargs jupyter nbconvert --to rst
 {'-' * 80}
 """)

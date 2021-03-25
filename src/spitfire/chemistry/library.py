@@ -107,6 +107,17 @@ class Library(object):
 
     """
 
+    def _set_grid(self):
+        grid = np.meshgrid(*[self._dims[d].values for d in self._dims], indexing='ij')
+        self._grid_shape = grid[0].shape
+        self._grid_size = grid[0].size
+
+        for i, d in enumerate(self._dims):
+            setattr(self, self._dims[d].name, d)
+            setattr(self, self._dims[d].name + '_grid', np.copy(grid[i]))
+            for a in self._dims[d].__dict__:
+                setattr(self, self._dims[d].name + a, getattr(self._dims[d], a))
+
     def __init__(self, *dimensions):
         self._dims = dict(
             {d.name: (Dimension(d.name, d.values) if isinstance(d, Dimension) else Dimension(d[0], d[1])) for d in
@@ -117,17 +128,22 @@ class Library(object):
             self._dims_ordering[i] = d.name
 
         if dimensions:
-            grid = np.meshgrid(*[self._dims[d].values for d in self._dims], indexing='ij')
-            self._grid_shape = grid[0].shape
-            self._grid_size = grid[0].size
-
-            for i, d in enumerate(self._dims):
-                setattr(self, self._dims[d].name, d)
-                setattr(self, self._dims[d].name + '_grid', np.copy(grid[i]))
-                for a in self._dims[d].__dict__:
-                    setattr(self, self._dims[d].name + a, getattr(self._dims[d], a))
+            self._set_grid()
 
         self._extra_attributes = dict()
+
+    def scale_dimension(self, dim_name, multiplier):
+        try:
+            self.remap_dimension(dim_name, lambda x: multiplier * x)
+        except KeyError:
+            raise KeyError(f'Invalid dimension name \"{dim_name}\" provided to scale_dimension() on library {self}.')
+
+    def remap_dimension(self, dim_name, mapping):
+        try:
+            self._dims[dim_name] = Dimension(dim_name, mapping(self._dims[dim_name].values))
+            self._set_grid()
+        except KeyError:
+            raise KeyError(f'Invalid dimension name \"{dim_name}\" provided to remap_dimension() on library {self}.')
 
     @property
     def extra_attributes(self):
@@ -393,6 +409,11 @@ class Library(object):
         for d in self._dims_ordering:
             dims.append(self._dims[self._dims_ordering[d]])
         return dims
+
+    @property
+    def dim_names(self):
+        """Obtain the ordered list of the Dimension object names"""
+        return [d.name for d in self.dims]
 
     def dim(self, name):
         """Obtain a Dimension object by name"""

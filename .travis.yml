@@ -32,4 +32,4 @@ install:
   - python3 setup.py install
 
 script:
-  - python3 -m unittest discover -s spitfire_test
+  - python3 -m unittest discover -s tests

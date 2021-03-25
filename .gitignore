@@ -1,7 +1,11 @@
 docs/build
-spitfire/griffon/griffon.cpp
-spitfire/griffon/*.so
+src/spitfire/griffon/griffon.cpp
+src/spitfire/griffon/*.so
 .idea
 build
 griffon_build
 *checkpoints
+*__pycache__*
+commit_msg
+dist/
+Spitfire.egg-info

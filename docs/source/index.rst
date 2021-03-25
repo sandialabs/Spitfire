@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to Spitfire's documentation!
-====================================
+------------------------------------
 
 
 .. toctree::
@@ -13,13 +13,13 @@ Welcome to Spitfire's documentation!
     :caption: Contents:
 
     introduction
+    reactionmodeling
     timeintegration
-    combustion
     modules
 
 
 Search the code
-===============
+---------------
 
 * :ref:`genindex`
 * :ref:`modindex`

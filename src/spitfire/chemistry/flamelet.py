@@ -34,7 +34,63 @@ _pressure_depr_warning = 'Deprecation warning in building Spitfire Flamelet inst
 
 class FlameletSpec(object):
     """
-    Library slice will get the mechanism, initial condition, boundary streams, and grid from a library
+    **Constructor**: specify boundary streams, the mixture fraction grid, and terms in the flamelet equations,
+        including chemical source terms, dissipation, heat loss, and enthalpy equation transformation terms.
+
+    Parameters
+    ----------
+    mech_spec : spitfire.chemistry.mechanism.ChemicalMechanismSpec instance
+        the chemical mechanism, including species thermodynamics and transport data and chemical reaction rate data
+    initial_condition : str or np.ndarray
+        the initial state of the flamelet, either 'equilibrium', 'unreacted', 'linear-TY', 'Burke-Schumann',
+        or the interior state vector from another flamelet (obtained with Flamelet.*_interior_state properties)
+    library_slice : spitfire.chemistry.library.Library
+        obtain the mechanism, initial condition, boundary streams, and grid from a library with the "mixture_fraction" dimension
+    oxy_stream : Cantera.Quantity (a Spitfire stream) or Cantera.Solution object
+        the oxidizer stream (Z=0 boundary condition)
+    fuel_stream : Cantera.Quantity (a Spitfire stream) or Cantera.Solution object
+        the fuel stream (Z=1 boundary condition)
+    max_dissipation_rate : float
+        the maximum dissipation rate (requires the dissipation_rate_form argument, default is 'Peters')
+    stoich_dissipation_rate : float
+        the stoichiometric dissipation rate (requires the dissipation_rate_form argument, default is 'Peters')
+    dissipation_rate_form : str
+        the form of dissipation rate to use if the maximum or stoichiometric value is specified ('Peters' (default) or 'constant')
+    dissipation_rate : np.ndarray
+        an array of dissipation rates over mixture fraction (cannot be specified along with maximum or stoichiometric value)
+    grid : np.ndarray
+        an array of grid points locations (specifying this argument overrides other grid arguments)
+    grid_points : int
+        the number of grid points to use (if the grid argument is not specified, this is required)
+    grid_type : str
+        the type of grid, either 'clustered' (default) or 'uniform'
+    grid_cluster_intensity : float
+        how tightly clustered grid points will be around the grid_cluster_point if grid_type is 'clustered' (default: 4)
+    grid_cluster_point : float
+        the location of grid point clustering (default is the stoichiometric mixture fraction)
+    heat_transfer : str
+        whether the flamelet is 'adiabatic' or 'nonadiabatic'
+    convection_temperature : float or np.ndarray
+        the convective heat loss reference temperature
+    radiation_temperature : float or np.ndarray
+        the radiation heat loss reference temperature
+    convection_coefficient : float or np.ndarray
+        the convective heat loss coefficient
+    radiative_emissivity : float or np.ndarray
+        the radiative heat loss coefficient
+    use_scaled_heat_loss : bool or np.ndarray
+        whether or not to use a special form of reference temperature and coefficients for heat loss
+    include_enthalpy_flux : bool
+        whether or not to use a consistent formulation of the enthalpy flux (True, default) or the simpler flamelet formulation (False)
+    include_variable_cp : bool
+        whether or not to include variation of the heat capacity (True, default) or use the simpler flamelet formulation (False)
+    rates_sensitivity_type : str
+        how the chemical source term Jacobian is formed, either 'dense' or 'sparse' for exact formulations
+        or 'no-TBAF' which ignores third-body and falloff sensitivities. The default is 'dense'.
+        For large mechanisms (over 100 species) the 'sparse' formulation is far faster than 'dense',
+        especially for mechanisms of more than 300 species.
+    sensitivity_transform_type : str
+        how the Jacobian is transformed, currently only 'exact' is supported
     """
 
     def __init__(self,
@@ -182,66 +238,7 @@ class FlameletSpec(object):
 
 
 class Flamelet(object):
-    """A class for solving one-dimensional non-premixed flamelets
-
-    **Constructor**: specify boundary streams, mixing rates, etc.
-
-    Parameters
-    ----------
-    mech_spec : spitfire.chemistry.mechanism.ChemicalMechanismSpec instance
-        the mechanism
-    initial_condition : str or np.ndarray
-        the initial state of the flamelet, either 'equilibrium', 'unreacted', 'linear-TY', 'Burke-Schumann',
-        or the interior state vector from another flamelet (obtained with Flamelet.*_interior_state properties)
-    pressure : float
-        the thermodynamic pressure
-    oxy_stream : Cantera.Quantity (a Spitfire stream) or Cantera.Solution object
-        the oxidizer stream
-    fuel_stream : Cantera.Quantity (a Spitfire stream) or Cantera.Solution object
-        the fuel stream
-    max_dissipation_rate : float
-        the maximum dissipation rate (cannot be specified alongside stoich_dissipation_rate or dissipation_rate)
-    stoich_dissipation_rate : float
-        the stoichiometric dissipation rate (cannot be specified alongside max_dissipation_rate or dissipation_rate)
-    dissipation_rate : np.ndarray
-        the np.ndarray of dissipation rates over mixture fraction (cannot be specified with maximum or stoichiometric dissipation rate)
-    dissipation_rate_form : str
-        the form of dissipation rate to use if the maximum value is specified ('Peters' (default) or 'constant'),
-        cannot be specified with the dissipation_rate argument
-    grid : np.ndarray
-        the location of the grid points (specifying the grid directly invalidates other grid arguments)
-    grid_points : int
-        the number of grid points to use if Spitfire is to build the grid (if the grid argument is not specified, this is required)
-    grid_type : str
-        the type of grid, either 'clustered' (default) or 'uniform'
-    grid_cluster_intensity : float
-        how tightly clustered grid points will be around the grid_cluster_point if grid_type is 'clustered' (default: 4)
-    grid_cluster_point : float
-        the location of grid point clustering (default is the stoichiometric mixture fraction)
-    heat_transfer : str
-        whether or not the flamelet is 'adiabatic' or 'nonadiabatic'
-    convection_temperature : float
-        the convective heat loss reference temperature
-    radiation_temperature : float
-        the radiation heat loss reference temperature
-    convection_coefficient : float
-        the convective heat loss coefficient
-    radiative_emissivity : float
-        the radiative heat loss coefficient
-    use_scaled_heat_loss : bool
-        whether or not to use a special form of reference temperature and coefficients for heat loss
-    include_enthalpy_flux : bool
-        whether or not to use a consistent formulation of the enthalpy flux (True) or the simplest flamelet formulation (False)
-    include_variable_cp : bool
-        whether or not to include variation of the heat capacity (True) or use the simplest flamelet formulation (False)
-    rates_sensitivity_type : str
-        how the chemical source term Jacobian is formed, either 'dense' or 'sparse' for exact formulations
-        or 'no-TBAF' which ignores third-body and falloff sensitivities. The default is 'dense'.
-        For large mechanisms (over 100 species) the 'sparse' formulation is far faster than 'dense',
-        especially for mechanisms of more than 300 species.
-    sensitivity_transform_type : str
-        how the Jacobian is transformed, currently only 'exact' is supported
-
+    """An API for solving flamelet equations in composing tabulated chemistry libraries
     """
 
     _heat_transfers = ['adiabatic', 'nonadiabatic']
@@ -315,6 +312,10 @@ class Flamelet(object):
         return z, dz
 
     @classmethod
+    def make_clustered_grid(cls, grid_points, grid_cluster_point, grid_cluster_intensity=6.):
+        return cls._clustered_grid(grid_points, grid_cluster_point, grid_cluster_intensity)[0]
+
+    @classmethod
     def _compute_dissipation_rate(cls,
                                   mixture_fraction,
                                   max_dissipation_rate,
@@ -360,19 +361,12 @@ class Flamelet(object):
                  flamelet_specs=None,
                  *args,
                  **kwargs):
-
-        fs = flamelet_specs
         if isinstance(flamelet_specs, dict):
-            if 'pressure' in flamelet_specs:
-                flamelet_specs.pop('pressure')
-                print(self._pressure_depr_warning)
             fs = FlameletSpec(**flamelet_specs)
+        elif flamelet_specs is None:
+            fs = FlameletSpec(*args, **kwargs)
         else:
-            if 'pressure' in kwargs:
-                kwargs.pop('pressure')
-                print(self._pressure_depr_warning)
-            if flamelet_specs is None:
-                fs = FlameletSpec(*args, **kwargs)
+            fs = flamelet_specs
 
         self._oxy_stream = fs.oxy_stream
         self._fuel_stream = fs.fuel_stream

@@ -14,7 +14,9 @@ from .chemistry.tabulation import build_adiabatic_eq_library, \
     build_nonadiabatic_defect_bs_library, \
     build_nonadiabatic_defect_eq_library, \
     build_nonadiabatic_defect_transient_slfm_library, \
-    build_nonadiabatic_defect_steady_slfm_library
+    build_nonadiabatic_defect_steady_slfm_library, \
+    apply_mixing_model, \
+    PDFSpec
 
 from .griffon.griffon import PyCombustionKernels
 

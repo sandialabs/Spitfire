@@ -1,5 +1,5 @@
-spitfire
-========
+Spitfire API documentation
+--------------------------
 
 .. toctree::
    :maxdepth: 4
