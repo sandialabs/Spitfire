@@ -8,10 +8,8 @@ Spitfire is a Python/C++ library for solving complex chemistry and reaction-diff
 
 - [Installing Spitfire](#installing-spitfire)
   * [Prerequisites](#prerequisites)
-    + [Python Packages](#python-packages)
-    + [C++ Dependencies](#c---dependencies)
-    + [Prerequisite installation using Conda](#prerequisite-installation-using-conda)
-    + [Prerequisite installation without Conda](#prerequisite-installation-without-conda)
+    + [Python and C++ Dependencies](#python-and-c-dependencies)
+    + [`TabProps` for Presumed PDF Mixing Models](#tabprops-for-presumed-pdf-mixing-models)
   * [Building and Installing Spitfire](#building-and-installing-spitfire)
   * [Running the Tests](#running-the-tests)
   * [Building the Documentation](#building-the-documentation)
@@ -20,8 +18,8 @@ Spitfire is a Python/C++ library for solving complex chemistry and reaction-diff
 
 ## Prerequisites
 
-### Python Packages
-Spitfire requires Python3 (developed and tested with version 3.6) and the following Python packages:
+### Python and C++ Dependencies
+Spitfire requires Python3 (tested with 3.6, 3.7) with the following packages:
 - `NumPy`
 - `SciPy`
 - `matplotlib`
@@ -30,37 +28,63 @@ Spitfire requires Python3 (developed and tested with version 3.6) and the follow
 - `sphinx`
 - `NumPydoc`
 
-We also highly recommend installing `jupyter` and `dash`.
+We also highly recommend installing `jupyter`.
 
-### C++ Dependencies
-Spitfire requires a C++11-compliant compiler and the BLAS/LAPACK libraries, which are commonly available on many systems
-and conda-based toolchains can provide these. Often simply installing NumPy, as already required, is sufficient.
-
-### Prerequisite Installation
 Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface easily.
-It is probably best to make an environment for Spitfire.
-At the moment, stick to Python 3.6 or 3.7, as it is unclear if Spitfire and its dependencies run properly on Python 3.8.
-To make a Python 3.7 environment named `spitfire` enter
-```
-conda create -n spitfire python=3.7
-```
-and then to activate it:
-```
-conda activate spitfire
-```
-
-After activating your environment, run the following commands to install the prerequisites.
+The lines below will install Spitfire's dependencies.
 ```
 conda install numpy scipy matplotlib Cython sphinx numpydoc
 conda install -c cantera cantera
 ```
-Also recommended are the following optional packages:
-```
-conda install -c anaconda jupyter
-```
+Along with the optional `conda install -c anaconda jupyter`.
 
 The pip package manager may also be used although this is more difficult because you'll have to install the Cantera Python interface yourself (see their [GitHub repository](https://github.com/Cantera/cantera) for guidance).
 Before installing Cantera, install the packages noted above, most of which can be done with `pip3`.
+
+Finally, Spitfire requires a C++11 compiler and the BLAS/LAPACK libraries, which are commonly available on many systems
+and conda-based toolchains can provide these. Often simply installing NumPy, as already required, is sufficient.
+
+
+### `TabProps` for Presumed PDF Mixing Models
+Spitfire can leverage the [TabProps](https://gitlab.multiscale.utah.edu/common/TabProps/) code developed at the University of Utah
+to provide presumed PDF mixing models. TabProps also provides arbitrary order piecewise Lagrange interpolants for structured data
+in up to five dimensions. A Python interface is under development and may be built to enable these capabilities in Spitfire.
+Without TabProps, Spitfire still provides fully featured reaction modeling capabilities,
+so if you aren't interested in mixing models, installing TabProps is optional.
+
+TabProps and its Python interface can be installed with a conda toolchain using the following commands.
+Fortunately conda can install a version of boost for C++ dependency.
+```
+conda install -c anaconda cmake
+conda install -c conda-forge boost-cpp
+conda install -c conda-forge pybind11
+
+git clone https://gitlab.multiscale.utah.edu/common/TabProps.git
+git checkout --track origin/mahanse/py_mixmdl  # the code is under active development
+
+cd TabProps
+mkdir build
+cd build
+cmake .. \
+     -DENABLE_PYTHON=ON \
+     -DENABLE_MIXMDL=ON \
+     -DTabProps_UTILS=ON \
+     -DTabProps_PREPROCESSOR=OFF \
+     -DTabProps_ENABLE_TESTING=ON \
+     -DCMAKE_BUILD_TYPE=Release
+
+make -j4 install
+```
+Note that `cmake` may struggle to find the Python interpreter of your conda environment.
+If this happens (you might see permission issues or see `/usr/lib` in the python paths, etc.),
+you can add these lines to the `cmake` call above.
+Substitute `[anaconda-path]` with something like `/opt/anaconda3`, change `[env-name]` to
+the name of your conda environment, and replace `[py_minor_version]` with 6 or 7 for python 3.6, 3.7.
+```
+     -DPYTHON_LIBRARY=[anaconda-path]/envs/[env-name]/lib/libpython3.[py_minor_version]m.a \
+     -DPYTHON_INCLUDE_DIR=[anaconda-path]/envs/[env-name]/bin/python3.[py_minor_version]m \
+     -DPYTHON_EXECUTABLE=[anaconda-path]/envs/[env-name]/bin/python3.[py_minor_version] \
+```
 
 ## Building and Installing Spitfire
 After installing the prerequisites, clone the Spitfire repository, `cd` to the base repository directory,
