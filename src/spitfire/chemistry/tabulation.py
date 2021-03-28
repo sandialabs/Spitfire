@@ -834,43 +834,6 @@ try:
     from pytabprops import ClippedGaussMixMdl, BetaMixMdl, LagrangeInterpolant1D
 
 
-    class PDFSpec:
-        def __init__(self,
-                     pdf='delta',
-                     scaled_variance_values=None,
-                     variance_values=None,
-                     convolution_spline_order=3,
-                     integrator_intervals=1,
-                     variance_name=None):
-            """Specification of a presumed PDF and integrator/spline details for a given single dimension in a library.
-
-            Parameters
-            ----------
-            pdf : str, or custom object type
-                the PDF, either 'ClipGauss' or 'Beta' for TabProps methods, or any custom object that implements the
-                set_mean(), set_variance() or set_scaled_variance(), and integrate(scipy.interpolate.interp1d) methods.
-            scaled_variance_values : np.array
-                array of values of the scaled variance (varies between zero and one), provide this or variance_values
-            variance_values : np.array
-                array of values of the variance, provide this or scaled_variance_values
-            variance_name : str
-                the name of the variance dimension added to the output library
-            convolution_spline_order : Int
-                the order of the 1-D piecewise Lagrange reconstruction used in the convolution integrals, default is 3 (cubic)
-            integrator_intervals : Int
-                extra parameter provided to TabProps integrators, default 1
-            variance_name : str
-                the name of the variance dimension to be added, by default Spitfire will add "_variance" to the name
-                of the dimension being convolved, or use "scaled_scalar_variance_mean" for "mixture_fraction"
-            """
-            self.pdf = pdf
-            self.scaled_variance_values = scaled_variance_values
-            self.variance_values = variance_values
-            self.convolution_spline_order = convolution_spline_order
-            self.integrator_intervals = integrator_intervals
-            self.variance_name = variance_name
-
-
     def _convolve_full_property(p, managed_dict, turb_lib, lam_lib, pdf_spec):
         use_scaled_variance = pdf_spec.scaled_variance_values is not None
         variance_range = pdf_spec.scaled_variance_values if use_scaled_variance else pdf_spec.variance_values
@@ -1007,6 +970,45 @@ def _apply_presumed_pdf_1var(library, variable_name, pdf_spec, added_suffix=_mea
         library_t.extra_attributes[key] = copy.copy(library.extra_attributes[key])
 
     return library_t
+
+
+class PDFSpec:
+    def __init__(self,
+                 pdf='delta',
+                 scaled_variance_values=None,
+                 variance_values=None,
+                 convolution_spline_order=3,
+                 integrator_intervals=1,
+                 variance_name=None):
+        """Specification of a presumed PDF and integrator/spline details for a given single dimension in a library.
+
+        Parameters
+        ----------
+        pdf : str, or custom object type
+            the PDF, either 'ClipGauss' or 'Beta' for TabProps methods, or any custom object that implements the
+            set_mean(), set_variance() or set_scaled_variance(), and integrate(scipy.interpolate.interp1d) methods.
+        scaled_variance_values : np.array
+            array of values of the scaled variance (varies between zero and one), provide this or variance_values
+        variance_values : np.array
+            array of values of the variance, provide this or scaled_variance_values
+        variance_name : str
+            the name of the variance dimension added to the output library
+        convolution_spline_order : Int
+            the order of the 1-D piecewise Lagrange reconstruction used in the convolution integrals, default is 3 (cubic)
+        integrator_intervals : Int
+            extra parameter provided to TabProps integrators, default 1
+        variance_name : str
+            the name of the variance dimension to be added, by default Spitfire will add "_variance" to the name
+            of the dimension being convolved, or use "scaled_scalar_variance_mean" for "mixture_fraction"
+        """
+        require_pytabprops('PDFSpec')
+
+        self.pdf = pdf
+        self.scaled_variance_values = scaled_variance_values
+        self.variance_values = variance_values
+        self.convolution_spline_order = convolution_spline_order
+        self.integrator_intervals = integrator_intervals
+        self.variance_name = variance_name
 
 
 def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_procs=1, verbose=False):
