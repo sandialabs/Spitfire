@@ -48,7 +48,7 @@ and conda-based toolchains can provide these. Often simply installing NumPy, as 
 ### `TabProps` for Presumed PDF Mixing Models
 Spitfire can leverage the [TabProps](https://gitlab.multiscale.utah.edu/common/TabProps/) code developed at the University of Utah
 to provide presumed PDF mixing models. TabProps also provides arbitrary order piecewise Lagrange interpolants for structured data
-in up to five dimensions. A Python interface is under development and may be built to enable these capabilities in Spitfire.
+in up to five dimensions. A Python interface may be built to enable these capabilities in Spitfire.
 Without TabProps, Spitfire still provides fully featured reaction modeling capabilities,
 so if you aren't interested in mixing models, installing TabProps is optional.
 
@@ -60,7 +60,6 @@ conda install -c conda-forge boost-cpp
 conda install -c conda-forge pybind11
 
 git clone https://gitlab.multiscale.utah.edu/common/TabProps.git
-git checkout --track origin/mahanse/py_mixmdl  # the code is under active development
 
 cd TabProps
 mkdir build
