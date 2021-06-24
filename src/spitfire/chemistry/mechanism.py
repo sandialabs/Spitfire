@@ -11,7 +11,7 @@ This module facilitates loading chemical reaction mechanisms in Cantera format a
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 import cantera as ct
-from numpy import sum, array
+from numpy import sum, array, abs
 from spitfire.griffon.griffon import PyCombustionKernels
 
 
@@ -276,7 +276,7 @@ class ChemicalMechanismSpec(object):
                 troe_params = rxn[12]
                 ctrxn.high_rate = fwd_rate
                 ctrxn.low_rate = ct.Arrhenius(flf_pre_exp_value, flf_temp_exponent, flf_act_energy)
-                if len(troe_params) == 4 and troe_params[3] < 1e-300:
+                if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
                     ctrxn.falloff = ct.TroeFalloff(troe_params[:3])
                 else:
                     ctrxn.falloff = ct.TroeFalloff(troe_params)
