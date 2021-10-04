@@ -8,7 +8,7 @@ try:
     from spitfire.chemistry.mechanism import ChemicalMechanismSpec
     from spitfire.chemistry.library import Library, Dimension
     from spitfire.chemistry.flamelet import FlameletSpec
-    from spitfire.chemistry.tabulation import build_adiabatic_eq_library, apply_presumed_PDF_model
+    from spitfire.chemistry.tabulation import build_adiabatic_eq_library, apply_mixing_model, PDFSpec
 
     import cantera
     import cantera as ct
@@ -78,16 +78,14 @@ try:
                 z_svv = np.linspace(0., 1., 6)
                 Tf_svv = np.linspace(0., 1., 5)
 
-                eq_lib1_t = apply_presumed_PDF_model(eq_lib1, 'ClipGauss', z_svv, verbose=False)
-                eq_lib2_t = apply_presumed_PDF_model(eq_lib2, 'ClipGauss', z_svv, verbose=False)
-                eq_lib3_t = apply_presumed_PDF_model(eq_lib3, 'ClipGauss', z_svv, num_procs=1, verbose=False)
-                eq_lib2T_t = apply_presumed_PDF_model(eq_lib2T, 'ClipGauss', z_svv, verbose=False)
-                eq_lib3T1_t = apply_presumed_PDF_model(eq_lib3T1, 'ClipGauss', z_svv, num_procs=1, verbose=False)
-                eq_lib3T2_t = apply_presumed_PDF_model(eq_lib3T2, 'ClipGauss', z_svv, num_procs=1, verbose=False)
-                eq_lib2_tt = apply_presumed_PDF_model(eq_lib2_t, 'Beta', Tf_svv,
-                                                      'fuel_temperature_mean', '', 'Tfvar', num_procs=1, verbose=False)
-                eq_lib3_tt = apply_presumed_PDF_model(eq_lib3_t, 'Beta', Tf_svv,
-                                                      'fuel_temperature_mean', '', 'Tfvar', num_procs=1, verbose=False)
+                eq_lib1_t = apply_mixing_model(eq_lib1, {'mixture_fraction': PDFSpec('ClipGauss', z_svv)}, verbose=False)
+                eq_lib2_t = apply_mixing_model(eq_lib2, {'mixture_fraction': PDFSpec('ClipGauss', z_svv)}, verbose=False)
+                eq_lib3_t = apply_mixing_model(eq_lib3, {'mixture_fraction': PDFSpec('ClipGauss', z_svv)}, num_procs=1, verbose=False)
+                eq_lib2T_t = apply_mixing_model(eq_lib2T, {'mixture_fraction': PDFSpec('ClipGauss', z_svv)}, verbose=False)
+                eq_lib3T1_t = apply_mixing_model(eq_lib3T1, {'mixture_fraction': PDFSpec('ClipGauss', z_svv)}, num_procs=1, verbose=False)
+                eq_lib3T2_t = apply_mixing_model(eq_lib3T2, {'mixture_fraction': PDFSpec('ClipGauss', z_svv)}, num_procs=1, verbose=False)
+                eq_lib2_tt = apply_mixing_model(eq_lib2_t, {'fuel_temperature_mean': PDFSpec('Beta', Tf_svv, variance_name='Tfvar')}, added_suffix='', num_procs=1, verbose=False)
+                eq_lib3_tt = apply_mixing_model(eq_lib3_t, {'fuel_temperature_mean': PDFSpec('Beta', Tf_svv, variance_name='Tfvar')}, added_suffix='', num_procs=1, verbose=False)
 
                 def get_dim_names(lib):
                     return [d.name for d in lib.dims]

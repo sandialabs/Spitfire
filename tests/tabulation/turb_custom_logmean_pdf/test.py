@@ -5,7 +5,10 @@ try:
 
     from numpy.testing import assert_allclose
     import numpy as np
-    from scipy.integrate import simpson
+    try:
+        from scipy.integrate import simpson
+    except ImportError:
+        from scipy.integrate import simps as simpson
 
     from spitfire.chemistry.mechanism import ChemicalMechanismSpec
     from spitfire.chemistry.library import Library, Dimension
@@ -16,7 +19,6 @@ try:
     import cantera as ct
 
     import pytabprops
-
     if int(cantera.__version__.replace('.', '')) >= 250:
         class Test(unittest.TestCase):
             def test(self):
