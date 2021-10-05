@@ -1,7 +1,7 @@
 
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Build Status](https://travis-ci.org/sandialabs/Spitfire.svg?branch=master)](https://travis-ci.com/sandialabs/Spitfire)
+[![Build Status](https://travis-ci.org/sandialabs/Spitfire.svg?branch=master)](https://app.travis-ci.com/sandialabs/Spitfire.svg?branch=master)
 [![Read the Docs](https://readthedocs.org/projects/yt2mp3/badge/?version=latest)](https://spitfire.readthedocs.io/en/latest/?badge=latest)
 
 Spitfire is a Python/C++ library for solving complex chemistry and reaction-diffusion problems. It is most often used to construct tabulated chemistry models for reacting flow simulations. It also solves canonical reactor models and provides efficient, extensible numerical time integration capabilities. Spitfire has been used and developed primarily at Sandia National Laboratories and the University of Utah.
