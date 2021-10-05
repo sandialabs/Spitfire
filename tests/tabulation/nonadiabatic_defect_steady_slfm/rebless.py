@@ -18,6 +18,7 @@ def run(num_procs):
 
     l = build_nonadiabatic_defect_steady_slfm_library(flamelet_specs, verbose=False,
                                                       diss_rate_values=np.logspace(0, 1, 4),
+                                                      diss_rate_log_scaled=True,
                                                       integration_args={'transient_tolerance': 1e-10},
                                                       num_procs=num_procs)
     l = sca.compute_specific_enthalpy(m, l)

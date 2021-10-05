@@ -111,7 +111,8 @@ try:
                     slfm,
                     mixing_spec={'dissipation_rate_stoich': PDFSpec(pdf=lm_pdf, variance_values=np.array([1.])),
                                  'mixture_fraction': PDFSpec(pdf='ClipGauss',
-                                                             scaled_variance_values=np.linspace(0, 1, 8))}
+                                                             scaled_variance_values=np.logspace(-4, 0, 8),
+                                                             log_scaled=True)}
                 )
 
                 # todo: this test could use some checks, right now it just makes sure that all of the variations

@@ -79,7 +79,7 @@ dimension.
     h_vec = np.hstack([0., np.logspace(-8, 1, 24)])
     
     zdim = Dimension('mixture_fraction', mixfrac_vec)
-    xdim = Dimension('dissipation_rate_stoich', chist_vec)
+    xdim = Dimension('dissipation_rate_stoich', chist_vec, log_scaled=True)
     hdim = Dimension('heat_transfer_coefficient', h_vec)
     adim = Dimension('alpha', alpha_vec)
     

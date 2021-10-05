@@ -430,7 +430,7 @@ dynamics are not included in the table.
     z_values = Flamelet(fs0).mixfrac_grid
     
     slfm_lib = Library(Dimension('mixture_fraction', z_values),
-                       Dimension('dissipation_rate_stoich', chi_values))
+                       Dimension('dissipation_rate_stoich', chi_values, log_scaled=True))
     slfm_lib['temperature'] = slfm_lib.get_empty_dataset()
     slfm_lib['pressure'] = slfm_lib.get_empty_dataset()
     for s in mech.species_names:

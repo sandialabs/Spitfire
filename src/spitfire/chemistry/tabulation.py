@@ -231,7 +231,8 @@ def build_adiabatic_slfm_library(flamelet_specs,
                                  verbose=True,
                                  solver_verbose=False,
                                  _return_intermediates=False,
-                                 include_extinguished=False):
+                                 include_extinguished=False,
+                                 diss_rate_log_scaled=True):
     """Build a flamelet library with an adiabatic strained laminar flamelet model
 
     Parameters
@@ -249,6 +250,8 @@ def build_adiabatic_slfm_library(flamelet_specs,
     include_extinguished : bool
         whether or not to include extinguished states in the output table, if encountered in the provided range of
         dissipation rates, off by default
+    diss_rate_log_scaled : bool
+        whether or not the range of dissipation rates is logarithmically scaled 
 
     Returns
     -------
@@ -318,7 +321,7 @@ def build_adiabatic_slfm_library(flamelet_specs,
         return table_dict, f.mixfrac_grid, np.array(x_values)
     else:
         z_dim = Dimension(_mixture_fraction_name, f.mixfrac_grid)
-        x_dim = Dimension(_dissipation_rate_name + _stoich_suffix, np.array(x_values))
+        x_dim = Dimension(_dissipation_rate_name + _stoich_suffix, np.array(x_values), diss_rate_log_scaled)
 
         output_library = Library(z_dim, x_dim)
         output_library.extra_attributes['mech_spec'] = m
@@ -668,7 +671,8 @@ def _build_nonadiabatic_defect_slfm_library(flamelet_specs,
                                             num_procs=1,
                                             integration_args=None,
                                             n_defect_st=32,
-                                            extend_defect_dim=False):
+                                            extend_defect_dim=False,
+                                            diss_rate_log_scaled=True):
     if isinstance(flamelet_specs, dict):
         flamelet_specs = FlameletSpec(**flamelet_specs)
 
@@ -697,7 +701,7 @@ def _build_nonadiabatic_defect_slfm_library(flamelet_specs,
     z_values = structured_defect_table[key0][_mixture_fraction_name]
 
     z_dim = Dimension(_mixture_fraction_name, z_values)
-    x_dim = Dimension(_dissipation_rate_name + _stoich_suffix, x_values)
+    x_dim = Dimension(_dissipation_rate_name + _stoich_suffix, x_values, diss_rate_log_scaled)
     g_dim = Dimension(_enthalpy_defect_name + _stoich_suffix, g_values)
 
     output_library = Library(z_dim, x_dim, g_dim)
@@ -725,7 +729,8 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                      num_procs=1,
                                                      integration_args=None,
                                                      n_defect_st=32,
-                                                     extend_defect_dim=False):
+                                                     extend_defect_dim=False,
+                                                     diss_rate_log_scaled=True):
     """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through rapid, transient extinction (as opposed to quasisteady heat loss)
 
@@ -770,7 +775,8 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                    num_procs,
                                                    integration_args,
                                                    n_defect_st,
-                                                   extend_defect_dim)
+                                                   extend_defect_dim,
+                                                   diss_rate_log_scaled=diss_rate_log_scaled)
 
 
 def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
@@ -782,7 +788,8 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
                                                   num_procs=1,
                                                   integration_args=None,
                                                   n_defect_st=32,
-                                                  extend_defect_dim=False):
+                                                  extend_defect_dim=False,
+                                                  diss_rate_log_scaled=True):
     """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through quasisteady extinction
 
@@ -827,7 +834,8 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
                                                    num_procs,
                                                    integration_args,
                                                    n_defect_st,
-                                                   extend_defect_dim)
+                                                   extend_defect_dim,
+                                                   diss_rate_log_scaled=diss_rate_log_scaled)
 
 
 try:
@@ -878,10 +886,11 @@ try:
 
 
     def _extend_presumed_pdf_first_dim(lam_lib, pdf_spec, added_suffix, num_procs, verbose=False):
-        turb_dims = [Dimension(d.name + added_suffix, d.values) for d in lam_lib.dims]
+        turb_dims = [Dimension(d.name + added_suffix, d.values, d.log_scaled) for d in lam_lib.dims]
         if pdf_spec.pdf != 'delta':
             turb_dims.append(Dimension(pdf_spec.variance_name,
-                                       pdf_spec.scaled_variance_values if pdf_spec.scaled_variance_values is not None else pdf_spec.variance_values))
+                                       pdf_spec.scaled_variance_values if pdf_spec.scaled_variance_values is not None else pdf_spec.variance_values,
+                                       pdf_spec.log_scaled))
             turb_lib = Library(*turb_dims)
             for p in lam_lib.props:
                 turb_lib[p] = turb_lib.get_empty_dataset()
@@ -979,7 +988,8 @@ class PDFSpec:
                  variance_values=None,
                  convolution_spline_order=3,
                  integrator_intervals=1,
-                 variance_name=None):
+                 variance_name=None,
+                 log_scaled=False):
         """Specification of a presumed PDF and integrator/spline details for a given single dimension in a library.
 
         Parameters
@@ -1000,6 +1010,8 @@ class PDFSpec:
         variance_name : str
             the name of the variance dimension to be added, by default Spitfire will add "_variance" to the name
             of the dimension being convolved, or use "scaled_scalar_variance_mean" for "mixture_fraction"
+        log_scaled : bool
+            whether or not the dimension is populated with log-scaled values, default False
         """
         require_pytabprops('PDFSpec')
 
@@ -1009,6 +1021,7 @@ class PDFSpec:
         self.convolution_spline_order = convolution_spline_order
         self.integrator_intervals = integrator_intervals
         self.variance_name = variance_name
+        self.log_scaled = log_scaled
 
 
 def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_procs=1, verbose=False):

@@ -39,7 +39,8 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
 
     l_ts = build_nonadiabatic_defect_transient_slfm_library(FlameletSpec(**flamelet_specs), 
                                                             verbose=True, 
-                                                            diss_rate_values=np.array([1e-2, 1e-1, 1e0, 1e1, 1e2]))
+                                                            diss_rate_values=np.array([1e-2, 1e-1, 1e0, 1e1, 1e2]),
+                                                            diss_rate_log_scaled=True)
 
 
 .. parsed-literal::
@@ -58,30 +59,30 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   2.98 s, T_max = 2249.2
-       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.15 s, T_max = 2186.1
-       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   0.66 s, T_max = 2109.4
-       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   1.43 s, T_max = 1998.4
-       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.07 s, T_max = 1768.7
+       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   7.67 s, T_max = 2249.2
+       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.52 s, T_max = 2186.1
+       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   1.46 s, T_max = 2109.4
+       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   3.72 s, T_max = 1998.4
+       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.18 s, T_max = 1768.7
     ----------------------------------------------------------------------------------
-    library built in   5.77 s
+    library built in  13.91 s
     ----------------------------------------------------------------------------------
     expanding (transient) enthalpy defect dimension ...
-    chi_st =  1.0e-02 1/s converged in  11.39 s
-    chi_st =  1.0e-01 1/s converged in  10.25 s
-    chi_st =  1.0e+00 1/s converged in   8.85 s
-    chi_st =  1.0e+01 1/s converged in   8.06 s
-    chi_st =  1.0e+02 1/s converged in   7.56 s
+    chi_st =  1.0e-02 1/s converged in  20.59 s
+    chi_st =  1.0e-01 1/s converged in  19.66 s
+    chi_st =  1.0e+00 1/s converged in  16.75 s
+    chi_st =  1.0e+01 1/s converged in  14.22 s
+    chi_st =  1.0e+02 1/s converged in  12.63 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in  46.12 s
+    enthalpy defect dimension expanded in  83.85 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--50%--100%
-    Structured enthalpy defect dimension built in   8.01 s
+    Structured enthalpy defect dimension built in   9.68 s
     ----------------------------------------------------------------------------------
-    library built in  59.92 s
+    library built in 107.46 s
     ----------------------------------------------------------------------------------
 
 
@@ -90,6 +91,7 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     l_ss = build_nonadiabatic_defect_steady_slfm_library(FlameletSpec(**flamelet_specs), 
                                                          verbose=True, 
                                                          diss_rate_values=np.array([1e-2, 1e-1, 1e0, 1e1, 1e2]),
+                                                         diss_rate_log_scaled=True,
                                                          solver_verbose=False,
                                                          h_stoich_spacing=1.e-3)
 
@@ -110,30 +112,30 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   2.95 s, T_max = 2249.2
-       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.14 s, T_max = 2186.1
-       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   0.64 s, T_max = 2109.4
-       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   1.41 s, T_max = 1998.4
-       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.07 s, T_max = 1768.7
+       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   7.15 s, T_max = 2249.2
+       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.45 s, T_max = 2186.1
+       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   1.41 s, T_max = 2109.4
+       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   3.27 s, T_max = 1998.4
+       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.17 s, T_max = 1768.7
     ----------------------------------------------------------------------------------
-    library built in   5.74 s
+    library built in  12.83 s
     ----------------------------------------------------------------------------------
     expanding (steady) enthalpy defect dimension ...
-    chi_st =  1.0e-02 1/s converged in  38.70 s
-    chi_st =  1.0e-01 1/s converged in  20.06 s
-    chi_st =  1.0e+00 1/s converged in  12.11 s
-    chi_st =  1.0e+01 1/s converged in   8.52 s
-    chi_st =  1.0e+02 1/s converged in  13.62 s
+    chi_st =  1.0e-02 1/s converged in 124.93 s
+    chi_st =  1.0e-01 1/s converged in  47.30 s
+    chi_st =  1.0e+00 1/s converged in  27.73 s
+    chi_st =  1.0e+01 1/s converged in  19.77 s
+    chi_st =  1.0e+02 1/s converged in  35.97 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in  93.04 s
+    enthalpy defect dimension expanded in 255.75 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--50%--100%
-    Structured enthalpy defect dimension built in   9.00 s
+    Structured enthalpy defect dimension built in  10.35 s
     ----------------------------------------------------------------------------------
-    library built in 107.81 s
+    library built in 278.96 s
     ----------------------------------------------------------------------------------
 
 

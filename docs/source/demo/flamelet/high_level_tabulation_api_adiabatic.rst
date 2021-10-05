@@ -62,6 +62,7 @@ dissipation rate ourselves.
     l_sl = build_adiabatic_slfm_library(flamelet_specs,
                                         diss_rate_values=np.logspace(-2, 3, 6),
                                         diss_rate_ref='stoichiometric',
+                                        diss_rate_log_scaled=True,
                                         verbose=False)
 
 And now we visualize the results, showing the equilibrium and

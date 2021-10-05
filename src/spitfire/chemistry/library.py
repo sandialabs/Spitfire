@@ -31,12 +31,13 @@ class Dimension(object):
         the values of the independent variable in the grid
     """
 
-    def __init__(self, name: str, values: np.array):
+    def __init__(self, name: str, values: np.array, log_scaled=False):
         self._name = name
         self._values = np.copy(values)
         self._min = np.min(values)
         self._max = np.max(values)
         self._npts = values.size
+        self._log_scaled = log_scaled
 
         if not name.isidentifier():
             raise ValueError(f'Error in building Dimension "{name}", the name cannot contain hyphens or spaces '
@@ -78,9 +79,13 @@ class Dimension(object):
     @property
     def npts(self):
         return self._npts
+       
+    @property
+    def log_scaled(self):
+        return self._log_scaled
 
     def _get_dict_for_file_save(self):
-        return {'name': self._name, 'values': self._values}
+        return {'name': self._name, 'values': self._values, 'log_scaled': self._log_scaled}
 
 
 class LibraryIndexError(IndexError):
@@ -120,7 +125,7 @@ class Library(object):
 
     def __init__(self, *dimensions):
         self._dims = dict(
-            {d.name: (Dimension(d.name, d.values) if isinstance(d, Dimension) else Dimension(d[0], d[1])) for d in
+            {d.name: (Dimension(d.name, d.values, d.log_scaled) if isinstance(d, Dimension) else Dimension(d[0], d[1], False if len(d) == 2 else d[2])) for d in
              dimensions})
         self._props = dict()
         self._dims_ordering = dict()
@@ -164,7 +169,7 @@ class Library(object):
         for index in instance_dict['dim_ordering']:
             name = instance_dict['dim_ordering'][index]
             d = instance_dict['dimensions'][name]
-            ordered_dims[index] = Dimension(d['name'], d['values'])
+            ordered_dims[index] = Dimension(d['name'], d['values'], log_scaled=(False if 'log_scaled' not in d else d['log_scaled']))
         self.__init__(*ordered_dims)
         for prop in instance_dict['properties']:
             self[prop] = instance_dict['properties'][prop]
@@ -253,7 +258,7 @@ class Library(object):
     def __copy__(self):
         new_dimensions = []
         for d in self.dims:
-            new_d = Dimension(d.name, d.values)
+            new_d = Dimension(d.name, d.values, d.log_scaled)
             new_dimensions.append(new_d)
         new_library = Library(*new_dimensions)
         for p in self.props:
@@ -265,7 +270,7 @@ class Library(object):
     def __deepcopy__(self, *args, **kwargs):
         new_dimensions = []
         for d in self.dims:
-            new_d = Dimension(d.name, np.copy(d.values))
+            new_d = Dimension(d.name, np.copy(d.values), d.log_scaled)
             new_dimensions.append(new_d)
         new_library = Library(*new_dimensions)
         for p in self.props:
@@ -294,11 +299,11 @@ class Library(object):
         new_dimensions = []
         for d in library.dims:
             if d.values.size > 1:
-                new_d = Dimension(d.name, d.values)
+                new_d = Dimension(d.name, d.values, d.log_scaled)
                 new_dimensions.append(new_d)
         if not new_dimensions:
-            return dict(dimensions=dict({p: np.squeeze(library[p]) for p in library.props}),
-                        properties=dict({d.name: np.squeeze(d.values) for d in library.dims}),
+            return dict(properties=dict({p: np.squeeze(library[p]) for p in library.props}),
+                        dimensions=dict({d.name: (np.squeeze(d.values), d.log_scaled) for d in library.dims}),
                         extra_attributes=library.extra_attributes)
         else:
             new_library = Library(*new_dimensions)
@@ -360,7 +365,7 @@ class Library(object):
                 if not isinstance(s, slice) and not isinstance(s, int):
                     raise LibraryIndexError(f'Library[...] can either take a single string or standard Python slices, '
                                             f'you provided it {slices}')
-                new_d = Dimension(d.name, np.array([d.values[s]]) if isinstance(d.values[s], float) else d.values[s])
+                new_d = Dimension(d.name, np.array([d.values[s]]) if isinstance(d.values[s], float) else d.values[s], d.log_scaled)
                 new_dimensions.append(new_d)
             new_library = Library(*new_dimensions)
             for p in self.props:
