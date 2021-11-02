@@ -15,6 +15,43 @@ from numpy import get_include as numpy_include
 import platform
 
 
+class ConfigSQA:
+  """Configuring SQA files, currently just git information. The class handles creating/deleting files during installation."""
+  def _clean_state(self, create_dir=False):
+    if os.path.exists(self._sqa_init_path):
+      os.remove(self._sqa_init_path)
+    if os.path.exists(self._git_asset_path):
+      os.remove(self._git_asset_path)
+    if os.path.isdir(self._sqa_dir):
+      os.rmdir(self._sqa_dir)
+    if create_dir:
+      os.mkdir(self._sqa_dir)
+      with open(self._sqa_init_path, 'w') as f:
+        f.write(' ')
+    
+  def __init__(self, sqa_dir):
+    self._sqa_dir = sqa_dir
+    self._sqa_init_path = os.path.join(self._sqa_dir, '__init__.py')
+    self._git_asset_path = os.path.join(self._sqa_dir, 'gitinfo.py')
+    self._clean_state(create_dir=True)
+    
+  def __del__(self, *args):
+    self._clean_state()
+    
+  def write_gitinfo(self):
+    with open(self._git_asset_path, 'w') as f:
+      from git import Repo
+      repo = Repo('.')
+      repo.config_reader()
+      tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
+      latest_tag = tags[-1]
+      f.write(f'state = "{("dirty" if repo.is_dirty() else "clean")}-{latest_tag}-{repo.head.object.hexsha}"')
+
+
+c = ConfigSQA('src/spitfire/sqa')
+c.write_gitinfo()
+
+
 def readfile(filename):
     try:
         with open(filename) as f:
@@ -33,7 +70,7 @@ setup(name='Spitfire',
       long_description=readfile('readme.md'),
       url='https://github.com/sandialabs/Spitfire/',
       package_dir={'': 'src'},
-      packages=['spitfire', 'spitfire.chemistry', 'spitfire.time', 'spitfire.griffon'],
+      packages=['spitfire', 'spitfire.chemistry', 'spitfire.time', 'spitfire.griffon', 'spitfire.sqa'],
       ext_modules=cythonize(Extension(name='spitfire.griffon.griffon',
                                       sources=[os.path.join('src', 'spitfire', 'griffon', 'griffon.pyx')] + glob(
                                           os.path.join('src', 'spitfire', 'griffon', 'src') + '/*.cpp', recursive=False),
