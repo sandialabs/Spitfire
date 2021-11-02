@@ -237,6 +237,35 @@ class FlameletSpec(object):
         self.__init__(**state)
 
 
+def compute_dissipation_rate(mixture_fraction,
+                             max_dissipation_rate,
+                             form='Peters'):
+    """Compute the scalar dissipation rate across mixture fraction
+
+        Parameters
+        ----------
+        mixture_fraction : array_like
+            the locations of grid points in mixture fraction space
+        max_dissipation_rate : float
+            the maximum value of the dissipation rate
+        form : str, optional
+            the form of the dissipation rate's dependency on mixture fraction, defaults to 'Peters', which
+            uses the form of N. Peters, Turbulent Combustion, 2000.
+            Specifying anything else will yield a constant scalar dissipation rate.
+
+        Returns
+        -------
+        x : array_like
+            the scalar dissipation rate on the given mixture fraction grid
+        """
+    if form == 'Peters' or form == 'peters':
+        x = max_dissipation_rate * np.exp(-2. * (erfinv(2. * mixture_fraction - 1.)) ** 2)
+    else:
+        x = np.zeros_like(mixture_fraction)
+        x[:] = max_dissipation_rate
+    return x
+
+
 class Flamelet(object):
     """An API for solving flamelet equations in composing tabulated chemistry libraries
     """
@@ -320,30 +349,7 @@ class Flamelet(object):
                                   mixture_fraction,
                                   max_dissipation_rate,
                                   form='Peters'):
-        """Compute the scalar dissipation rate across mixture fraction
-
-            Parameters
-            ----------
-            mixture_fraction : array_like
-                the locations of grid points in mixture fraction space
-            max_dissipation_rate : float
-                the maximum value of the dissipation rate
-            form : str, optional
-                the form of the dissipation rate's dependency on mixture fraction, defaults to 'Peters', which
-                uses the form of N. Peters, Turbulent Combustion, 2000.
-                Specifying anything else will yield a constant scalar dissipation rate.
-
-            Returns
-            -------
-            x : array_like
-                the scalar dissipation rate on the given mixture fraction grid
-            """
-        if form == 'Peters' or form == 'peters':
-            x = max_dissipation_rate * np.exp(-2. * (erfinv(2. * mixture_fraction - 1.)) ** 2)
-        else:
-            x = np.zeros_like(mixture_fraction)
-            x[:] = max_dissipation_rate
-        return x
+        return compute_dissipation_rate(mixture_fraction, max_dissipation_rate, form)
 
     def _set_heat_transfer_arg_as_np_array(self, input_value, input_name, attr_name):
         if input_value is None:
@@ -450,9 +456,7 @@ class Flamelet(object):
                 if fs.max_dissipation_rate is not None:
                     self._max_dissipation_rate = fs.max_dissipation_rate
                     self._dissipation_rate_form = fs.dissipation_rate_form
-                    self._x = self._compute_dissipation_rate(self._z,
-                                                             self._max_dissipation_rate,
-                                                             self._dissipation_rate_form)
+                    self._x = compute_dissipation_rate(self._z, self._max_dissipation_rate, self._dissipation_rate_form)
                 elif fs.stoich_dissipation_rate is not None:
                     if fs.dissipation_rate_form in ['peters', 'Peters']:
                         z_st = self.mechanism.stoich_mixture_fraction(self.fuel_stream, self.oxy_stream)
@@ -461,9 +465,7 @@ class Flamelet(object):
                     elif fs.dissipation_rate_form == 'constant':
                         self._max_dissipation_rate = fs.stoich_dissipation_rate
                     self._dissipation_rate_form = fs.dissipation_rate_form
-                    self._x = self._compute_dissipation_rate(self._z,
-                                                             self._max_dissipation_rate,
-                                                             self._dissipation_rate_form)
+                    self._x = compute_dissipation_rate(self._z, self._max_dissipation_rate, self._dissipation_rate_form)
         self._lewis_numbers = np.ones(self._n_species)
 
         # set up the heat transfer
