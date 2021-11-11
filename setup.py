@@ -46,8 +46,6 @@ class ConfigSQA:
       tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
       tag_dict = dict({t: repo.commit(t) for t in tags})
 
-      print(tag_dict)
-
       latest_tag = tags[-1]
       tag_hexsha = tag_dict[latest_tag].hexsha
       is_dirty = repo.is_dirty()
