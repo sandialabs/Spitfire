@@ -44,8 +44,30 @@ class ConfigSQA:
       repo = Repo('.')
       repo.config_reader()
       tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
+      tag_dict = dict({t: repo.commit(t) for t in tags})
+
       latest_tag = tags[-1]
-      f.write(f'state = "{("dirty" if repo.is_dirty() else "clean")}-{latest_tag}-{repo.head.object.hexsha}"')
+      tag_hexsha = tag_dict[latest_tag].hexsha
+      is_dirty = repo.is_dirty()
+      current_hexsha = repo.head.object.hexsha
+
+      if is_dirty:
+        detailed_version = f'dirty-{latest_tag}-{current_hexsha}'
+        minimal_version = 'local'
+      else:
+        if current_hexsha == tag_hexsha:
+          detailed_version = f'{latest_tag}'
+          minimal_version = f'{latest_tag}'
+        else:
+          detailed_version = f'clean-{latest_tag}-{current_hexsha}'
+          minimal_version = 'committed'
+      
+      f.write(f'detailed_version = "{detailed_version}"\n')
+      f.write(f'minimal_version = "{minimal_version}"\n')
+      f.write(f'latest_tag = "{latest_tag}"\n')
+      f.write(f'latest_tag_sha = "{tag_hexsha}"\n')
+      f.write(f'is_dirty = "{is_dirty}"\n')
+      f.write(f'current_hexsha = "{current_hexsha}"\n')
 
 
 c = ConfigSQA('src/spitfire/sqa')
