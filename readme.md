@@ -27,13 +27,16 @@ Spitfire requires Python3 (tested with 3.6, 3.7) with the following packages:
 - `Cantera`
 - `sphinx`
 - `NumPydoc`
+- `GitPython`
 
 We also highly recommend installing `jupyter`.
 
 Conda provides the easiest method of installing Spitfire's Python dependencies, primarily because it can install the Cantera Python interface easily.
 The lines below will install Spitfire's dependencies.
+On some systems, installing dependencies such as NumPy through conda-forge can be required.
 ```
 conda install numpy scipy matplotlib Cython sphinx numpydoc
+conda install -c conda-forge gitpython
 conda install -c cantera cantera
 ```
 Along with the optional `conda install -c anaconda jupyter`.
@@ -67,7 +70,7 @@ cd build
 cmake .. \
      -DENABLE_PYTHON=ON \
      -DENABLE_MIXMDL=ON \
-     -DTabProps_UTILS=ON \
+     -DTabProps_UTILS=OFF \
      -DTabProps_PREPROCESSOR=OFF \
      -DTabProps_ENABLE_TESTING=ON \
      -DCMAKE_BUILD_TYPE=Release
@@ -105,7 +108,7 @@ python3 -m unittest discover -s tests
 ```
 
 ## Building the Documentation
-First, be aware that static documentation for Spitfire is hosted by [Read the Docs](https://spitfire.readthedocs.io/en/latest/).
+First, be aware that documentation for Spitfire is hosted by [Read the Docs](https://spitfire.readthedocs.io/en/latest/).
 A number of demonstrations as well as some basic theory are available in the documentation.
 Second, documenting multi-language software in scientific applications, especially when extensibility is an explicit aim, is hard!
 Any questions, suggestions, or help you could provide would be appreciated greatly.
@@ -115,4 +118,4 @@ cd docs
 make html
 ```
 and then point your favorite web browser to the `build/html/index.html` file.
-Sphinx enables other forms of documentation but the HTML has been our primary target.
+Sphinx enables other forms of documentation but HTML has been our primary target.
