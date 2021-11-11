@@ -41,3 +41,5 @@ from .time.methods import (ForwardEulerS1P1,
                            KennedyCarpenterS8P5Q4,
                            GeneralAdaptiveERK,
                            GeneralAdaptiveERKMultipleEmbedded)
+
+from .data.get import datafile as datafile
