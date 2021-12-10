@@ -59,12 +59,31 @@ def validate_on_mechanism(mech, temperature, pressure, test_rhs=True, test_jac=T
             jacFD[:, 1 + i] = (- rhsGR1 + rhsGR2) / (2. * dY)
 
         pass_jac = max(abs(jacGR - jacFD) / (abs(jacGR) + 1.)) < 1.e-2
+        if not pass_jac:
+            print('fd:')
+            for i in range(ns):
+                for j in range(ns):
+                    print(f'{jacFD[i, j]:12.2e}', end=', ')
+                print('')
+            print('gr:')
+            for i in range(ns):
+                for j in range(ns):
+                    print(f'{jacGR[i, j]:12.2e}', end=', ')
+                print('')
+            print('gr-fd:')
+            for i in range(ns):
+                for j in range(ns):
+                    print(f'{(jacGR[i, j] - jacFD[i, j]) / (abs(jacFD[i, j]) + 1.0):12.2e}', end=', ')
+                print('')
+            print('')
 
     w = gas.net_production_rates * gas.molecular_weights
     h = gas.standard_enthalpies_RT * gas.T * gas_constant / gas.molecular_weights
     rhsCN = zeros(ns)
     rhsCN[1:] = w[:-1] / gas.density
     rhsCN[0] = - sum(w * h) / gas.density / gas.cp_mass
+    if max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) > 100. * sqrt(np.finfo(float).eps):
+        print(rhsGR, rhsCN)
     pass_rhs = max(abs(rhsGR - rhsCN) / (abs(rhsCN) + 1.)) < 100. * sqrt(np.finfo(float).eps)
 
     if test_rhs and test_jac:

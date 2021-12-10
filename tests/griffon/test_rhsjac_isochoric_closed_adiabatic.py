@@ -101,16 +101,33 @@ def validate_on_mechanism(mech, temperature, pressure, test_rhs=True, test_jac=T
 
         jacFD11 = np.copy(jacFD[1, 1])
         jacSemiFD11 = - 1. / cv * (1. / rho * (sum(wsensT * e) + sum(cvi * w)) + cvsensT * rhsGR[1])
-        pass_jac = max(abs(jacGR - jacFD) / (abs(jacGR) + 1.)) < 1.e-4
+        pass_jac = max(abs(jacGR - jacFD) / (abs(jacGR) + 1.)) < 1.e-3
+
+        if not pass_jac:
+            print('fd:')
+            for i in range(ns + 1):
+                for j in range(ns + 1):
+                    print(f'{jacFD[i, j]:12.2e}', end=', ')
+                print('')
+            print('gr:')
+            for i in range(ns + 1):
+                for j in range(ns + 1):
+                    print(f'{jacGR[i, j]:12.2e}', end=', ')
+                print('')
+            print('gr-fd:')
+            for i in range(ns + 1):
+                for j in range(ns + 1):
+                    df = (jacGR[i, j] - jacFD[i, j]) / (abs(jacFD[i, j]) + 1.0)
+                    if df > 1.e-3:
+                        print(f'{df:12.2e}', end=', ')
+                    else:
+                        print(f'{"":16}', end=', ')
+                print('')
+            print('')
 
     if test_rhs:
         return pass_rhs
     if test_jac:
-        if not pass_jac:
-            print(jacGR[1, 1])
-            print(jacSemiFD11)
-            print(jacFD11)
-            print(abs(jacGR - jacFD) / (abs(jacGR) + 1.))
         return pass_jac
 
 

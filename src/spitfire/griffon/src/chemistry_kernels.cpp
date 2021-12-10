@@ -10,6 +10,7 @@
 
 #include "combustion_kernels.h"
 #include <cmath>
+#include <iostream>
 
 #define GRIFFON_SUM2(prop) (prop(0) + prop(1))
 #define GRIFFON_SUM3(prop) (GRIFFON_SUM2(prop) + prop(2))
@@ -57,6 +58,7 @@ void CombustionKernels::production_rates(const double &temperature, const double
   {
     const auto polyType = mechanismData.heatCapacityData.types[n];
     const auto &c = mechanismData.heatCapacityData.coefficients[n];
+    const auto &c9 = mechanismData.heatCapacityData.nasa9Coefficients[n];
     switch (polyType)
     {
     case CpType::NASA7:
@@ -69,6 +71,21 @@ void CombustionKernels::production_rates(const double &temperature, const double
         specG[n] = c[6] + T * (c[1] - c[7] - c[1] * logT - T * (c[2] + T * (c[3] + T * (c[4] + T * c[5]))));
       }
       break;
+    case CpType::NASA9:
+    {
+      const auto nregions = static_cast<int>(c9[0]);
+      for(int k=0; k<nregions; ++k)
+      {
+        const int region_start_idx = 1 + k * 11;
+        if(T < c9[region_start_idx + 1] && T > c9[region_start_idx])
+        {
+          const auto *a = &(c9[region_start_idx + 2]);
+          specG[n] = a[7] - 0.5 * a[0] * invT + a[1] * (logT + 1.0) - T * (a[2] * (logT - 1.0) + a[8] + T * (0.5 * a[3] + T * (0.1666666666666666 * a[4] + T * (0.0833333333333333 * a[5] + T * 0.05 * a[6]))));
+          break;
+        }
+      }
+    }
+    break;
     case CpType::CONST:
       specG[n] = c[1] + c[3] * (T - c[0]) - T * (c[2] + c[3] * (logT - log(c[0])));
       break;
@@ -78,7 +95,7 @@ void CombustionKernels::production_rates(const double &temperature, const double
     }
     }
   }
-
+  
   double k = 0;
   double kr;
   double m;

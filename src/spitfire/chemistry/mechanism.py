@@ -140,6 +140,10 @@ class ChemicalMechanismSpec(object):
                                                      cp['high-coeffs'].tolist())
                 self._mech_data['species'][s]['cp'] = (
                     'NASA7', cp['Tmin'], cp['Tmid'], cp['Tmax'], cp['low-coeffs'].tolist(), cp['high-coeffs'].tolist())
+            elif cp['type'] == 'NASA9':
+                self._griffon.mechanism_add_nasa9_cp(s, cp['Tmin'], cp['Tmax'], cp['coeffs'].tolist())
+                self._mech_data['species'][s]['cp'] = ('NASA9', cp['Tmin'], cp['Tmax'], cp['coeffs'].tolist())
+
 
         add_smpl = self._griffon.mechanism_add_reaction_simple
         add_3bdy = self._griffon.mechanism_add_reaction_three_body
@@ -243,6 +247,9 @@ class ChemicalMechanismSpec(object):
                 Tmin, Tmid, Tmax, low_coeffs, high_coeffs = spec['cp'][1:]
                 coeffs = [Tmid] + high_coeffs + low_coeffs
                 ctspec.thermo = ct.NasaPoly2(Tmin, Tmax, p_ref, coeffs)
+            elif spec['cp'][0] == 'NASA9':
+                Tmin, Tmax, coeffs = spec['cp'][1:]
+                ctspec.thermo = ct.Nasa9PolyMultiTempRegion(Tmin, Tmax, p_ref, coeffs)
             species_list.append(ctspec)
 
         reaction_list = list()
@@ -311,7 +318,6 @@ class ChemicalMechanismSpec(object):
             sp = ctsol.species(i)
 
             spec_name_list.append(sp.name)
-
             if isinstance(sp.thermo, ct.ConstantCp):
                 spec_dict[sp.name] = dict({'atoms': sp.composition,
                                            'heat-capacity': dict({
@@ -331,6 +337,13 @@ class ChemicalMechanismSpec(object):
                                                'Tmax': sp.thermo.max_temp,
                                                'low-coeffs': sp.thermo.coeffs[8:],
                                                'high-coeffs': sp.thermo.coeffs[1:8]})})
+            elif isinstance(sp.thermo, ct.Nasa9PolyMultiTempRegion):
+                spec_dict[sp.name] = dict({'atoms': sp.composition,
+                                           'heat-capacity': dict({
+                                               'type': 'NASA9',
+                                               'Tmin': sp.thermo.min_temp,
+                                               'Tmax': sp.thermo.max_temp,
+                                               'coeffs': sp.thermo.coeffs})})
 
         for i in range(ctsol.n_reactions):
             rx = ctsol.reaction(i)

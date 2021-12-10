@@ -82,6 +82,7 @@ void CombustionKernels::prod_rates_sens_sparse(const double &temperature, const 
   {
     const auto polyType = mechanismData.heatCapacityData.types[n];
     const auto &c = mechanismData.heatCapacityData.coefficients[n];
+    const auto &c9 = mechanismData.heatCapacityData.nasa9Coefficients[n];
     switch (polyType)
     {
     case CpType::NASA7:
@@ -95,7 +96,23 @@ void CombustionKernels::prod_rates_sens_sparse(const double &temperature, const 
         specG[n] = c[6] + T * (c[1] - c[7] - c[1] * logT - T * (c[2] + T * (c[3] + T * (c[4] + T * c[5]))));
         dBdTSpec[n] = invRu * ((c[1] - Ru) * invT + c[2] + T * (2 * c[3] + T * (3 * c[4] + T * 4 * c[5])) + c[6] * invT * invT);
       }
-      break;
+      break;   
+    case CpType::NASA9:
+    {
+      const auto nregions = static_cast<int>(c9[0]);
+      for(int k=0; k<nregions; ++k)
+      {
+        const int region_start_idx = 1 + k * 11;
+        if(T < c9[region_start_idx + 1] || k == nregions - 1)
+        {
+          const auto *a = &(c9[region_start_idx + 2]);
+          specG[n] = a[7] - 0.5 * a[0] * invT + a[1] * (logT + 1.0) - T * (a[2] * (logT - 1.0) + a[8] + T * (0.5 * a[3] + T * (0.1666666666666666 * a[4] + T * (0.0833333333333333 * a[5] + T * 0.05 * a[6]))));
+          dBdTSpec[n] = invRu * (invT * (a[2] - Ru + invT * (a[7] + a[1] * logT - invT * a[0])) + 0.5 * a[3] + T * (a[4] * 0.3333333333333333 + T * (0.25 * a[5] + T * 0.2 * a[6])));
+          break;
+        }
+      }
+    }
+    break;
     case CpType::CONST:
       specG[n] = c[1] + c[3] * (T - c[0]) - T * (c[2] + c[3] * (logT - std::log(c[0])));
       dBdTSpec[n] = invT * (Msp[n] * invRu * (c[3] - invT * (c[3] * c[0] - c[1])) - 1);

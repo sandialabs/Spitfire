@@ -95,7 +95,7 @@ def validate_on_mechanism(mech, temperature, pressure, tau, do_rhs, do_jac):
             r.reactor_rhs_isochoric(state_p, rhoin, Tin, yin, tau, 0, 0, 0, 0, 0, 0, True, rhsGR2)
             jacFD[:, 2 + i] = (- rhsGR1 + rhsGR2) / (2. * dY)
 
-        return max(abs(jacGR - jacFD) / (abs(jacGR) + 1.)) < 1.e-4
+        return max(abs(jacGR - jacFD) / (abs(jacGR) + 1.)) < 4.e-3
 
 
 def create_test(m, T, p, tau, do_rhs, do_jac):

@@ -44,7 +44,8 @@ public:
   {
     UNKNOWN,
     CONST,
-    NASA7
+    NASA7,
+    NASA9
   };
 
   /*
@@ -148,6 +149,7 @@ public:
   struct HeatCapacityData
   {
     std::vector<std::array<double, NCP>> coefficients;
+    std::vector<std::vector<double>> nasa9Coefficients;
     std::vector<double> minTemperatures;
     std::vector<double> maxTemperatures;
     std::vector<CpType> types;
@@ -284,7 +286,7 @@ public:
      * 3. set reference pressure and temperature (mechanism_set_ref_pressure, mechanism_set_ref_temperature)
      * 4. add species with atom maps (mechanism_add_species)
      * 5. call mechanism_resize_heat_capacity_data()
-     * 6. add the heat capacity polynomials with either mechanism_add_const_cp or mechanism_add_nasa7_cp
+     * 6. add the heat capacity polynomials with either mechanism_add_const_cp, mechanism_add_nasa7_cp, or mechanism_add_nasa9_cp
      * 7. add reactions with the methods below. The *_with_special_orders methods are for nonelementary reactions.
      */
   void
@@ -307,6 +309,8 @@ public:
   void
   mechanism_add_nasa7_cp(const std::string &spec_name, const double &Tmin, const double &Tmid, const double &Tmax,
                          const std::vector<double> &low_coeffs, const std::vector<double> &high_coeffs);
+  void
+  mechanism_add_nasa9_cp(const std::string &spec_name, const double &Tmin, const double &Tmax, const std::vector<double> &coeffs);
   void
   mechanism_add_reaction_simple(const std::map<std::string, int> &reactants_stoich,
                                 const std::map<std::string, int> &products_stoich, const bool reversible,
@@ -397,6 +401,8 @@ public:
   energy_mix(const double &temperature, const double *y) const;
   void
   species_cp(const double &temperature, double *out_cpspecies) const;
+  void
+  cp_sens_T(const double &temperature, const double *y, double *out_cpmixsens, double *out_cpspeciessens) const;
   void
   species_cv(const double &temperature, double *out_cvspecies) const;
   void
@@ -532,8 +538,6 @@ private:
   void
   cv_mix_and_species(const double &temperature, const double *y, const double &mmw, double *out_cvmix,
                      double *out_cvspecies) const;
-  void
-  cp_sens_T(const double &temperature, const double *y, double *out_cpmixsens, double *out_cpspeciessens) const;
   inline void
   cv_sens_T(const double &temperature, const double *y, double *out_cvmixsens, double *out_cvspeciessens) const
   {

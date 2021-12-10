@@ -80,6 +80,7 @@ void CombustionKernels::mechanism_resize_heat_capacity_data()
 {
   const auto ns = mechanismData.phaseData.nSpecies;
   mechanismData.heatCapacityData.coefficients.resize(ns);
+  mechanismData.heatCapacityData.nasa9Coefficients.resize(ns);
   mechanismData.heatCapacityData.minTemperatures.resize(ns);
   mechanismData.heatCapacityData.maxTemperatures.resize(ns);
   mechanismData.heatCapacityData.types.resize(ns);
@@ -126,6 +127,30 @@ void CombustionKernels::mechanism_add_nasa7_cp(const std::string &spec_name, con
   coeffs[10] /= 6.;
   coeffs[11] /= 12.;
   coeffs[12] /= 20.;
+}
+
+void CombustionKernels::mechanism_add_nasa9_cp(const std::string &spec_name, const double &Tmin, 
+                                               const double &Tmax, const std::vector<double> &coeffs_in)
+{
+  const double R = mechanismData.phaseData.Ru;
+
+  const auto i = mechanismData.phaseData.speciesIndices.at(spec_name);
+  mechanismData.heatCapacityData.types[i] = CpType::NASA9;
+  mechanismData.heatCapacityData.minTemperatures[i] = Tmin;
+  mechanismData.heatCapacityData.maxTemperatures[i] = Tmax;
+
+  const auto nregions = static_cast<int>(coeffs_in[0]);
+  auto &coeffs = mechanismData.heatCapacityData.nasa9Coefficients[i];
+  coeffs.resize(coeffs_in.size());
+  coeffs[0] = coeffs_in[0];
+  for(int k=0; k<nregions; ++k)
+  {
+    const int region_start_idx = 1 + k * 11;
+    for(int j=0; j<11; ++j)
+    {
+      coeffs[region_start_idx + j] = (j < 2 ? 1.0 : R) * coeffs_in[region_start_idx + j];
+    }
+  }
 }
 
 void CombustionKernels::mechanism_add_reaction_simple(const std::map<std::string, int> &reactants_stoich,

@@ -47,6 +47,10 @@ cdef extern from "combustion_kernels.h" namespace "griffon":
       const double& Tmax,
       const vector[double]& low_coeffs,
       const vector[double]& high_coeffs)
+    void mechanism_add_nasa9_cp(const string& spec_name,
+      const double& Tmin,
+      const double& Tmax,
+      const vector[double]& coeffs)
     void mechanism_add_reaction_simple(const map[string, int]& reactants_stoich,
       const map[string, int]& products_stoich,
       const bool reversible,
@@ -139,6 +143,7 @@ cdef extern from "combustion_kernels.h" namespace "griffon":
     void species_cv(const double T, double *cvspecies)
     void species_enthalpies(const double T, double *enthalpyspecies)
     void species_energies(const double T, double *energyspecies)
+    void cp_sens_T(const double &temperature, const double *y, double *out_cpmixsens, double *out_cpspeciessens)
 
     # kinetics methods
     void production_rates(const double T, const double rho, const double* y, double *prodrates)
@@ -301,6 +306,19 @@ cdef class PyCombustionKernels:
       for h in high_coeffs:
         high_coeffs_vec.push_back(h)
       self.c_calculator.mechanism_add_nasa7_cp(spec_name.encode(), Tmin, Tmid, Tmax, low_coeffs_vec, high_coeffs_vec)
+
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def mechanism_add_nasa9_cp(self,
+        str spec_name,
+        double Tmin,
+        double Tmax,
+        list coeffs):
+      cdef vector[double] coeffs_vec
+      for c in coeffs:
+        coeffs_vec.push_back(c)
+      self.c_calculator.mechanism_add_nasa9_cp(spec_name.encode(), Tmin, Tmax, coeffs_vec)
 
     @cython.nonecheck(False)
     @cython.boundscheck(False)
@@ -731,6 +749,13 @@ cdef class PyCombustionKernels:
     @cython.wraparound(False)
     def species_energies(self, np.double_t T, np.ndarray[np.double_t, ndim=1] energyspecies):
       self.c_calculator.species_energies(T, &energyspecies[0])
+
+    @cython.nonecheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def dcpdT_species(self, np.double_t T, np.ndarray[np.double_t, ndim=1] mass_fractions, np.ndarray[np.double_t, ndim=1] dcpdT_spec):
+      dcpdT = 0.0
+      self.c_calculator.cp_sens_T(T, &mass_fractions[0], &dcpdT, &dcpdT_spec[0])
 
     @cython.nonecheck(False)
     @cython.boundscheck(False)

@@ -5,28 +5,41 @@ from spitfire import ChemicalMechanismSpec as Mechanism
 import pickle
 import cantera as ct
 
+ct.suppress_thermo_warnings()  # because we are faking heat capacity polynomials
+
 species_decl = list([ct.Species('A', 'H:2'),
                      ct.Species('B', 'H:1'),
                      ct.Species('C', 'O:1'),
                      ct.Species('D', 'O:2'),
                      ct.Species('E', 'H:1, O:2'),
                      ct.Species('N', 'H:1, O:1')])
-species_dict = dict({'const': list(), 'nasa7': list()})
+species_dict = dict({'const': list(), 'nasa7': list(), 'nasa9-1': list(), 'nasa9-2': list(), 'nasa9-3': list()})
 for i, s in enumerate(species_decl):
     species_dict['const'].append(ct.Species(s.name, s.composition))
     species_dict['const'][-1].thermo = ct.ConstantCp(300., 3000., 101325., (300., 0., 0., float(i + 1) * 1.e4))
-    species_dict['nasa7'].append(ct.Species(s.name, s.composition))
-    coeffs = [float(i + 1) * v for v in [1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-8, 1.e-10, 1.e-12]]
-    species_dict['nasa7'][-1].thermo = ct.NasaPoly2(300., 3000., 101325., hstack([1200.] + coeffs + coeffs))
 
-mechs = [('const', Mechanism.from_solution(ct.Solution(thermo='IdealGas',
-                                                       kinetics='GasKinetics',
-                                                       species=species_dict['const'],
-                                                       reactions=[]))),
-         ('nasa7', Mechanism.from_solution(ct.Solution(thermo='IdealGas',
-                                                       kinetics='GasKinetics',
-                                                       species=species_dict['nasa7'],
-                                                       reactions=[])))]
+    species_dict['nasa7'].append(ct.Species(s.name, s.composition))
+    coeffs1 = [float(i + 1) * v for v in [1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-8, 1.e-10, 1.e-12]]
+    coeffs2= [float(i + 2) * v for v in [1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-8, 1.e-10, 1.e-12]]
+    species_dict['nasa7'][-1].thermo = ct.NasaPoly2(300., 3000., 101325., hstack([1200.] + coeffs1 + coeffs2))
+
+    species_dict['nasa9-1'].append(ct.Species(s.name, s.composition))
+    coeffs = [float(i + 1) * v for v in [1e0, 1e0, 1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-10, 1.e2, 1.e1]]
+    species_dict['nasa9-1'][-1].thermo = ct.Nasa9PolyMultiTempRegion(300., 3000., 101325., hstack([1] + [300, 3000.] + coeffs))
+
+    species_dict['nasa9-2'].append(ct.Species(s.name, s.composition))
+    coeffs1 = [float(i + 1) * v for v in [1e0, 1e0, 1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-10, 1.e2, 1.e1]]
+    coeffs2 = [float(i + 2) * v for v in [1e0, 1e0, 1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-10, 1.e2, 1.e1]]
+    species_dict['nasa9-2'][-1].thermo = ct.Nasa9PolyMultiTempRegion(300., 3000., 101325., hstack([2] + [300, 1200.] + coeffs1 + [1200., 3000.] + coeffs2))
+
+    species_dict['nasa9-3'].append(ct.Species(s.name, s.composition))
+    coeffs1 = [float(i + 1) * v for v in [1e0, 1e0, 1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-10, 1.e2, 1.e1]]
+    coeffs2 = [float(i + 2) * v for v in [1e0, 1e0, 1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-10, 1.e2, 1.e1]]
+    coeffs3 = [float(i + 3) * v for v in [1e0, 1e0, 1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-10, 1.e2, 1.e1]]
+    species_dict['nasa9-3'][-1].thermo = ct.Nasa9PolyMultiTempRegion(300., 3000., 101325., hstack([3] + [300, 1200.] + coeffs1 + [1200., 2000.] + coeffs2 + [2000., 3000.] + coeffs3))
+
+mechs = [(s, Mechanism.from_solution(ct.Solution(thermo='IdealGas', kinetics='GasKinetics', species=species_dict[s], reactions=[]))) for s in species_dict]
+
 
 tolerance = 1.e-14
 
@@ -72,6 +85,17 @@ def do_cpspec(griffon, gas, T, p, y):
     griffon.species_cp(T, gr)
     return max(abs(gr - ct) / abs(gr)) < tolerance
 
+def do_dcpdT(griffon, gas, T, p, y):
+    dcpspecdT_gr = zeros(gas.n_species)
+    griffon.dcpdT_species(T, y, dcpspecdT_gr)
+    gas.TPY = T, p, y
+    cpspec1_ct = gas.standard_cp_R * gas_constant / gas.molecular_weights
+    dT = 1.e-2
+    gas.TPY = T + dT, p, y
+    cpspec2_ct = gas.standard_cp_R * gas_constant / gas.molecular_weights
+    dcpspecdT_ct = (cpspec2_ct - cpspec1_ct) / dT
+    this_fd_tol = 1.e-4
+    return max(abs(dcpspecdT_ct - dcpspecdT_gr) / cpspec1_ct.dot(y)) < this_fd_tol
 
 def do_cvspec(griffon, gas, T, p, y):
     gas.TPY = T, p, y
@@ -121,8 +145,9 @@ quantity_test_dict = {'mixture molecular weight': do_mmw,
                       'enthalpy mix': do_hmix,
                       'energy mix': do_emix,
                       'enthalpy species': do_hspec,
-                      'energy species': do_espec}
-temperature_dict = {'low': 300., 'high': 1200.}
+                      'energy species': do_espec,
+                      'dcpdT': do_dcpdT}
+temperature_dict = {'low': 300., 'high': 1400.}
 
 
 def validate_on_mechanism(mech, temperature, quantity, serialize_mech):
