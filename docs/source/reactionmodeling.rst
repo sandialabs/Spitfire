@@ -294,29 +294,8 @@ todo: add description of new non-elementary reaction rates
 
 Species Thermodynamics
 ++++++++++++++++++++++
-Spitfire supports thermodynamics (enthalpies, entropies, equilibrium coefficients, etc.) based on two models of
-species heat capacities.
-First is a species with a constant heat capacity:
-
-.. math::
-    c_{p,i} &= c_{p,i}^\circ, \\
-    h_i &= h_i^\circ + c_{p,i}^\circ(T - T^\circ), \\
-    s_i &= s_i^\circ + c_{p,i}^\circ\ln\left(\frac{T}{T^\circ}\right),
-
-where :math:`h_i^\circ` and :math:`s_i^\circ` are the standard state enthalpy and entropy of formation.
-
-Second is a species with a variable heat capacity determined by the NASA-7 polynomials:
-
-.. math::
-    c_{p,i} &= \frac{R_u}{M_i}\left(a_0 + a_1T + a_2T^2 + a_3T^3 + a_4T^4\right), \\
-    h_i &= \frac{R_u}{M_i}\left(a_0T + \frac{a_1}{2}T^2 + \frac{a_2}{3}T^3 + \frac{a_3}{4}T^4 + \frac{a_4}{5}T^5 + a_5\right), \\
-    s_i &= \frac{R_u}{M_i}\left(a_0\ln(T) + a_1T + \frac{a_2}{2}T^2 + \frac{a_3}{3}T^3 + \frac{a_4}{4}T^4 + a_6\right),
-
-where :math:`a_i` are the coefficients of the polynomial (in a particular temperature range) and :math:`R_u` is the universal molar gas constant.
-
-
-
-
+Spitfire supports ideal mixtures of thermally perfect species, and species heat capacity may be modeled as a constant or through a NASA-7 or NASA-9 polynomial.
+NASA-7 polynomials must be used with two temperature regions, while any number of regions may be used with a NASA-9 polynomial.
 
 
 
