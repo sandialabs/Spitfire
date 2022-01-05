@@ -16,7 +16,7 @@
     </state>
     <thermo model="IdealGas"/>
     <kinetics model="GasKinetics"/>
-    <transport model="None"/>
+    <transport model="Mix"/>
   </phase>
 
   <!-- species definitions     -->
@@ -230,6 +230,14 @@
              -1.672099740E+03</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">linear</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species O2    -->
@@ -256,6 +264,14 @@
              -5.530621610E+02</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">linear</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species NO    -->
@@ -282,6 +298,14 @@
              1.242081216E+03</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">linear</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species N    -->
@@ -308,6 +332,14 @@
              -5.848769753E+02</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">atom</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species O    -->
@@ -334,6 +366,14 @@
              -2.181728151E+02</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">atom</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species N2+    -->
@@ -361,6 +401,14 @@
              8.436270947E+02</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">linear</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species O2+    -->
@@ -388,6 +436,14 @@
              2.852035602E+03</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">linear</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species NO+    -->
@@ -415,6 +471,14 @@
              -4.324044462E+03</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">linear</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species N+    -->
@@ -442,6 +506,14 @@
              -1.706646380E+01</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">atom</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
     <!-- species O+    -->
@@ -469,6 +541,14 @@
              3.426193080E+02</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">atom</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
 
 
@@ -523,6 +603,14 @@
              -1.172081224E+01</floatArray>
         </NASA9>
       </thermo>
+      <transport model="gas_transport">
+        <string title="geometry">atom</string>
+        <LJ_welldepth units="K">145.000</LJ_welldepth>
+        <LJ_diameter units="A">2.050</LJ_diameter>
+        <dipoleMoment units="Debye">0.000</dipoleMoment>
+        <polarizability units="A3">0.000</polarizability>
+        <rotRelax>0.000</rotRelax>
+      </transport>
     </species>
   </speciesData>
   <reactionData id="reaction_data">

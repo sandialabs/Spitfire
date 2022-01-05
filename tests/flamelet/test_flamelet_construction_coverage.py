@@ -42,7 +42,6 @@ def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):
         Flamelet(flamelet_specs=flamelet_specs)
         fso = FlameletSpec(**flamelet_specs)
         f = Flamelet(fso)
-
         fso_pickle = pickle.dumps(fso)
         fso2 = pickle.loads(fso_pickle)
         f = Flamelet(fso2)

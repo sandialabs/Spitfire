@@ -79,6 +79,7 @@ class ChemicalMechanismSpec(object):
         self._mech_data['elements'] = list()
         self._mech_data['species'] = dict()
         self._mech_data['reactions'] = list()
+        self._mech_data['transport-model'] = None
 
         self._griffon = PyCombustionKernels()
         self._populate_griffon_mechanism_data(*self._extract_cantera_mechanism_data(self._cantera_wrapper.solution))
@@ -106,7 +107,8 @@ class ChemicalMechanismSpec(object):
                                          ref_pressure,
                                          spec_name_list,
                                          spec_dict,
-                                         reac_list):
+                                         reac_list,
+                                         transport_model):
         self._griffon.mechanism_set_ref_pressure(ref_pressure)
         self._mech_data['ref_pressure'] = ref_pressure
         self._griffon.mechanism_set_ref_temperature(ref_temperature)
@@ -143,7 +145,10 @@ class ChemicalMechanismSpec(object):
             elif cp['type'] == 'NASA9':
                 self._griffon.mechanism_add_nasa9_cp(s, cp['Tmin'], cp['Tmax'], cp['coeffs'].tolist())
                 self._mech_data['species'][s]['cp'] = ('NASA9', cp['Tmin'], cp['Tmax'], cp['coeffs'].tolist())
+            if transport_model is not None and 'transport-data' in spec_dict[s]:
+                self._mech_data['species'][s]['transport-data'] = dict(spec_dict[s]['transport-data'])
 
+        self._mech_data['transport-model'] = transport_model
 
         add_smpl = self._griffon.mechanism_add_reaction_simple
         add_3bdy = self._griffon.mechanism_add_reaction_three_body
@@ -250,6 +255,8 @@ class ChemicalMechanismSpec(object):
             elif spec['cp'][0] == 'NASA9':
                 Tmin, Tmax, coeffs = spec['cp'][1:]
                 ctspec.thermo = ct.Nasa9PolyMultiTempRegion(Tmin, Tmax, p_ref, coeffs)
+            if 'transport-data' in spec and 'transport-model' in gdata and gdata['transport-model'] is not None:
+                ctspec.transport = ct.GasTransportData(**spec['transport-data'])
             species_list.append(ctspec)
 
         reaction_list = list()
@@ -294,7 +301,7 @@ class ChemicalMechanismSpec(object):
             ctrxn.reversible = reversible
             reaction_list.append(ctrxn)
 
-        return ct.Solution(thermo='IdealGas', kinetics='GasKinetics', species=species_list, reactions=reaction_list)
+        return ct.Solution(transport_model=None if 'transport-model' not in gdata else gdata['transport-model'], thermo='IdealGas', kinetics='GasKinetics', species=species_list, reactions=reaction_list)
 
     @classmethod
     def _get_cantera_element_mw_map(cls, ctsol: ct.Solution):
@@ -344,6 +351,18 @@ class ChemicalMechanismSpec(object):
                                                'Tmin': sp.thermo.min_temp,
                                                'Tmax': sp.thermo.max_temp,
                                                'coeffs': sp.thermo.coeffs})})
+            if sp.transport is not None:
+                spec_dict[sp.name]['transport-data'] = dict(acentric_factor=sp.transport.acentric_factor,
+                                                            diameter=sp.transport.diameter,
+                                                            dipole=sp.transport.dipole,
+                                                            dispersion_coefficient=sp.transport.dispersion_coefficient,
+                                                            geometry=sp.transport.geometry,
+                                                            polarizability=sp.transport.polarizability,
+                                                            quadrupole_polarizability=sp.transport.quadrupole_polarizability,
+                                                            rotational_relaxation=sp.transport.rotational_relaxation,
+                                                            well_depth=sp.transport.well_depth)
+
+        transport_model = None if (ctsol.transport_model == 'Transport' or ctsol.transport_model is None) else ctsol.transport_model
 
         for i in range(ctsol.n_reactions):
             rx = ctsol.reaction(i)
@@ -403,7 +422,7 @@ class ChemicalMechanismSpec(object):
                 if rx.orders:
                     reac_temporary_list[-1][1]['orders'] = rx.orders
         reac_list = [y[1] for y in sorted(reac_temporary_list, key=lambda x: x[0])]
-        return ct_element_mw_map, elem_list, ref_temperature, ref_pressure, spec_name_list, spec_dict, reac_list
+        return ct_element_mw_map, elem_list, ref_temperature, ref_pressure, spec_name_list, spec_dict, reac_list, transport_model
 
     @property
     def gas(self):

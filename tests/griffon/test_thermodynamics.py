@@ -38,7 +38,7 @@ for i, s in enumerate(species_decl):
     coeffs3 = [float(i + 3) * v for v in [1e0, 1e0, 1.e0, 1.e-2, 1.e-4, 1.e-6, 1.e-10, 1.e2, 1.e1]]
     species_dict['nasa9-3'][-1].thermo = ct.Nasa9PolyMultiTempRegion(300., 3000., 101325., hstack([3] + [300, 1200.] + coeffs1 + [1200., 2000.] + coeffs2 + [2000., 3000.] + coeffs3))
 
-mechs = [(s, Mechanism.from_solution(ct.Solution(thermo='IdealGas', kinetics='GasKinetics', species=species_dict[s], reactions=[]))) for s in species_dict]
+mechs = [(s, Mechanism.from_solution(ct.Solution(transport_model=None, thermo='IdealGas', kinetics='GasKinetics', species=species_dict[s], reactions=[]))) for s in species_dict]
 
 
 tolerance = 1.e-14
