@@ -12,6 +12,7 @@
 //
 #include "combustion_kernels.h"
 #include <cmath>
+#include <stdexcept>
 
 #define GRIFFON_SUM2(prop) (prop(0) + prop(1))
 #define GRIFFON_SUM3(prop) (GRIFFON_SUM2(prop) + prop(2))

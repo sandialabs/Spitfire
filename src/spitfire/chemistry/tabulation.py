@@ -552,7 +552,6 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
                        verbose,
                        integration_args,
                        solver_verbose) for chi_st in table_dict.keys()))
-
         if verbose:
             print('----------------------------------------------------------------------------------')
             print('enthalpy defect dimension expanded in {:6.2f} s'.format(perf_counter() - cput000), flush=True)
@@ -562,6 +561,9 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
         serial_dict = dict()
         for cg in nonad_table_dict.keys():
             serial_dict[cg] = nonad_table_dict[cg]
+
+        pool.close()
+        pool.join()
 
         if verbose:
             print('done in {:6.2f} s'.format(perf_counter() - cput0000))
@@ -923,6 +925,8 @@ try:
                      turb_lib.props)
             for p in managed_dict:
                 turb_lib[p] = managed_dict[p]
+            pool.close()
+            pool.join()
 
         if verbose:
             cputf = perf_counter()
