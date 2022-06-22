@@ -1,4 +1,7 @@
 
+1.02.01
+- Added explicit close/join to multiprocessing pools in all parallel operations
+- Simple fixes for GCC 10.3 compiler
 
 
 1.02.00
