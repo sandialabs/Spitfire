@@ -12,10 +12,10 @@ try:
 
     import cantera
     import cantera as ct
+    from spitfire.chemistry.ctversion import check as cantera_version_check
 
-    import pytabprops
 
-    if int(cantera.__version__.replace('.', '')) >= 250:
+    if cantera_version_check('atleast', 2, 5, None):
         class Test(unittest.TestCase):
             def test(self):
                 gas = ct.Solution('h2o2.yaml', transport_model='Multi')

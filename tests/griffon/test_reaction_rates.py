@@ -4,6 +4,7 @@ import cantera as ct
 import pickle
 from os.path import join, abspath
 from spitfire import ChemicalMechanismSpec as Mechanism
+from spitfire.chemistry.ctversion import check as cantera_version_check
 
 T_range = [300, 1200, 1800]
 p_range = [101325, 1013250]
@@ -141,15 +142,27 @@ reaction_indices = dict({
     'Lindemann_rev_11_11_noN_Arrhenius': 14,
     'Troe_rev_11_11_noN_Arrhenius': 15})
 
-xml = abspath(join('tests', 'test_mechanisms', 'reaction_test_mechanism.xml'))
+xml = abspath(join('tests', 'test_mechanisms', 'reaction_test_mechanism.yaml'))
 
 
 def create_test(reaction_key, type, serialize_mech):
     def test(self):
+        if cantera_version_check('pre', 2, 6, None):
+            species = ct.Species.listFromFile(xml)
+            ref = ct.Solution(thermo='IdealGas',
+                            kinetics='GasKinetics',
+                            species=species)
+            reactions = ct.Reaction.listFromFile(xml, ref)[reaction_indices[reaction_key]]
+        else:
+            species = ct.Species.list_from_file(xml)
+            ref = ct.Solution(thermo='IdealGas',
+                            kinetics='GasKinetics',
+                            species=species)
+            reactions = ct.Reaction.list_from_file(xml, ref)[reaction_indices[reaction_key]]
         sol = ct.Solution(thermo='IdealGas',
                           kinetics='GasKinetics',
-                          species=ct.Species.listFromFile(xml),
-                          reactions=[ct.Reaction.listFromFile(xml)[reaction_indices[reaction_key]]])
+                          species=species,
+                          reactions=[reactions])
         if type == 'rates':
             self.assertTrue(verify_rates_mechanism(sol, serialize_mech))
         elif type == 'sensitivities':

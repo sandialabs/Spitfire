@@ -665,7 +665,7 @@ class HomogeneousReactor(object):
                 axT.set_ylabel('Temperature (K)')
                 axT.grid()
                 for species_vars in plot:
-                    if species_vars is not 'temperature':  # separate subplot for species mass fractions
+                    if species_vars != 'temperature':  # separate subplot for species mass fractions
                         Y = output_library['mass fraction ' + species_vars]
                         axY.loglog(t, Y, label=species_vars)
                 axY.set_xlabel('time (ms)')

@@ -1,0 +1,125 @@
+generator: ctml2yaml
+cantera-version: 2.6.0
+date: Fri, 01 Jul 2022 14:56:45 -0600
+input-files: [irr_elementary_noN_noT_const_cp.xml]
+
+phases:
+- name: gas
+  elements: [O, H]
+  species: [A, B, C, D, E, N]
+  thermo: ideal-gas
+  kinetics: gas
+  reactions: all
+  state: {T: 300.0 K, P: 1.01325e+05 Pa}
+
+species:
+- name: A
+  composition: {H: 2.0}
+  note: ''
+  thermo:
+    model: constant-cp
+    T0: 298.15 K
+    h0: 6.19735e+06 J/kmol
+    s0: 1.79999e+05 J/kmol/K
+    cp0: 2.0786e+04 J/kmol/K
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 38.0
+    diameter: 2.92
+    dipole: 0.0
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+- name: B
+  composition: {H: 1.0}
+  note: ''
+  thermo:
+    model: constant-cp
+    T0: 298.15 K
+    h0: 6.19735e+06 J/kmol
+    s0: 1.79999e+05 J/kmol/K
+    cp0: 2.0786e+04 J/kmol/K
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 145.0
+    diameter: 2.05
+    dipole: 0.0
+    polarizability: 0.0
+    rotational-relaxation: 0.0
+- name: C
+  composition: {O: 1.0}
+  note: ''
+  thermo:
+    model: constant-cp
+    T0: 298.15 K
+    h0: 6.19735e+06 J/kmol
+    s0: 1.79999e+05 J/kmol/K
+    cp0: 2.0786e+04 J/kmol/K
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 80.0
+    diameter: 2.75
+    dipole: 0.0
+    polarizability: 0.0
+    rotational-relaxation: 0.0
+- name: E
+  composition: {H: 1.0, O: 2.0}
+  note: ''
+  thermo:
+    model: constant-cp
+    T0: 298.15 K
+    h0: 6.19735e+06 J/kmol
+    s0: 1.79999e+05 J/kmol/K
+    cp0: 2.0786e+04 J/kmol/K
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 107.4
+    diameter: 3.458
+    dipole: 0.0
+    polarizability: 1.6
+    rotational-relaxation: 3.8
+- name: D
+  composition: {O: 2.0}
+  note: ''
+  thermo:
+    model: constant-cp
+    T0: 298.15 K
+    h0: 6.19735e+06 J/kmol
+    s0: 1.79999e+05 J/kmol/K
+    cp0: 2.0786e+04 J/kmol/K
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 107.4
+    diameter: 3.458
+    dipole: 0.0
+    polarizability: 1.6
+    rotational-relaxation: 3.8
+- name: N
+  composition: {H: 1.0, O: 1.0}
+  note: ''
+  thermo:
+    model: constant-cp
+    T0: 298.15 K
+    h0: 6.19735e+06 J/kmol
+    s0: 1.79999e+05 J/kmol/K
+    cp0: 2.0786e+04 J/kmol/K
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 80.0
+    diameter: 2.75
+    dipole: 0.0
+    polarizability: 0.0
+    rotational-relaxation: 0.0
+
+reactions:
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+04, b: 0.0, Ea: 0.0 cal/mol}
+- equation: A + D + M <=> B + E + M
+  type: three-body
+  rate-constant: {A: 1.0e-305, b: 0.0, Ea: 0.0 cal/mol}
+  efficiencies: {A: 1.0}

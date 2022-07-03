@@ -1,0 +1,114 @@
+generator: ctml2yaml
+cantera-version: 2.6.0
+date: Fri, 01 Jul 2022 15:32:48 -0600
+input-files: [reaction_test_mechanism.xml]
+
+phases:
+- name: test_set
+  elements: [O, H]
+  species: [A, B, C, D, E, N]
+  thermo: ideal-gas
+  kinetics: gas
+  reactions: all
+
+species:
+- name: A
+  composition: {H: 2.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 3000.0]
+    data:
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+- name: B
+  composition: {H: 1.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 3000.0]
+    data:
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+- name: C
+  composition: {O: 1.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 3000.0]
+    data:
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+- name: D
+  composition: {O: 2.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 3000.0]
+    data:
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+- name: E
+  composition: {H: 1.0, O: 2.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 3000.0]
+    data:
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+- name: N
+  composition: {H: 1.0, O: 1.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 3000.0]
+    data:
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+    - [1.0, 0.01, 1.0e-04, 1.0e-06, 1.0e-08, 1.0e-10, 1.0e-12]
+
+reactions:
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: 0.0, Ea: 0.0 J/kmol}
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: 0.0, Ea: 0.0 J/kmol}
+  orders:
+    A: 0.5
+    D: 0.5
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: 0.0, Ea: 0.0 J/kmol}
+  orders:
+    A: 0.5
+    D: 1.5
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: 0.0, Ea: 0.0 J/kmol}
+  orders:
+    A: 1.5
+    D: 1.5
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: 1.0, Ea: 0.0 J/kmol}
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: 2.0, Ea: 0.0 J/kmol}
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: -1.0, Ea: 0.0 J/kmol}
+- equation: A + D => B + E
+  rate-constant: {A: 1.0e+07, b: 1.0, Ea: 10.0 kcal/mol}
+- equation: A + D <=> B + E
+  rate-constant: {A: 1.0e+07, b: 0.0, Ea: 0.0 J/kmol}
+- equation: A + D <=> B + E
+  rate-constant: {A: 1.0e+07, b: 1.0, Ea: 0.0 J/kmol}
+- equation: A + D <=> B + E
+  rate-constant: {A: 1.0e+07, b: 2.0, Ea: 0.0 J/kmol}
+- equation: A + D <=> B + E
+  rate-constant: {A: 1.0e+07, b: -1.0, Ea: 0.0 J/kmol}
+- equation: A + D <=> B + E
+  rate-constant: {A: 1.0e+07, b: 1.0, Ea: 10.0 kcal/mol}
+- equation: A + D + M <=> B + E + M
+  type: three-body
+  rate-constant: {A: 1.0e+07, b: 1.0, Ea: 10.0 kcal/mol}
+  efficiencies: {C: 2.0}
+- equation: A + D (+ M) <=> B + E (+ M)
+  type: falloff
+  high-P-rate-constant: {A: 1.0e+07, b: 1.0, Ea: 10.0 kcal/mol}
+  low-P-rate-constant: {A: 0.1, b: 1.0, Ea: 1.0 kcal/mol}
+  efficiencies: {C: 2.0}
+- equation: A + D (+ M) <=> B + E (+ M)
+  type: falloff
+  high-P-rate-constant: {A: 1.0e+07, b: 1.0, Ea: 10.0 kcal/mol}
+  low-P-rate-constant: {A: 100.0, b: 1.0, Ea: 1.0 kcal/mol}
+  efficiencies: {C: 2.0}
+  Troe: {A: 1.0, T3: 100.0, T1: 1000.0, T2: 2000.0}

@@ -37,7 +37,7 @@ def _write_library_header(lib_type, mech, fuel, oxy, verbose):
         print('-' * 82)
         print(f'building {lib_type} library')
         print('-' * 82)
-        print(f'- mechanism: {mech.mech_xml_path}')
+        print(f'- mechanism: {mech.mech_file_path}')
         print(f'- {mech.n_species} species, {mech.n_reactions} reactions')
         print(f'- stoichiometric mixture fraction: {mech.stoich_mixture_fraction(fuel, oxy):.3f}')
         print('-' * 82)

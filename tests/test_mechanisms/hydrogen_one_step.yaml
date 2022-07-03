@@ -1,0 +1,58 @@
+generator: ctml2yaml
+cantera-version: 2.6.0
+date: Fri, 01 Jul 2022 15:32:43 -0600
+input-files: [hydrogen_one_step.xml]
+
+phases:
+- name: one_step_hydrogen
+  elements: [O, H, N]
+  species: [H2, O2, H2O, N2]
+  thermo: ideal-gas
+  kinetics: gas
+  reactions: all
+
+species:
+- name: H2
+  composition: {H: 2.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.298124, 8.249442e-04, -8.143015e-07, -9.475434e-11, 4.134872e-13, -1012.521,
+      -3.294094]
+    - [2.991423, 7.000644e-04, -5.633829e-08, -9.231578e-12, 1.582752e-15, -835.034,
+      -1.35511]
+- name: H2O
+  composition: {H: 2.0, O: 1.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.386842, 3.474982e-03, -6.354696e-06, 6.968581e-09, -2.506588e-12, -3.020811e+04,
+      2.590233]
+    - [2.672146, 3.056293e-03, -8.73026e-07, 1.200996e-10, -6.391618e-15, -2.989921e+04,
+      6.862817]
+- name: O2
+  composition: {O: 2.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.212936, 1.127486e-03, -5.75615e-07, 1.313877e-09, -8.768554e-13, -1005.249,
+      6.034738]
+    - [3.697578, 6.135197e-04, -1.258842e-07, 1.775281e-11, -1.136435e-15, -1233.93,
+      3.189166]
+- name: N2
+  composition: {N: 2.0}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.298677, 1.40824e-03, -3.963222e-06, 5.641515e-09, -2.444855e-12, -1020.9,
+      3.950372]
+    - [2.92664, 1.487977e-03, -5.684761e-07, 1.009704e-10, -6.753351e-15, -922.7977,
+      5.980528]
+
+reactions:
+- equation: 2 H2 + O2 => 2 H2O
+  rate-constant: {A: 2.0e+07, b: 0.0, Ea: 30.0 kcal/mol}

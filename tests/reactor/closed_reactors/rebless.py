@@ -7,8 +7,8 @@ def run():
     from spitfire.chemistry.reactors import HomogeneousReactor
     import numpy as np
 
-    xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
-    mechanism = ChemicalMechanismSpec(cantera_xml=xml, group_name='h2-burke')
+    xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
+    mechanism = ChemicalMechanismSpec(cantera_input=xml, group_name='h2-burke')
 
     air = mechanism.stream(stp_air=True)
     fuel = mechanism.stream('X', 'H2:1')

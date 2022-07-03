@@ -5,10 +5,10 @@ from numpy.testing import assert_allclose
 
 from tests.tabulation.adiabatic_slfm.rebless import run
 from spitfire.chemistry.library import Library
+from spitfire.chemistry.ctversion import check as cantera_version_check
 
-import cantera
 
-if int(cantera.__version__.replace('.', '')) >= 250:
+if cantera_version_check('atleast', 2, 5, None):
     class Test(unittest.TestCase):
         def test(self):
             output_library = run()

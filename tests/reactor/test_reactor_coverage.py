@@ -4,12 +4,28 @@ from os.path import join, abspath
 import cantera as ct
 from spitfire import ChemicalMechanismSpec as Mechanism, HomogeneousReactor
 import spitfire.chemistry.analysis as sca
+from spitfire.chemistry.ctversion import check as cantera_version_check
 
-xml = abspath(join('tests', 'test_mechanisms', 'hydrogen_one_step.xml'))
+xml = abspath(join('tests', 'test_mechanisms', 'hydrogen_one_step.yaml'))
+
+
+
+if cantera_version_check('pre', 2, 6, None):
+    species = ct.Species.listFromFile(xml)
+    ref = ct.Solution(thermo='IdealGas',
+                    kinetics='GasKinetics',
+                    species=species)
+    reactions = ct.Reaction.listFromFile(xml, ref)
+else:
+    species = ct.Species.list_from_file(xml)
+    ref = ct.Solution(thermo='IdealGas',
+                    kinetics='GasKinetics',
+                    species=species)
+    reactions = ct.Reaction.list_from_file(xml, ref)
 sol = ct.Solution(thermo='IdealGas',
-                  kinetics='GasKinetics',
-                  species=ct.Species.listFromFile(xml),
-                  reactions=ct.Reaction.listFromFile(xml))
+                    kinetics='GasKinetics',
+                    species=species,
+                    reactions=reactions)
 mechanism = Mechanism.from_solution(sol)
 
 

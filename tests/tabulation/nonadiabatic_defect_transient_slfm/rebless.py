@@ -8,8 +8,8 @@ def run(num_procs):
     from spitfire.data.get import datafile
     import numpy as np
 
-    test_xml = datafile('burke-hydrogen.xml')
-    m = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='gas')
+    test_xml = datafile('burke-hydrogen.yaml')
+    m = ChemicalMechanismSpec(cantera_input=test_xml, group_name='gas')
     pressure = 101325.
     air = m.stream(stp_air=True)
     air.TP = 1200., pressure

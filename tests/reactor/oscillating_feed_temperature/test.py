@@ -5,10 +5,10 @@ from os.path import join, abspath
 from numpy.testing import assert_allclose
 
 from tests.reactor.oscillating_feed_temperature.rebless import run
+from spitfire.chemistry.ctversion import check as cantera_version_check
 
-import cantera
 
-if int(cantera.__version__.replace('.', '')) >= 250:
+if cantera_version_check('atleast', 2, 5, None):
     class Test(unittest.TestCase):
         def test(self):
             output = run()

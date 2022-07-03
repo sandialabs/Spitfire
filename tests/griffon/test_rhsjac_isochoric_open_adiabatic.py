@@ -7,7 +7,7 @@ from os.path import join, abspath
 from subprocess import getoutput
 
 test_mech_directory = abspath(join('tests', 'test_mechanisms', 'old_xmls'))
-mechs = [x.replace('.xml', '') for x in getoutput('ls ' + test_mech_directory + ' | grep .xml').split('\n')]
+mechs = [x.replace('.yaml', '') for x in getoutput('ls ' + test_mech_directory + ' | grep .yaml').split('\n')]
 
 
 def rhs_cantera(p_arg, T_arg, y_arg, rhoin, Tin_arg, yin_arg, tau_arg, gas, rhs_chem_in):
@@ -29,7 +29,7 @@ def rhs_cantera(p_arg, T_arg, y_arg, rhoin, Tin_arg, yin_arg, tau_arg, gas, rhs_
 
 
 def validate_on_mechanism(mech, temperature, pressure, tau, do_rhs, do_jac):
-    xml = join(test_mech_directory, mech + '.xml')
+    xml = join(test_mech_directory, mech + '.yaml')
     T = temperature
     Tin = T + 1000.
     p = pressure

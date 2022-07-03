@@ -13,31 +13,33 @@ This module facilitates loading chemical reaction mechanisms in Cantera format a
 import cantera as ct
 from numpy import sum, array, abs
 from spitfire.griffon.griffon import PyCombustionKernels
+from spitfire.chemistry.ctversion import check as cantera_version_check
+
 
 
 class CanteraLoadError(Exception):
-    def __init__(self, mech_xml_path, group_name, error):
+    def __init__(self, mech_file_path, group_name, error):
         super().__init__(f'Cantera failed to build a Solution object for the given XML and group name. '
-                         f'XML path provided: {mech_xml_path}, '
+                         f'YAML/CTI/XML path provided: {mech_file_path}, '
                          f'group name provided: {group_name}, '
                          f'Error: {error}')
 
 
 class _CanteraWrapper(object):
-    def __init__(self, mech_xml_path, group_name, solution=None):
-        self._mech_xml_path = mech_xml_path if mech_xml_path is not None else 'cantera-XML-not-given'
+    def __init__(self, mech_file_path, group_name, solution=None):
+        self._mech_file_path = mech_file_path if mech_file_path is not None else 'cantera-input-not-given'
         self._group_name = group_name if group_name is not None else 'cantera-group-not-given'
         if solution is None:
             try:
-                self._solution = ct.Solution(self._mech_xml_path, self._group_name)
+                self._solution = ct.Solution(self._mech_file_path, self._group_name)
             except Exception as error:
-                raise CanteraLoadError(mech_xml_path, group_name, error)
+                raise CanteraLoadError(mech_file_path, group_name, error)
         else:
             self._solution = solution
 
     @property
-    def mech_xml_path(self):
-        return self._mech_xml_path
+    def mech_file_path(self):
+        return self._mech_file_path
 
     @property
     def group_name(self):
@@ -58,8 +60,8 @@ class ChemicalMechanismSpec(object):
 
         Parameters
         ----------
-        cantera_xml : str
-            a cantera XML file describing the thermochemistry and (optionally) transport properties
+        cantera_input : str
+            a cantera YAML/XML/CTI file describing the thermochemistry and (optionally) transport properties
         group_name : str
             the phase to use (e.g. a phase with transport properties vs without, if such a split exists in the XML file)
         cantera_solution: ct.Solution
@@ -67,9 +69,13 @@ class ChemicalMechanismSpec(object):
 
     """
 
-    def __init__(self, cantera_xml=None, group_name=None, cantera_solution=None):
+    def __init__(self, cantera_input=None, group_name=None, cantera_solution=None, cantera_xml=None):
+        cantera_input = cantera_input
+        if cantera_xml is not None:
+            cantera_input = cantera_input if cantera_input is not None else cantera_xml
+            print('Deprecation warning: the "cantera_xml" input argument to ChemicalMechanismSpec is deprecated and will be removed.\nUse the "cantera_input" argument instead.')
         if cantera_solution is None:
-            self._cantera_wrapper = _CanteraWrapper(cantera_xml, group_name)
+            self._cantera_wrapper = _CanteraWrapper(cantera_input, group_name)
         else:
             self._cantera_wrapper = _CanteraWrapper(None, None, cantera_solution)
 
@@ -263,37 +269,58 @@ class ChemicalMechanismSpec(object):
         for rxn in gdata['reactions']:
             type, reactants_stoich, products_stoich, reversible = rxn[:4]
 
-            fwd_pre_exp_value, fwd_temp_exponent, fwd_act_energy = rxn[4:7]
-            fwd_rate = ct.Arrhenius(fwd_pre_exp_value, fwd_temp_exponent, fwd_act_energy)
-
             if type == 'simple' or type == 'simple-special':
-                ctrxn = ct.ElementaryReaction(reactants_stoich, products_stoich)
-                ctrxn.rate = fwd_rate
+                if cantera_version_check('pre', 2, 6, None):
+                    ctrxn = ct.ElementaryReaction(reactants_stoich, products_stoich)
+                    ctrxn.rate = ct.Arrhenius(*rxn[4:7])
+                else:
+                    ctrxn = ct.Reaction(reactants_stoich, products_stoich, ct.ArrheniusRate(*rxn[4:7]))
             elif type == 'three-body' or type == 'three-body-special':
                 ctrxn = ct.ThreeBodyReaction(reactants_stoich, products_stoich)
-                ctrxn.rate = fwd_rate
+                ctrxn.rate = ct.Arrhenius(*rxn[4:7]) if cantera_version_check('pre', 2, 6, None) else ct.ArrheniusRate(*rxn[4:7])
                 ctrxn.efficiencies = rxn[7]
                 ctrxn.default_efficiency = rxn[8]
             elif type == 'Lindemann' or type == 'Lindemann-special':
-                ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
-                ctrxn.efficiencies = rxn[7]
-                ctrxn.default_efficiency = rxn[8]
-                flf_pre_exp_value, flf_temp_exponent, flf_act_energy = rxn[9:12]
-                ctrxn.high_rate = fwd_rate
-                ctrxn.low_rate = ct.Arrhenius(flf_pre_exp_value, flf_temp_exponent, flf_act_energy)
-                ctrxn.falloff = ct.Falloff()
-            elif type == 'Troe' or type == 'Troe-special':
-                ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
-                ctrxn.efficiencies = rxn[7]
-                ctrxn.default_efficiency = rxn[8]
-                flf_pre_exp_value, flf_temp_exponent, flf_act_energy = rxn[9:12]
-                troe_params = rxn[12]
-                ctrxn.high_rate = fwd_rate
-                ctrxn.low_rate = ct.Arrhenius(flf_pre_exp_value, flf_temp_exponent, flf_act_energy)
-                if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
-                    ctrxn.falloff = ct.TroeFalloff(troe_params[:3])
+                if cantera_version_check('pre', 2, 6, None):
+                    ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
+                    ctrxn.efficiencies = rxn[7]
+                    ctrxn.default_efficiency = rxn[8]
+                    ctrxn.high_rate = ct.Arrhenius(*rxn[4:7])
+                    ctrxn.low_rate = ct.Arrhenius(*rxn[9:12])
+                    ctrxn.falloff = ct.Falloff()
                 else:
-                    ctrxn.falloff = ct.TroeFalloff(troe_params)
+                    ctrxn = ct.FalloffReaction(
+                        reactants_stoich, 
+                        products_stoich,
+                        rate=ct.LindemannRate(low=ct.Arrhenius(*rxn[9:12]), high=ct.Arrhenius(*rxn[4:7])),
+                        efficiencies=rxn[7])
+                    ctrxn.default_efficiency = rxn[8]
+
+            elif type == 'Troe' or type == 'Troe-special':
+                if cantera_version_check('pre', 2, 6, None):
+                    ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
+                    ctrxn.efficiencies = rxn[7]
+                    ctrxn.default_efficiency = rxn[8]
+                    troe_params = rxn[12]
+                    ctrxn.high_rate = ct.Arrhenius(*rxn[4:7])
+                    ctrxn.low_rate = ct.Arrhenius(*rxn[9:12])
+                    if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
+                        ctrxn.falloff = ct.TroeFalloff(troe_params[:3])
+                    else:
+                        ctrxn.falloff = ct.TroeFalloff(troe_params)
+                else:
+                    troe_params = rxn[12]
+                    if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
+                        falloff_coeffs = troe_params[:3]
+                    else:
+                        falloff_coeffs = troe_params
+                    ctrxn = ct.FalloffReaction(
+                        reactants_stoich, 
+                        products_stoich,
+                        rate=ct.TroeRate(low=ct.Arrhenius(*rxn[9:12]), high=ct.Arrhenius(*rxn[4:7]), falloff_coeffs=falloff_coeffs),
+                        efficiencies=rxn[7])
+                    ctrxn.default_efficiency = rxn[8]
+
 
             if 'special' in type:
                 ctrxn.orders = rxn[-1]
@@ -367,38 +394,71 @@ class ChemicalMechanismSpec(object):
         for i in range(ctsol.n_reactions):
             rx = ctsol.reaction(i)
             if isinstance(rx, ct.FalloffReaction):
-                f = rx.falloff
-                if isinstance(f, ct.TroeFalloff):
-                    reac_temporary_list.append((3, dict({'type': 'Troe',
-                                                         'reversible': rx.reversible,
-                                                         'reactants': rx.reactants,
-                                                         'products': rx.products,
-                                                         'default-eff': rx.default_efficiency,
-                                                         'efficiencies': rx.efficiencies,
-                                                         'fwd-A': rx.high_rate.pre_exponential_factor,
-                                                         'fwd-b': rx.high_rate.temperature_exponent,
-                                                         'fwd-Ea': rx.high_rate.activation_energy,
-                                                         'flf-A': rx.low_rate.pre_exponential_factor,
-                                                         'flf-b': rx.low_rate.temperature_exponent,
-                                                         'flf-Ea': rx.low_rate.activation_energy,
-                                                         'Troe-params': rx.falloff.parameters})))
-                    if rx.orders:
-                        reac_temporary_list[-1][1]['orders'] = rx.orders
+                if cantera_version_check('pre', 2, 6, None):
+                    f = rx.falloff
+                    if isinstance(f, ct.TroeFalloff):
+                        reac_temporary_list.append((3, dict({'type': 'Troe',
+                                                            'reversible': rx.reversible,
+                                                            'reactants': rx.reactants,
+                                                            'products': rx.products,
+                                                            'default-eff': rx.default_efficiency,
+                                                            'efficiencies': rx.efficiencies,
+                                                            'fwd-A': rx.high_rate.pre_exponential_factor,
+                                                            'fwd-b': rx.high_rate.temperature_exponent,
+                                                            'fwd-Ea': rx.high_rate.activation_energy,
+                                                            'flf-A': rx.low_rate.pre_exponential_factor,
+                                                            'flf-b': rx.low_rate.temperature_exponent,
+                                                            'flf-Ea': rx.low_rate.activation_energy,
+                                                            'Troe-params': rx.falloff.parameters})))
+                        if rx.orders:
+                            reac_temporary_list[-1][1]['orders'] = rx.orders
+                    else:
+                        reac_temporary_list.append((2, dict({'type': 'Lindemann',
+                                                            'reversible': rx.reversible,
+                                                            'reactants': rx.reactants,
+                                                            'products': rx.products,
+                                                            'default-eff': rx.default_efficiency,
+                                                            'efficiencies': rx.efficiencies,
+                                                            'fwd-A': rx.high_rate.pre_exponential_factor,
+                                                            'fwd-b': rx.high_rate.temperature_exponent,
+                                                            'fwd-Ea': rx.high_rate.activation_energy,
+                                                            'flf-A': rx.low_rate.pre_exponential_factor,
+                                                            'flf-b': rx.low_rate.temperature_exponent,
+                                                            'flf-Ea': rx.low_rate.activation_energy})))
+                        if rx.orders:
+                            reac_temporary_list[-1][1]['orders'] = rx.orders
                 else:
-                    reac_temporary_list.append((2, dict({'type': 'Lindemann',
-                                                         'reversible': rx.reversible,
-                                                         'reactants': rx.reactants,
-                                                         'products': rx.products,
-                                                         'default-eff': rx.default_efficiency,
-                                                         'efficiencies': rx.efficiencies,
-                                                         'fwd-A': rx.high_rate.pre_exponential_factor,
-                                                         'fwd-b': rx.high_rate.temperature_exponent,
-                                                         'fwd-Ea': rx.high_rate.activation_energy,
-                                                         'flf-A': rx.low_rate.pre_exponential_factor,
-                                                         'flf-b': rx.low_rate.temperature_exponent,
-                                                         'flf-Ea': rx.low_rate.activation_energy})))
-                    if rx.orders:
-                        reac_temporary_list[-1][1]['orders'] = rx.orders
+                    if isinstance(rx.rate, ct.TroeRate):
+                        reac_temporary_list.append((3, dict({'type': 'Troe',
+                                                            'reversible': rx.reversible,
+                                                            'reactants': rx.reactants,
+                                                            'products': rx.products,
+                                                            'default-eff': rx.default_efficiency,
+                                                            'efficiencies': rx.efficiencies,
+                                                            'fwd-A': rx.rate.high_rate.pre_exponential_factor,
+                                                            'fwd-b': rx.rate.high_rate.temperature_exponent,
+                                                            'fwd-Ea': rx.rate.high_rate.activation_energy,
+                                                            'flf-A': rx.rate.low_rate.pre_exponential_factor,
+                                                            'flf-b': rx.rate.low_rate.temperature_exponent,
+                                                            'flf-Ea': rx.rate.low_rate.activation_energy,
+                                                            'Troe-params': rx.rate.falloff_coeffs})))
+                        if rx.orders:
+                            reac_temporary_list[-1][1]['orders'] = rx.orders
+                    else:
+                        reac_temporary_list.append((2, dict({'type': 'Lindemann',
+                                                            'reversible': rx.reversible,
+                                                            'reactants': rx.reactants,
+                                                            'products': rx.products,
+                                                            'default-eff': rx.default_efficiency,
+                                                            'efficiencies': rx.efficiencies,
+                                                            'fwd-A': rx.rate.high_rate.pre_exponential_factor,
+                                                            'fwd-b': rx.rate.high_rate.temperature_exponent,
+                                                            'fwd-Ea': rx.rate.high_rate.activation_energy,
+                                                            'flf-A': rx.rate.low_rate.pre_exponential_factor,
+                                                            'flf-b': rx.rate.low_rate.temperature_exponent,
+                                                            'flf-Ea': rx.rate.low_rate.activation_energy})))
+                        if rx.orders:
+                            reac_temporary_list[-1][1]['orders'] = rx.orders
             elif isinstance(rx, ct.ThreeBodyReaction):
                 reac_temporary_list.append((1, dict({'type': 'three-body',
                                                      'reversible': rx.reversible,
@@ -411,7 +471,7 @@ class ChemicalMechanismSpec(object):
                                                      'Ea': rx.rate.activation_energy})))
                 if rx.orders:
                     reac_temporary_list[-1][1]['orders'] = rx.orders
-            elif isinstance(rx, ct.ElementaryReaction):
+            else:
                 reac_temporary_list.append((0, dict({'type': 'simple',
                                                      'reversible': rx.reversible,
                                                      'reactants': rx.reactants,
@@ -437,11 +497,17 @@ class ChemicalMechanismSpec(object):
     @property
     def mech_xml_path(self):
         """Obtain the path of the identified mechanism's XML specification"""
-        return self._cantera_wrapper.mech_xml_path
+        print('Deprecation warning: the "mech_xml_path" property of ChemicalMechanismSpec is deprecated and will be removed.\nUse the "mech_file_path" property instead.')
+        return self._cantera_wrapper.mech_file_path
+
+    @property
+    def mech_file_path(self):
+        """Obtain the path of the identified mechanism's Cantera input file specification"""
+        return self._cantera_wrapper.mech_file_path
 
     @property
     def group_name(self):
-        """Obtain the group name of the identified mechanism's XML specification"""
+        """Obtain the group name of the identified mechanism"""
         return self._cantera_wrapper.group_name
 
     @property

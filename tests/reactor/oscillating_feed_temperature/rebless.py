@@ -8,8 +8,8 @@ def run():
     from numpy import sin as sin, pi as pi, array
 
     from os.path import abspath, join
-    xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
-    mechanism = ChemicalMechanismSpec(cantera_xml=xml,
+    xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
+    mechanism = ChemicalMechanismSpec(cantera_input=xml,
                                       group_name='h2-burke')
 
     air = mechanism.stream(stp_air=True)

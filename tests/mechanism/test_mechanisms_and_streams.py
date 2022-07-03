@@ -8,10 +8,10 @@ from spitfire import ChemicalMechanismSpec, CanteraLoadError
 class MechanismSpec(unittest.TestCase):
     def test_create_valid_mechanism_spec_from_xml(self):
         try:
-            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
             m = ChemicalMechanismSpec(xml, 'h2-burke')
             g = m.griffon
-            x = m.mech_xml_path
+            x = m.mech_file_path
             s = m.gas
             self.assertTrue(True)
         except:
@@ -19,11 +19,11 @@ class MechanismSpec(unittest.TestCase):
 
     def test_create_valid_mechanism_spec_from_solution(self):
         try:
-            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
             sol = Solution(xml)
             m = ChemicalMechanismSpec.from_solution(sol)
             g = m.griffon
-            x = m.mech_xml_path
+            x = m.mech_file_path
             n = m.group_name
             s = m.gas
             self.assertTrue(True)
@@ -38,7 +38,7 @@ class MechanismSpec(unittest.TestCase):
             self.assertTrue(True)
 
     def test_create_invalid_mechanism_spec_bad_group(self):
-        xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+        xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
         try:
             ChemicalMechanismSpec(xml, 'bad group')
             self.assertTrue(False)
@@ -47,7 +47,7 @@ class MechanismSpec(unittest.TestCase):
 
     def test_create_valid_streams(self):
         try:
-            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
             m = ChemicalMechanismSpec(xml, 'h2-burke')
             air = m.stream(stp_air=True)
             h2o2 = m.stream('TPX', (300., 101325., 'H2:1, O2:1'))
@@ -61,7 +61,7 @@ class MechanismSpec(unittest.TestCase):
 
     def test_create_invalid_stpair_streams(self):
         try:
-            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
             m = ChemicalMechanismSpec(xml, 'h2-burke')
             m.stream(stp_air=False)
             self.assertTrue(False)
@@ -70,7 +70,7 @@ class MechanismSpec(unittest.TestCase):
 
     def test_create_invalid_streams_no_property_values(self):
         try:
-            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
             m = ChemicalMechanismSpec(xml, 'h2-burke')
             m.stream('TPX')
             self.assertTrue(False)
@@ -79,7 +79,7 @@ class MechanismSpec(unittest.TestCase):
 
     def test_mechanism_simple_api_methods(self):
         try:
-            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
             sol = Solution(xml)
             m = ChemicalMechanismSpec.from_solution(sol)
             self.assertEqual(m.n_species, sol.n_species, 'ChemicalMechanismSpec.n_species vs ct.Solution.n_species')
@@ -101,7 +101,7 @@ class MechanismSpec(unittest.TestCase):
             self.assertTrue(False)
 
         try:
-            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+            xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
             m = ChemicalMechanismSpec.from_solution(Solution(xml))
             m.molecular_weight(list())
             self.assertTrue(False)
@@ -109,7 +109,7 @@ class MechanismSpec(unittest.TestCase):
             self.assertTrue(True)
 
     def test_mechanism_serialization(self):
-        xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
+        xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
         sol = Solution(xml)
         m1 = ChemicalMechanismSpec.from_solution(sol)
 

@@ -7,11 +7,11 @@ from os.path import join, abspath
 from subprocess import getoutput
 
 test_mech_directory = abspath(join('tests', 'test_mechanisms', 'old_xmls'))
-mechs = [x.replace('.xml', '') for x in getoutput('ls ' + test_mech_directory + ' | grep .xml').split('\n')]
+mechs = [x.replace('.yaml', '') for x in getoutput('ls ' + test_mech_directory + ' | grep .yaml').split('\n')]
 
 
 def validate_on_mechanism(mech, temperature, pressure, full_Jacobian, isochoric):
-    xml = join(test_mech_directory, mech + '.xml')
+    xml = join(test_mech_directory, mech + '.yaml')
 
     r = ChemicalMechanismSpec(xml, 'gas').griffon
 

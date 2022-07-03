@@ -7,10 +7,11 @@ from numpy.testing import assert_allclose
 from tests.tabulation.adiabatic_equilibrium.rebless import run
 from spitfire.chemistry.library import Library
 import spitfire.chemistry.analysis as sca
+from spitfire.chemistry.ctversion import check as cantera_version_check
 
-import cantera
 
-if int(cantera.__version__.replace('.', '')) >= 250:
+if cantera_version_check('atleast', 2, 5, None):
+    tol_args = {'atol': 1e-14} if cantera_version_check('pre', 2, 6, None) else {'atol': 1e-7, 'rtol': 3e-3}
     class Test(unittest.TestCase):
         def test(self):
             output_library = run()
@@ -22,7 +23,7 @@ if int(cantera.__version__.replace('.', '')) >= 250:
             gold_library = Library.load_from_file(gold_file)
 
             for prop in gold_library.props:
-                self.assertIsNone(assert_allclose(gold_library[prop], output_library[prop], atol=1.e-14))
+                self.assertIsNone(assert_allclose(gold_library[prop], output_library[prop], **tol_args))
 
             if os.path.isfile('testlib.pkl'):
                 os.remove('testlib.pkl')
@@ -36,7 +37,7 @@ if int(cantera.__version__.replace('.', '')) >= 250:
             l = sca.compute_pressure(m, l)
             l = sca.compute_viscosity(m, l)
             for prop in gold_library.props:
-                self.assertIsNone(assert_allclose(gold_library[prop], l[prop], atol=1.e-14))
+                self.assertIsNone(assert_allclose(gold_library[prop], l[prop], **tol_args))
             os.remove('testlib.pkl')
 
 

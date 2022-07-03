@@ -7,8 +7,8 @@ def run():
     import spitfire.chemistry.analysis as sca
     import numpy as np
 
-    test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
-    m = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='h2-burke')
+    test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
+    m = ChemicalMechanismSpec(cantera_input=test_xml, group_name='h2-burke')
     pressure = 101325.
     air = m.stream(stp_air=True)
     air.TP = 1200., pressure

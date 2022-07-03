@@ -6,8 +6,8 @@ from spitfire import ChemicalMechanismSpec, Flamelet, FlameletSpec
 
 
 def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):
-    test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
-    mechanism = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='h2-burke')
+    test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
+    mechanism = ChemicalMechanismSpec(cantera_input=test_xml, group_name='h2-burke')
     air = mechanism.stream(stp_air=True)
     fuel = mechanism.stream('X', 'H2:1')
     fuel.TP = 300, air.P
@@ -58,8 +58,8 @@ def construct_adiabatic_flamelet(initialization, grid_type, diss_rate_form):
 
 
 def construct_nonadiabatic_flamelet(initialization, grid_type, diss_rate_form):
-    test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
-    mechanism = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='h2-burke')
+    test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
+    mechanism = ChemicalMechanismSpec(cantera_input=test_xml, group_name='h2-burke')
     air = mechanism.stream(stp_air=True)
     fuel = mechanism.stream('X', 'H2:1')
     fuel.TP = 300, air.P
@@ -216,8 +216,8 @@ class Construction(unittest.TestCase):
     pass
 
 
-test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.xml'))
-mechanism = ChemicalMechanismSpec(cantera_xml=test_xml, group_name='h2-burke')
+test_xml = abspath(join('tests', 'test_mechanisms', 'h2-burke.yaml'))
+mechanism = ChemicalMechanismSpec(cantera_input=test_xml, group_name='h2-burke')
 air = mechanism.stream(stp_air=True)
 fuel = mechanism.stream('X', 'H2:1')
 fuel.TP = 300, air.P

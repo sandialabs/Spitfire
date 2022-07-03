@@ -17,6 +17,8 @@ import cantera as ct
 from spitfire.chemistry.mechanism import ChemicalMechanismSpec
 from spitfire.chemistry.library import Library
 from scipy.linalg import eig, eigvals
+from spitfire.chemistry.ctversion import check as cantera_version_check
+
 
 
 def get_ct_solution_array(mechanism, library):
@@ -255,7 +257,10 @@ def explosive_mode_analysis(mechanism,
 
     gas = mechanism.gas
     griffon = mechanism.griffon
-    V_stoich = gas.product_stoich_coeffs() - gas.reactant_stoich_coeffs()
+    if cantera_version_check('pre', 2, 6, None):
+        V_stoich = gas.product_stoich_coeffs() - gas.reactant_stoich_coeffs()
+    else:
+        V_stoich = gas.product_stoich_coeffs3 - gas.reactant_stoich_coeffs3
     ns = gas.n_species
     ne = ns if configuration == 'isobaric' else ns + 1
     nr = mechanism.n_reactions
