@@ -31,7 +31,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../src'))
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -62,7 +62,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Spitfire'
-copyright = '2018-2021'
+copyright = '2018-2022'
 author = 'Mike Hansen'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -70,7 +70,7 @@ author = 'Mike Hansen'
 # built documents.
 #
 # The short X.Y version.
-version = '1.02'
+version = '1.2'
 # The full version, including alpha/beta/rc tags.
 release = '1.02.01'
 
@@ -79,7 +79,7 @@ release = '1.02.01'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
