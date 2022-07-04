@@ -8,6 +8,8 @@ Subpackages
    :maxdepth: 4
 
    spitfire.chemistry
+   spitfire.data
+   spitfire.griffon
    spitfire.time
 
 Module contents

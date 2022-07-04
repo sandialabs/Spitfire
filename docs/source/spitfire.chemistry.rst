@@ -12,6 +12,14 @@ spitfire.chemistry.analysis module
    :undoc-members:
    :show-inheritance:
 
+spitfire.chemistry.ctversion module
+-----------------------------------
+
+.. automodule:: spitfire.chemistry.ctversion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 spitfire.chemistry.flamelet module
 ----------------------------------
 
@@ -59,7 +67,6 @@ spitfire.chemistry.tabulation module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------
