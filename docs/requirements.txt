@@ -1,6 +1,0 @@
-numpydoc
-Cython
-cantera
-numpy
-scipy
-GitPython
