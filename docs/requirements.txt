@@ -1,1 +1,5 @@
 numpydoc
+Cython
+cantera
+numpy
+scipy
