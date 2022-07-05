@@ -6,7 +6,6 @@ build:
     python: miniconda3-4.7
 
 python:
-  version: 3.9
   install:
     - method: setuptools
       path: .
