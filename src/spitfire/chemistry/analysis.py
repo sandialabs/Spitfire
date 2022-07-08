@@ -21,7 +21,7 @@ from spitfire.chemistry.ctversion import check as cantera_version_check
 
 
 
-def get_ct_solution_array(mechanism, library):
+def get_ct_solution_array(mechanism=None, library=None):
     """Obtain a Cantera SolutionArray object representative of an arbitrary library
 
         Parameters
@@ -39,10 +39,17 @@ def get_ct_solution_array(mechanism, library):
             shape of the original library
         """
 
-    if not isinstance(mechanism, ChemicalMechanismSpec):
-        raise TypeError('Input argument "mechanism" to get_ct_solution_array() must be a ChemicalMechanismSpec')
     if not isinstance(library, Library):
         raise TypeError('Input argument "library" to get_ct_solution_array() must be a Library')
+
+    if mechanism is None:
+        if 'mech_spec' in library.extra_attributes:
+            mechanism = library.extra_attributes['mech_spec']
+        else:
+            raise ValueError('Input argument "mechanism" to get_ct_solution_array() is required as a mechanism could not be found at library.extra_attributes["mech_spec"]')
+
+    if not isinstance(mechanism, ChemicalMechanismSpec):
+        raise TypeError('Invalid "mechanism" for get_ct_solution_array(): must be a ChemicalMechanismSpec')
 
     required_strings = ['temperature'] + ['mass fraction ' + s for s in mechanism.species_names]
     for required_string in required_strings:

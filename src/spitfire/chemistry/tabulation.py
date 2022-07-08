@@ -343,7 +343,7 @@ def _expand_enthalpy_defect_dimension_transient(chi_st, managed_dict, flamelet_s
     flamelet_specs.scale_heat_loss_by_temp_range = True
     flamelet_specs.scale_convection_by_dissipation = True
     flamelet_specs.use_linear_ref_temp_profile = True
-    flamelet_specs.convection_coefficient = 1.e7
+    flamelet_specs.convection_coefficient = flamelet_specs.convection_coefficient if flamelet_specs.convection_coefficient is not None else 1.e7
     flamelet_specs.radiative_emissivity = 0.
 
     integration_args = dict(
