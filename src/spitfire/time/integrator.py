@@ -249,7 +249,8 @@ def odesolve(right_hand_side,
              time_step_decrease_factor_to_force_jacobian=0.9,
              show_solver_stats_in_situ=False,
              return_info=False,
-             throw_on_failure=True):
+             throw_on_failure=True,
+             print_exception_on_failure=True):
     """Solve a time integration problem with a wide variety of solvers, termination options, etc.
 
         Parameters
@@ -334,6 +335,9 @@ def odesolve(right_hand_side,
             whether or not to return a dictionary of solver statistics
         throw_on_failure : bool
             whether or not to throw an exception on integrator/model failure (default: True)
+        print_exception_on_failure : bool
+            whether or not to print an exception message on integrator/model failure (default: True)
+
 
         Returns
         -------
@@ -654,7 +658,7 @@ def odesolve(right_hand_side,
 
     except Exception as error:
         stats_dict = {'success': False}
-        if verbose:
+        if print_exception_on_failure:
             print(f'Spitfire odesolve caught the following Exception during time integration:\n')
         logger.exception(error)
         logging.disable(level=logging.DEBUG)

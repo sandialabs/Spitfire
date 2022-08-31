@@ -1063,7 +1063,8 @@ class Flamelet(object):
                   extra_stepper_args=dict(),
                   extra_nlsolver_args=dict(),
                   extra_stepcontrol_args=dict(),
-                  save_first_and_last_only=False):
+                  save_first_and_last_only=False,
+                  print_exception_on_failure=False):
         """Base method for flamelet integration
 
             Parameters
@@ -1108,6 +1109,8 @@ class Flamelet(object):
                 extra arguments to specify on the spitfire.time.StepControl object
             save_first_and_last_only : bool
                 whether or not to retain all data (False, default) or only the first and last solutions
+            print_exception_on_failure : bool
+                whether or not to print an exception message on integrator/model failure (default: False)
 
             Returns
             -------
@@ -1170,6 +1173,7 @@ class Flamelet(object):
                           norm_weighting=1. / self._variable_scales,
                           post_step_callback=post_step_callback,
                           save_each_step=not save_first_and_last_only,
+                          print_exception_on_failure=print_exception_on_failure,
                           **integrator_args)
 
         if save_first_and_last_only:

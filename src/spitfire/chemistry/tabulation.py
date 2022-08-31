@@ -350,7 +350,8 @@ def _expand_enthalpy_defect_dimension_transient(chi_st, managed_dict, flamelet_s
         {'first_time_step': 1.e-9,
          'max_time_step': 1.e-1,
          'write_log': solver_verbose,
-         'log_rate': 100})
+         'log_rate': 100,
+         'print_exception_on_failure': False})
 
     if input_integration_args is not None:
         integration_args.update(input_integration_args)
