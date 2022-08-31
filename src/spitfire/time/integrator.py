@@ -660,7 +660,7 @@ def odesolve(right_hand_side,
         stats_dict = {'success': False}
         if print_exception_on_failure:
             print(f'Spitfire odesolve caught the following Exception during time integration:\n')
-        logger.exception(error)
+            logger.exception(error)
         logging.disable(level=logging.DEBUG)
         if throw_on_failure:
             raise ValueError('odesolve failed to integrate the system due to an Exception being caught - see above')
