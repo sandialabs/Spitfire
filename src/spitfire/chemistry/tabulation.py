@@ -992,7 +992,7 @@ class PDFSpec:
                  scaled_variance_values=None,
                  variance_values=None,
                  convolution_spline_order=3,
-                 integrator_intervals=1,
+                 integrator_intervals=100,
                  variance_name=None,
                  log_scaled=False):
         """Specification of a presumed PDF and integrator/spline details for a given single dimension in a library.
@@ -1011,7 +1011,7 @@ class PDFSpec:
         convolution_spline_order : Int
             the order of the 1-D piecewise Lagrange reconstruction used in the convolution integrals, default is 3 (cubic)
         integrator_intervals : Int
-            extra parameter provided to TabProps integrators, default 1
+            extra parameter provided to TabProps integrators, default 100
         variance_name : str
             the name of the variance dimension to be added, by default Spitfire will add "_variance" to the name
             of the dimension being convolved, or use "scaled_scalar_variance_mean" for "mixture_fraction"
