@@ -11,7 +11,7 @@ def check(qual, major, minor, patch=None):
   
   check_version = major * 100 + minor * 10 + patch
   
-  cv_split = [int(a) for a in cantera.__version__.split('.')]
+  cv_split = [int(a) for a in cantera.__version__.split('.') if a.isdigit()]
   cv_patch = 0 if patch is None else cv_split[2]
   cv_minor = 0 if minor is None else cv_split[1]
   cv = 100 * cv_split[0] + 10 * cv_minor + cv_patch
