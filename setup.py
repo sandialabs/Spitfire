@@ -43,11 +43,12 @@ class ConfigSQA:
       from git import Repo
       repo = Repo('.')
       repo.config_reader()
+      no_tags = len(repo.tags) == 0
       tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
       tag_dict = dict({t: repo.commit(t) for t in tags})
 
-      latest_tag = tags[-1]
-      tag_hexsha = tag_dict[latest_tag].hexsha
+      latest_tag = None if no_tags else tags[-1]
+      tag_hexsha = None if no_tags else tag_dict[latest_tag].hexsha
       is_dirty = repo.is_dirty()
       current_hexsha = repo.head.object.hexsha
 
@@ -55,12 +56,16 @@ class ConfigSQA:
         detailed_version = f'dirty-{latest_tag}-{current_hexsha}'
         minimal_version = 'local'
       else:
-        if current_hexsha == tag_hexsha:
-          detailed_version = f'{latest_tag}'
-          minimal_version = f'{latest_tag}'
-        else:
+        if no_tags:
           detailed_version = f'clean-{latest_tag}-{current_hexsha}'
           minimal_version = 'committed'
+        else:
+          if current_hexsha == tag_hexsha:
+            detailed_version = f'{latest_tag}'
+            minimal_version = f'{latest_tag}'
+          else:
+            detailed_version = f'clean-{latest_tag}-{current_hexsha}'
+            minimal_version = 'committed'
       
       f.write(f'detailed_version = "{detailed_version}"\n')
       f.write(f'minimal_version = "{minimal_version}"\n')
@@ -83,6 +88,11 @@ def readfile(filename):
             return f.read()
 
 
+base_compile_args = ['-O3', '-g', '-std=c++11', '-Wno-error']
+compile_for_mac = ['-stdlib=libc++'] if platform.system() == 'Darwin' else list()
+griffon_compile_args = base_compile_args + compile_for_mac
+
+
 setup(name='Spitfire',
       version=readfile('version'),
       author='Michael A. Hansen',
@@ -96,8 +106,7 @@ setup(name='Spitfire',
       ext_modules=cythonize(Extension(name='spitfire.griffon.griffon',
                                       sources=[os.path.join('src', 'spitfire', 'griffon', 'griffon.pyx')] + glob(
                                           os.path.join('src', 'spitfire', 'griffon', 'src') + '/*.cpp', recursive=False),
-                                      extra_compile_args=['-O3', '-g', '-std=c++11', '-Wno-error'] + [
-                                          '-stdlib=libc++'] if platform.system() == 'Darwin' else [],
+                                      extra_compile_args=griffon_compile_args,
                                       include_dirs=[numpy_include(), os.path.join('src', 'spitfire', 'griffon', 'include')],
                                       library_dirs=[os.path.join('src', 'spitfire', 'griffon')],
                                       libraries=['blas', 'lapack'],

@@ -10,7 +10,7 @@
 
 #include "combustion_kernels.h"
 #include "blas_lapack_kernels.h"
-#include "math.h"
+#include <cmath>
 
 namespace griffon
 {
