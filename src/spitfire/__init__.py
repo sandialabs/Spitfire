@@ -16,7 +16,11 @@ from .chemistry.tabulation import build_adiabatic_eq_library, \
     build_nonadiabatic_defect_transient_slfm_library, \
     build_nonadiabatic_defect_steady_slfm_library, \
     apply_mixing_model, \
-    PDFSpec
+    PDFSpec, \
+    BetaPDF, \
+    DoubleDeltaPDF, \
+    ClipGaussPDF, \
+    compute_pdf_max_integration_errors
 
 from .griffon.griffon import PyCombustionKernels
 

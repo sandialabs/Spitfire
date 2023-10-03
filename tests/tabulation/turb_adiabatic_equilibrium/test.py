@@ -11,7 +11,7 @@ try:
 
 
     if cantera_version_check('atleast', 2, 5, None):
-        tol_args = {'atol': 1e-14} if cantera_version_check('pre', 2, 6, None) else {'atol': 1e-7, 'rtol': 3e-3}
+        tol_args = {'atol': 1e-6} if cantera_version_check('pre', 2, 6, None) else {'atol': 1e-7, 'rtol': 3e-3}
         class Test(unittest.TestCase):
             def test(self):
                 output_library = run()

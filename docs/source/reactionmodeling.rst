@@ -14,8 +14,6 @@ Chemical Reaction Models
     demo/flamelet/introduction_to_flamelets
     demo/flamelet/high_level_tabulation_api_adiabatic
     demo/flamelet/example_nonadiabatic_flamelets
-    demo/flamelet/tabulation_api_presumed_pdf
-    demo/flamelet/custom_pdf_logmean_chi
     demo/flamelet/methane_shear_layer_tabulation
     demo/flamelet/transient_ignition_stepper_details
     demo/flamelet/example_transient_flamelet_rate_sensitivity

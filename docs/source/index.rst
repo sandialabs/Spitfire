@@ -6,5 +6,6 @@
 
     introduction
     reactionmodeling
+    mixingmodeling
     timeintegration
     modules

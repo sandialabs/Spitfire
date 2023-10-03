@@ -4,30 +4,13 @@ Tabulation API Example: Presumed PDF SLFM Tables
 *This demo is part of Spitfire, with*\ `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Building presumed PDF adiabatic and nonadiabatic SFLM
-libraries for turbulent flows - Using Spitfire’s wrapper around the
-Python interface of
-```TabProps`` <https://multiscale.utah.edu/software/>`__ to easily
-extend tables with clipped Gaussian and Beta PDFs
+*Highlights*
 
-Tabulated chemistry models can often be split into two pieces: a
-*reaction* model and a *mixing* model. The reaction model describes
-small scale laminar flame structure, for instance equilibrium (fast
-chemistry) or diffusion-reaction (SLFM), possibly perturbed by radiative
-heat losses. A mixing model is unnecessary in a CFD simulation when the
-flow is laminar or when all scales of turbulence are resolved as in
-direct numerical simulation (DNS). In Reynolds-averaged Navier-Stokes
-(RANS) or large eddy simulation (LES), however, small scales are modeled
-instead of being resolved by the mesh. Here a mixing model is necessary
-to account for turbulence-chemistry interaction on subgrid scales.
+- Building presumed PDF adiabatic and nonadiabatic SFLM libraries for turbulent flows
 
-In RANS and LES, typically two statistical moments of conserved scalars
-are transported on the mesh and the mixing model accounts for
-unresolved, or subgrid, heterogeneity. A mixing model accomplishes this
-by describing the statistical distribution of the subgrid scalar field.
-Spitfire and the `Python interface of the ``TabProps``
-code <https://multiscale.utah.edu/software/>`__ can be combined to build
-reaction models and then incorporate presumed PDF mixing models.
+- Using Spitfire’s wrapper around the Python interface of ``TabProps`` <https://multiscale.utah.edu/software/> to easily extend tables with clipped Gaussian and Beta PDFs
+
+In this demo, we build reaction models and then incorporate the presumed PDF mixing models outlined in the mixing model documentation.
 
 The Reaction Models
 -------------------
@@ -89,36 +72,36 @@ following prior demonstrations.
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   8 (chi_stoich =  1.0e-01 1/s)  converged in   0.66 s, T_max = 2122.1
+       1/   8 (chi_stoich =  1.0e-01 1/s)  converged in   0.68 s, T_max = 2122.1
        2/   8 (chi_stoich =  2.7e-01 1/s)  converged in   0.01 s, T_max = 2089.8
        3/   8 (chi_stoich =  7.2e-01 1/s)  converged in   0.01 s, T_max = 2055.4
-       4/   8 (chi_stoich =  1.9e+00 1/s)  converged in   0.06 s, T_max = 2027.5
-       5/   8 (chi_stoich =  5.2e+00 1/s)  converged in   0.07 s, T_max = 1984.7
+       4/   8 (chi_stoich =  1.9e+00 1/s)  converged in   0.07 s, T_max = 2027.5
+       5/   8 (chi_stoich =  5.2e+00 1/s)  converged in   0.08 s, T_max = 1984.7
        6/   8 (chi_stoich =  1.4e+01 1/s)  converged in   0.08 s, T_max = 1924.2
-       7/   8 (chi_stoich =  3.7e+01 1/s)  converged in   0.07 s, T_max = 1840.6
-       8/   8 (chi_stoich =  1.0e+02 1/s)  converged in   0.10 s, T_max = 1695.0
+       7/   8 (chi_stoich =  3.7e+01 1/s)  converged in   0.08 s, T_max = 1840.6
+       8/   8 (chi_stoich =  1.0e+02 1/s)  converged in   0.11 s, T_max = 1695.0
     ----------------------------------------------------------------------------------
-    library built in   1.19 s
+    library built in   1.27 s
     ----------------------------------------------------------------------------------
     expanding (transient) enthalpy defect dimension ...
-    chi_st =  1.0e-01 1/s converged in   7.03 s
-    chi_st =  2.7e-01 1/s converged in   6.60 s
-    chi_st =  7.2e-01 1/s converged in   6.45 s
-    chi_st =  1.9e+00 1/s converged in   6.05 s
-    chi_st =  5.2e+00 1/s converged in   5.96 s
-    chi_st =  1.4e+01 1/s converged in   6.52 s
-    chi_st =  3.7e+01 1/s converged in   7.72 s
-    chi_st =  1.0e+02 1/s converged in   6.91 s
+    chi_st =  1.0e-01 1/s converged in  13.95 s
+    chi_st =  2.7e-01 1/s converged in  13.38 s
+    chi_st =  7.2e-01 1/s converged in  13.06 s
+    chi_st =  1.9e+00 1/s converged in  12.70 s
+    chi_st =  5.2e+00 1/s converged in  12.90 s
+    chi_st =  1.4e+01 1/s converged in  12.35 s
+    chi_st =  3.7e+01 1/s converged in  15.03 s
+    chi_st =  1.0e+02 1/s converged in  14.13 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in  53.25 s
+    enthalpy defect dimension expanded in 107.50 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--50%--60%--70%--80%--100%
-    Structured enthalpy defect dimension built in   3.28 s
+    Structured enthalpy defect dimension built in   3.35 s
     ----------------------------------------------------------------------------------
-    library built in  57.74 s
+    library built in 112.14 s
     ----------------------------------------------------------------------------------
 
 
@@ -158,19 +141,19 @@ Presumed PDFs
 -------------
 
 First, we’ll use TabProps to evaluate the clipped Gaussian and
-:math:`\beta` PDFs for some represenative means and variances. Note the
+:math:`\beta` PDFs for some representative means and variances. Note the
 major differences between the PDF types at higher variances and near the
 boundaries. The poor behavior of the :math:`\beta` PDF in these regimes
 makes it substantially harder to integrate than the clipped Gaussian.
 
 .. code:: ipython3
 
-    from pytabprops import ClippedGaussMixMdl, BetaMixMdl
+    from spitfire import BetaPDF, ClipGaussPDF
     
     ztest = np.linspace(0, 1, 1000)
     
-    cg = ClippedGaussMixMdl(201, 201, False)
-    bp = BetaMixMdl()
+    cg = ClipGaussPDF()
+    bp = BetaPDF()
     
     zmean = 0.38
     for i, zsvar in enumerate([0.05, 0.1, 0.2, 0.25, 0.28]):
@@ -211,19 +194,91 @@ makes it substantially harder to integrate than the clipped Gaussian.
 .. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_5_1.png
 
 
-Incorporating the Mixing Model: Clipped Gaussian and :math:`\beta` PDFs
------------------------------------------------------------------------
+Another PDF supported in Spitfire is a ``DoubleDeltaPDF`` shown below.
+To be precise, what we show below is not the actual double delta PDF but
+its integral.
+
+.. code:: ipython3
+
+    from spitfire import DoubleDeltaPDF
+    
+    ztest = np.linspace(0, 1, 1000)
+    colors = ['k','r','b']
+    
+    ddelta = DoubleDeltaPDF()
+    
+    zmean = 0.15
+    for i, zsvar in enumerate([0.05, 0.1, 0.3]):
+        ddelta.set_mean(zmean)
+        ddelta.set_scaled_variance(zsvar)
+        nonzero_points = np.array([ddelta.find_bounds()[0],ddelta.find_bounds()[1]])
+        zfull = np.sort(np.hstack((ztest, nonzero_points)))
+        plt.plot(zfull, ddelta.get_pdf(zfull), '-', label=str(zsvar))
+    plt.title(f'mean {zmean:.2f} w/multiple variances')
+    plt.xlabel('input')
+    plt.ylabel('PDF')
+    plt.grid()
+    plt.legend()
+    plt.show()
+    
+    zsvar = 0.12
+    for i, zmean in enumerate([0.1, 0.4, 0.9]):
+        ddelta.set_mean(zmean)
+        ddelta.set_scaled_variance(zsvar)
+        nonzero_points = np.array([ddelta.find_bounds()[0],ddelta.find_bounds()[1]])
+        zfull = np.sort(np.hstack((ztest, nonzero_points)))
+        plt.plot(zfull, ddelta.get_pdf(zfull), '-', label=str(zmean))
+    plt.title(f'scaled variance {zsvar:.2f} w/multiple means')
+    plt.xlabel('input')
+    plt.ylabel('PDF')
+    plt.grid()
+    plt.legend()
+    plt.show()
+
+
+
+
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_7_0.png
+
+
+
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_7_1.png
+
+
+Incorporating the Mixing Model: PDFs supported by Spitfire
+----------------------------------------------------------
 
 Spitfire provides the ``apply_mixing_model`` which takes an existing
 ``Library``, for instance those computed above, and incorporates subgrid
 variation for all dimensions and adds the (default) suffix ``_mean``.
 
-Spitfire provides two optimized PDF integrators from TabProps, the
-clipped Gaussian (``'ClipGauss'``) and the beta PDF (``'Beta'``). These
-PDFs and their integrals are challenging to implement and TabProps’
-implementation is excellent. In addition these, Spitfire allows you to
-“roll your own” PDF integrator, a feature to be shown in following
-demonstrations.
+Spitfire provides optimized PDF integrators for the following PDFs:
+
+- clipped Gaussian (``'ClipGauss'``)
+
+- :math:`\beta` PDF (``'Beta'``)
+
+- double delta PDF (``'DoubleDelta'``)
+
+Tabprops handles integration of the clipped Gaussian while
+``scipy.integrate.quad`` handles integration of the Beta PDF. The
+DoubleDelta PDF allows for analytic solutions. In addition to these
+supported PDFs, Spitfire allows you to “roll your own” PDF integrator, a
+feature to be shown in following demonstrations.
+
+When calling ``apply_mixing_model`` on particularly large laminar
+libraries, speedup through parallelism can be achieved when ``num_procs`` is greater than 1 
+by setting ``parallel_type`` to one of the following options:
+
+- ``'property'``: parallelize over properties
+
+- ``'property-mean'``: parallelize over mean and properties
+
+- ``'property-variance'``: parallelize over variance and properties
+
+- ``'full'``: parallelize over mean, variance, and properties
+
+- ``'default'``: use the fastest parallel method on average depending on the pdf
 
 .. code:: ipython3
 
@@ -239,8 +294,8 @@ demonstrations.
 
 .. parsed-literal::
 
-    scaled_scalar_variance_mean: computing 10880 integrals... completed in 1.7 seconds, average = 6231 integrals/s.
-    scaled_scalar_variance_mean: computing 174080 integrals... completed in 26.3 seconds, average = 6609 integrals/s.
+    scaled_scalar_variance_mean: computing 10880 integrals... completed in 2.9 seconds, average = 3759 integrals/s.
+    scaled_scalar_variance_mean: computing 174080 integrals... completed in 42.5 seconds, average = 4098 integrals/s.
 
 
 Now take a quick look at the tables. Input dimensions have been suffixed
@@ -264,11 +319,11 @@ between 0 and 1) is incorporated as the final dimension. Futher, the
     2. Dimension "dissipation_rate_stoich_mean" spanning [0.1, 100.0] with 8 points
     3. Dimension "scaled_scalar_variance_mean" spanning [0.0, 1.0] with 10 points
     ------------------------------------------
-    temperature         , min = 300.0 max = 2122.0969552261395
-    viscosity           , min = 1.2370131775920866e-05 max = 6.906467776682997e-05
-    enthalpy            , min = -1739935.6849118916 max = 1901.8191601112546
-    heat_capacity_cp    , min = 1011.3329912202539 max = 2422.2079033534937
-    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7fb4465fe050>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7fb459b7a350>, 'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7fb459b7a2d0>}}
+    temperature         , min = 300.0 max = 2122.096955226145
+    viscosity           , min = 1.2370131775920866e-05 max = 6.906467776682902e-05
+    enthalpy            , min = -1739935.6849118916 max = 1901.8191601112542
+    heat_capacity_cp    , min = 1011.3329912202539 max = 2422.2079033535088
+    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f5f929b5a90>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a2cfd0>, 'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a2cc10>}}
     ------------------------------------------
     
     
@@ -276,14 +331,14 @@ between 0 and 1) is incorporated as the final dimension. Futher, the
     ------------------------------------------
     1. Dimension "mixture_fraction_mean" spanning [0.0, 1.0] with 34 points
     2. Dimension "dissipation_rate_stoich_mean" spanning [0.1, 100.0] with 8 points
-    3. Dimension "enthalpy_defect_stoich_mean" spanning [-2140792.9007149865, 0.0] with 16 points
+    3. Dimension "enthalpy_defect_stoich_mean" spanning [-2140766.3110727593, 0.0] with 16 points
     4. Dimension "scaled_scalar_variance_mean" spanning [0.0, 1.0] with 10 points
     ------------------------------------------
-    temperature         , min = 299.99999999999994 max = 2122.0969552261395
-    viscosity           , min = 1.2370131775920852e-05 max = 6.906467776682997e-05
-    enthalpy            , min = -2521386.931029486 max = 1901.8191601113012
-    heat_capacity_cp    , min = 1011.3329912202539 max = 2422.2079033534937
-    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7fb45ebb4110>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7fb459b7a350>, 'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7fb459e46d90>, 'enthalpy_defect_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7fb459e46d50>}}
+    temperature         , min = 299.99999999999994 max = 2122.096955226145
+    viscosity           , min = 1.2370131775920852e-05 max = 6.906467776682902e-05
+    enthalpy            , min = -2521383.376793081 max = 1901.8191601113015
+    heat_capacity_cp    , min = 1011.3329912202539 max = 2422.2079033535088
+    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f5f900e7a50>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a2cfd0>, 'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a8af10>, 'enthalpy_defect_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f900cd9d0>}}
     ------------------------------------------
     
 
@@ -317,8 +372,7 @@ To finish things off we can show some simple visualiations of the data.
     plt.show()
 
 
-
-.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_13_0.png
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_15_1.png
 
 
 .. code:: ipython3
@@ -353,6 +407,101 @@ To finish things off we can show some simple visualiations of the data.
 
 
 
-.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_14_0.png
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_16_0.png
 
+
+Below, we compare the convolution of a property using the different
+supported PDFs. We will pick a single property profile.
+
+.. code:: ipython3
+
+    prop = 'temperature'
+    sampled_lib = Library(prop_ad.dims[0])
+    sampled_lib[prop] = Library.copy(prop_ad)[prop][:,-1]
+    
+    t_cg_T_ad = apply_mixing_model(sampled_lib, {'mixture_fraction': PDFSpec(pdf='ClipGauss', scaled_variance_values=scaled_variance_values)}, verbose=True)
+    t_bp_T_ad = apply_mixing_model(sampled_lib, {'mixture_fraction': PDFSpec(pdf='Beta', scaled_variance_values=scaled_variance_values)}, verbose=True)
+    t_dd_T_ad = apply_mixing_model(sampled_lib, {'mixture_fraction': PDFSpec(pdf='DoubleDelta', scaled_variance_values=scaled_variance_values)}, verbose=True)
+
+
+
+.. parsed-literal::
+
+    scaled_scalar_variance_mean: computing 340 integrals... completed in 0.2 seconds, average = 1961 integrals/s.
+    scaled_scalar_variance_mean: computing 340 integrals... completed in 3.9 seconds, average = 86 integrals/s.
+    scaled_scalar_variance_mean: computing 340 integrals... completed in 0.0 seconds, average = 35079 integrals/s.
+
+
+.. code:: ipython3
+
+    for i in range(scaled_variance_values.size):
+        plt.plot(t_cg_T_ad.mixture_fraction_mean_values, t_cg_T_ad[prop][:, i], 'k-')
+    plt.xlabel('mean mixture fraction')
+    plt.ylabel('filtered '+prop+' w/multiple variances')
+    plt.title('Clipped Gaussian PDF')
+    plt.grid()
+    plt.show()
+    
+    for i in range(scaled_variance_values.size):
+        plt.plot(t_bp_T_ad.mixture_fraction_mean_values, t_bp_T_ad[prop][:, i], 'k-')
+    plt.xlabel('mean mixture fraction')
+    plt.ylabel('filtered '+prop+' w/multiple variances')
+    plt.title('Beta PDF')
+    plt.grid()
+    plt.show()
+    
+    for i in range(scaled_variance_values.size):
+        plt.plot(t_dd_T_ad.mixture_fraction_mean_values, t_dd_T_ad[prop][:, i], 'k-')
+    plt.xlabel('mean mixture fraction')
+    plt.ylabel('filtered '+prop+' w/multiple variances')
+    plt.title('Double Delta PDF')
+    plt.grid()
+    plt.show()
+
+
+
+
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_19_0.png
+
+
+
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_19_1.png
+
+
+
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_19_2.png
+
+
+All PDFs, :math:`P(\phi)`, must satisfy the following integrals:
+
+1. :math:`1 = \int_{-\infty}^\infty P(\phi) \mathrm{d}\phi`
+
+2. :math:`\bar{\phi} = \int_{-\infty}^\infty \phi P(\phi) \mathrm{d}\phi`
+
+3. :math:`\sigma_{\phi}^2 = \int_{-\infty}^\infty (\phi - \bar{\phi})^2 P(\phi) \mathrm{d}\phi`
+
+Spitfire provides the function ``compute_pdf_max_integration_errors``
+for computing the relative errors in satisfying those integrals. This is
+useful when determining acceptable parameters for the :math:`\beta`-PDF,
+for example. Below we show the relative errors using the default values
+for the ``BetaPDF`` parameters.
+
+.. code:: ipython3
+
+    from spitfire import compute_pdf_max_integration_errors
+    
+    svars = np.array([0., 1.e-5, 6.e-4, 1.e-3, 0.1, 0.5, 0.8, 0.86, 0.9, 0.95, 1.])
+    means = np.hstack((0,np.logspace(-5,0,100)))
+    
+    pdf = BetaPDF(scaled_variance_max_integrate=0.86, 
+                  scaled_variance_min_integrate=6.e-4, 
+                  mean_boundary_integrate=6.e-5)
+    
+    print(compute_pdf_max_integration_errors(pdf, means, svars))
+
+
+
+.. parsed-literal::
+
+    (0.0005913180615271241, 2.4555011311778803e-06, 0.009900892069395257)
 

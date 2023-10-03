@@ -4,30 +4,14 @@ Custom Presumed PDF: log-mean PDF of the scalar dissipation rate
 *This demo is part of Spitfire, with*\ `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Building presumed PDF adiabatic and nonadiabatic SFLM
-libraries for turbulent flows - Using Spitfire’s wrapper around the
-Python interface of
-```TabProps`` <https://multiscale.utah.edu/software/>`__ to easily
-extend tables with clipped Gaussian and Beta PDFs
+*Highlights*
 
-Tabulated chemistry models can often be split into two pieces: a
-*reaction* model and a *mixing* model. The reaction model describes
-small scale laminar flame structure, for instance equilibrium (fast
-chemistry) or diffusion-reaction (SLFM), possibly perturbed by radiative
-heat losses. A mixing model is unnecessary in a CFD simulation when the
-flow is laminar or when all scales of turbulence are resolved as in
-direct numerical simulation (DNS). In Reynolds-averaged Navier-Stokes
-(RANS) or large eddy simulation (LES), however, small scales are modeled
-instead of being resolved by the mesh. Here a mixing model is necessary
-to account for turbulence-chemistry interaction on subgrid scales.
+- Building presumed PDF adiabatic and nonadiabatic SFLM libraries for turbulent flows
 
-In RANS and LES, typically two statistical moments of conserved scalars
-are transported on the mesh and the mixing model accounts for
-unresolved, or subgrid, heterogeneity. A mixing model accomplishes this
-by describing the statistical distribution of the subgrid scalar field.
-Spitfire and the `Python interface of the ``TabProps``
-code <https://multiscale.utah.edu/software/>`__ can be combined to build
-reaction models and then incorporate presumed PDF mixing models.
+- Using Spitfire’s wrapper around the Python interface of ``TabProps`` <https://multiscale.utah.edu/software/> to easily extend tables with clipped Gaussian and Beta PDFs
+
+In this demo, we build reaction models and then incorporate custom built presumed PDF mixing models to perform the convolution integrals outlined in the mixing model documentation.
+
 
 Reaction Model
 --------------
