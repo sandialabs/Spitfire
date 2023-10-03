@@ -8,7 +8,7 @@ try:
     from spitfire.chemistry.mechanism import ChemicalMechanismSpec
     from spitfire.chemistry.library import Library, Dimension
     from spitfire.chemistry.flamelet import FlameletSpec
-    from spitfire.chemistry.tabulation import build_adiabatic_eq_library, apply_mixing_model, PDFSpec
+    from spitfire.chemistry.tabulation import build_adiabatic_eq_library, apply_mixing_model, PDFSpec, build_adiabatic_slfm_library
 
     import cantera
     import cantera as ct
@@ -150,6 +150,33 @@ try:
                                                   eq_lib3['temperature']))
                 self.assertIsNone(assert_allclose(np.squeeze(eq_lib3_tt['temperature'][:, :, :, 0, 0]),
                                                   eq_lib3['temperature']))
+
+                # parallel options
+                slfm = build_adiabatic_slfm_library(fs, diss_rate_values=np.logspace(-1,1,3), verbose=False)
+                slfm_serial = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=1, verbose=False)
+                slfm_prop   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='property', verbose=False)
+                slfm_mean   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='property-mean', verbose=False)
+                slfm_var    = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='property-variance', verbose=False)
+                slfm_full   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='full', verbose=False)
+                slfm_def    = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='default', verbose=False)
+
+                try:
+                    apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='mean', verbose=False)
+                    self.assertTrue(False)
+                except:
+                    self.assertTrue(True)
+
+                for prop in slfm.props:
+                    if np.max(np.abs(slfm_serial[prop] - slfm_prop[prop])) > 1.e-16:
+                        self.assertTrue(False)
+                    if np.max(np.abs(slfm_serial[prop] - slfm_mean[prop])) > 1.e-16:
+                        self.assertTrue(False)
+                    if np.max(np.abs(slfm_serial[prop] - slfm_var[prop])) > 1.e-16:
+                        self.assertTrue(False)
+                    if np.max(np.abs(slfm_serial[prop] - slfm_full[prop])) > 1.e-16:
+                        self.assertTrue(False)
+                    if np.max(np.abs(slfm_serial[prop] - slfm_def[prop])) > 1.e-16:
+                        self.assertTrue(False)
 
 
         if __name__ == '__main__':

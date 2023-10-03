@@ -21,6 +21,7 @@ import spitfire.chemistry.analysis as sca
 import copy
 from functools import partial
 import itertools
+from scipy import integrate
 
 """these names are specific to tabulated chemistry libraries for combustion"""
 _mixture_fraction_name = 'mixture_fraction'
@@ -842,20 +843,46 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
 
 
 try:
-    from pytabprops import ClippedGaussMixMdl, BetaMixMdl, LagrangeInterpolant1D
+    from pytabprops import ClippedGaussMixMdl, BetaMixMdl, LagrangeInterpolant1D, StateTable
 
+
+    def _pdf_object_and_info(pdf):
+        if isinstance(pdf, str):
+            is_custom_pdf = False
+            if pdf.lower() == 'clipgauss':
+                pdf_obj = ClipGaussPDF()
+            elif pdf.lower() == 'beta':
+                pdf_obj = BetaPDF()
+            elif pdf.lower() == 'doubledelta':
+                pdf_obj = DoubleDeltaPDF()
+            else:
+                raise ValueError("Unsupported PDF string")
+        else:
+            pdf_obj = pdf
+            is_custom_pdf = not isinstance(pdf, ClipGaussPDF) and \
+                            not isinstance(pdf, BetaPDF) and \
+                            not isinstance(pdf, DoubleDeltaPDF)
+        return is_custom_pdf, pdf_obj
+
+
+    def _single_integral(is_custom_pdf, pdf_obj, indepvars, depvars, convolution_spline_order, integrator_intervals):
+        if not is_custom_pdf:
+            interp = LagrangeInterpolant1D(convolution_spline_order,
+                                            indepvars, depvars, True)
+            return pdf_obj.integrate(interp, integrator_intervals)
+        else:
+            interp = interp1d(indepvars, depvars, kind=convolution_spline_order,
+                              fill_value=(float(depvars[0]), float(depvars[-1])),
+                              bounds_error=False)
+            return pdf_obj.integrate(interp)       
+    
 
     def _convolve_full_property(p, managed_dict, turb_lib, lam_lib, pdf_spec):
         use_scaled_variance = pdf_spec.scaled_variance_values is not None
         variance_range = pdf_spec.scaled_variance_values if use_scaled_variance else pdf_spec.variance_values
         prop_turb = turb_lib[p]
         prop_lam = lam_lib[p]
-        if isinstance(pdf_spec.pdf, str):
-            use_pytabprops = True
-            pdf_obj = ClippedGaussMixMdl(201, 201, False) if pdf_spec.pdf == 'ClipGauss' else BetaMixMdl()
-        else:
-            pdf_obj = pdf_spec.pdf
-            use_pytabprops = isinstance(pdf_spec.pdf, ClippedGaussMixMdl) or isinstance(pdf_spec.pdf, BetaMixMdl)
+        is_custom_pdf, pdf_obj = _pdf_object_and_info(pdf_spec.pdf)
 
         for ((izm, zm), (isvm, svm)) in itertools.product(enumerate(turb_lib.dims[0].values),
                                                           enumerate(variance_range.copy())):
@@ -870,25 +897,131 @@ try:
                 lam_point_list = [slice(izm, izm + 1), *lam_ex_list]
                 lam_line_list = [slice(None), *lam_ex_list]
                 turb_slice = tuple(lam_point_list + [slice(isvm, isvm + 1)])
-                if use_pytabprops:
-                    interp = LagrangeInterpolant1D(pdf_spec.convolution_spline_order,
-                                                   turb_lib.dims[0].values,
-                                                   prop_lam[tuple(lam_line_list)], True)
-                    prop_turb[turb_slice] = pdf_obj.integrate(interp, pdf_spec.integrator_intervals)
-                else:
-                    interp = interp1d(turb_lib.dims[0].values.ravel(), prop_lam[tuple(lam_line_list)].ravel(),
-                                      kind=pdf_spec.convolution_spline_order,
-                                      fill_value=(float(prop_lam[tuple(lam_line_list)][0]),
-                                                  float(prop_lam[tuple(lam_line_list)][-1])),
-                                      bounds_error=False)
-                    prop_turb[turb_slice] = pdf_obj.integrate(interp)
+                prop_turb[turb_slice] = _single_integral(is_custom_pdf,
+                                                         pdf_obj,
+                                                         turb_lib.dims[0].values.ravel(),
+                                                         prop_lam[tuple(lam_line_list)].ravel(),
+                                                         pdf_spec.convolution_spline_order,
+                                                         pdf_spec.integrator_intervals)
         if managed_dict is None:
             return prop_turb
         else:
             managed_dict[p] = prop_turb
 
 
-    def _extend_presumed_pdf_first_dim(lam_lib, pdf_spec, added_suffix, num_procs, verbose=False):
+    def _convolve_single_mean_variance(data, mean, variance, mean_range, pdf_spec):
+        is_custom_pdf, pdf_obj = _pdf_object_and_info(pdf_spec.pdf)
+        pdf_obj.set_mean(mean)
+        pdf_obj.set_scaled_variance(variance) if pdf_spec.scaled_variance_values is not None else pdf_obj.set_variance(variance)
+        
+        if data.ndim == 1:
+            return _single_integral(is_custom_pdf,
+                                    pdf_obj,
+                                    mean_range,
+                                    data,
+                                    pdf_spec.convolution_spline_order,
+                                    pdf_spec.integrator_intervals)
+        else:
+            ans = np.zeros([*data.shape[1:]])
+            for indices in itertools.product(*[range(data.shape[i+1]) for i in range(data.ndim-1)]):
+                lam_ex_list = [slice(idx, idx + 1) for idx in indices]
+                lam_line_list = [slice(None), *lam_ex_list]
+
+                ans[tuple(lam_ex_list)] = _single_integral(is_custom_pdf,
+                                                           pdf_obj,
+                                                           mean_range,
+                                                           data[tuple(lam_line_list)],
+                                                           pdf_spec.convolution_spline_order,
+                                                           pdf_spec.integrator_intervals)
+            return ans
+
+
+    def _emplace_single_mean_variance(output_dict, name, mean_index, var_index, convolve_output):
+        ndims = len(output_dict.dims)
+        if ndims>2:
+            indices = [mean_index,*[slice(None) for i in range(ndims-2)], var_index]
+            output_dict[name][tuple(indices)] = convolve_output
+        else:
+            output_dict[name][mean_index, var_index] = convolve_output
+
+
+    def _convolve_single_mean(data, mean, variances, mean_range, pdf_spec):
+        is_custom_pdf, pdf_obj = _pdf_object_and_info(pdf_spec.pdf)
+        pdf_obj.set_mean(mean)
+        toreturn = np.zeros_like(variances) if data.ndim == 1 else np.zeros([*data.shape[1:], variances.size])
+        for iv,variance in enumerate(variances):
+            pdf_obj.set_scaled_variance(variance) if pdf_spec.scaled_variance_values is not None else pdf_obj.set_variance(variance)
+            
+            if data.ndim == 1:
+                toreturn[iv] = _single_integral(is_custom_pdf,
+                                                pdf_obj,
+                                                mean_range,
+                                                data,
+                                                pdf_spec.convolution_spline_order,
+                                                pdf_spec.integrator_intervals)
+            else:
+                ans = np.zeros([*data.shape[1:]])
+                for indices in itertools.product(*[range(data.shape[i+1]) for i in range(data.ndim-1)]):
+                    lam_ex_list = [slice(idx, idx + 1) for idx in indices]
+                    lam_line_list = [slice(None), *lam_ex_list]
+                    ans[tuple(lam_ex_list)] = _single_integral(is_custom_pdf,
+                                                               pdf_obj,
+                                                               mean_range,
+                                                               data[tuple(lam_line_list)],
+                                                               pdf_spec.convolution_spline_order,
+                                                               pdf_spec.integrator_intervals)
+                toreturn[(*[slice(None) for i in range(data.ndim-1)],iv)] = ans
+        return toreturn
+
+
+    def _emplace_single_mean(output_dict, name, mean_index, convolve_output):
+        ndims = len(output_dict.dims)
+        if ndims>2:
+            indices = [mean_index,*[slice(None) for i in range(ndims-1)]]
+            output_dict[name][tuple(indices)] = convolve_output
+        else:
+            output_dict[name][mean_index, :] = convolve_output
+
+
+    def _convolve_single_variance(data, means, variance, pdf_spec):
+        is_custom_pdf, pdf_obj = _pdf_object_and_info(pdf_spec.pdf)
+        toreturn = np.zeros_like(means) if data.ndim == 1 else np.zeros([means.size,*data.shape[1:]])
+        for im,mean in enumerate(means):
+            pdf_obj.set_mean(mean)
+            pdf_obj.set_scaled_variance(variance) if pdf_spec.scaled_variance_values is not None else pdf_obj.set_variance(variance)
+            
+            if data.ndim == 1:
+                toreturn[im] = _single_integral(is_custom_pdf,
+                                                pdf_obj,
+                                                means,
+                                                data,
+                                                pdf_spec.convolution_spline_order,
+                                                pdf_spec.integrator_intervals)
+            else:
+                ans = np.zeros([*data.shape[1:]])
+                for indices in itertools.product(*[range(data.shape[i+1]) for i in range(data.ndim-1)]):
+                    lam_ex_list = [slice(idx, idx + 1) for idx in indices]
+                    lam_line_list = [slice(None), *lam_ex_list]
+                    ans[tuple(lam_ex_list)] = _single_integral(is_custom_pdf,
+                                                               pdf_obj,
+                                                               means,
+                                                               data[tuple(lam_line_list)],
+                                                               pdf_spec.convolution_spline_order,
+                                                               pdf_spec.integrator_intervals)
+                toreturn[(im,*[slice(None) for i in range(data.ndim-1)])] = ans
+        return toreturn
+
+
+    def _emplace_single_variance(output_dict, name, var_index, convolve_output):
+        ndims = len(output_dict.dims)
+        if ndims>2:
+            indices = [*[slice(None) for i in range(ndims-1)], var_index]
+            output_dict[name][tuple(indices)] = convolve_output
+        else:
+            output_dict[name][:, var_index] = convolve_output
+
+
+    def _extend_presumed_pdf_first_dim(lam_lib, pdf_spec, added_suffix, num_procs, parallel_type='default', verbose=False):
         turb_dims = [Dimension(d.name + added_suffix, d.values, d.log_scaled) for d in lam_lib.dims]
         if pdf_spec.pdf != 'delta':
             turb_dims.append(Dimension(pdf_spec.variance_name,
@@ -915,19 +1048,65 @@ try:
             for p in turb_lib.props:
                 turb_lib[p] = _convolve_full_property(p, None, turb_lib, lam_lib, pdf_spec)
         else:
-            pool = Pool(processes=num_procs)
-            manager = Manager()
-            managed_dict = manager.dict()
-            pool.map(partial(_convolve_full_property,
-                             managed_dict=managed_dict,
-                             turb_lib=turb_lib,
-                             lam_lib=lam_lib,
-                             pdf_spec=pdf_spec),
-                     turb_lib.props)
-            for p in managed_dict:
-                turb_lib[p] = managed_dict[p]
-            pool.close()
-            pool.join()
+            if parallel_type=='default':
+                if isinstance(pdf_spec.pdf, str):
+                    parallel_type = 'property-mean' if pdf_spec.pdf.lower() == 'beta' else 'property-variance'
+                else:
+                    parallel_type = 'property-mean' if isinstance(pdf_spec.pdf, BetaPDF) else 'property-variance'
+            
+            if parallel_type=='full':
+                variance_range = pdf_spec.scaled_variance_values if pdf_spec.scaled_variance_values is not None else pdf_spec.variance_values
+                mean_range = turb_lib.dims[0].values
+                with Pool(processes=num_procs) as pool:
+                    tasks = set()
+                    for name in lam_lib.props:
+                        data = lam_lib[name]
+                        for mean_index, mean in enumerate(mean_range):
+                            for var_index, variance in enumerate(variance_range):
+                                tasks.add(pool.apply_async(partial(_convolve_single_mean_variance, data, mean, variance, mean_range, pdf_spec), 
+                                                           callback=partial(_emplace_single_mean_variance, turb_lib, name, mean_index, var_index)))
+                    for t in tasks:
+                        t.get()
+            elif parallel_type=='property-variance':
+                variance_range = pdf_spec.scaled_variance_values if pdf_spec.scaled_variance_values is not None else pdf_spec.variance_values
+                mean_range = turb_lib.dims[0].values
+                with Pool(processes=num_procs) as pool:
+                    tasks = set()
+                    for name in lam_lib.props:
+                        data = lam_lib[name]
+                        for var_index, variance in enumerate(variance_range):
+                            tasks.add(pool.apply_async(partial(_convolve_single_variance, data, mean_range, variance, pdf_spec), 
+                                                       callback=partial(_emplace_single_variance, turb_lib, name, var_index)))
+                    for t in tasks:
+                        t.get()
+            elif parallel_type=='property-mean':
+                variance_range = pdf_spec.scaled_variance_values if pdf_spec.scaled_variance_values is not None else pdf_spec.variance_values
+                mean_range = turb_lib.dims[0].values
+                with Pool(processes=num_procs) as pool:
+                    tasks = set()
+                    for name in lam_lib.props:
+                        data = lam_lib[name]
+                        for mean_index, mean in enumerate(mean_range):
+                            tasks.add(pool.apply_async(partial(_convolve_single_mean, data, mean, variance_range, mean_range, pdf_spec), 
+                                                       callback=partial(_emplace_single_mean, turb_lib, name, mean_index)))
+                    for t in tasks:
+                        t.get()
+            elif parallel_type=='property':
+                pool = Pool(processes=num_procs)
+                manager = Manager()
+                managed_dict = manager.dict()
+                pool.map(partial(_convolve_full_property,
+                                managed_dict=managed_dict,
+                                turb_lib=turb_lib,
+                                lam_lib=lam_lib,
+                                pdf_spec=pdf_spec),
+                        turb_lib.props)
+                for p in managed_dict:
+                    turb_lib[p] = managed_dict[p]
+                pool.close()
+                pool.join()
+            else:
+                raise ValueError("Unsupported parallel_type.")
 
         if verbose:
             cputf = perf_counter()
@@ -935,18 +1114,435 @@ try:
             avg = float(num_integrals) / dcput
             print(f'completed in {dcput:.1f} seconds, average = {int(avg)} integrals/s.')
         return turb_lib
+
+
+    class ClipGaussPDF:
+        """Clipped Gaussian presumed PDF wrapper for the Tabprops implementation.
+
+        Parameters
+        ----------
+        nfpts : Int
+            number of modified means to tabulate over, default 201
+        ngpts : Int
+            number of modified variances to tabulate over, default 201
+        write_params_to_disk : bool
+            whether or not to write out the tabulated modified means and variances, default False
+        """
+        def __init__(self, 
+                     nfpts=201, 
+                     ngpts=201,
+                     write_params_to_disk=False):
+            self._pdf = ClippedGaussMixMdl(nfpts, ngpts, write_params_to_disk)
+            self._nfpts = nfpts
+            self._ngpts = ngpts
+            self._write_params_to_disk = write_params_to_disk
+
+        def __getstate__(self):
+            params = {}
+            params['nfpts'] = self._nfpts
+            params['ngpts'] = self._ngpts
+            params['write_params_to_disk'] = self._write_params_to_disk
+            return params
+
+        def __setstate__(self, state):
+            self.__init__(**state)
+        
+        def get_pdf(self, x):
+            "Evaluate the clipped Gaussian PDF"
+            return self._pdf.get_pdf(x)
+        
+        def set_mean(self, mean):
+            "Set the mean for the clipped Gaussian PDF"
+            self._pdf.set_mean(mean)
+
+        def set_variance(self, variance):
+            "Set the variance for the clipped Gaussian PDF"
+            self._pdf.set_variance(variance)
+
+        def set_scaled_variance(self, variance):
+            "Set the scaled variance for the clipped Gaussian PDF"
+            self._pdf.set_scaled_variance(variance)
+
+        def get_mean(self):
+            "returns the mean for the clipped Gaussian PDF"
+            return self._pdf.get_mean()
+
+        def get_variance(self):
+            "returns the variance for the clipped Gaussian PDF"
+            return self._pdf.get_variance()
+
+        def get_scaled_variance(self):
+            "returns the scaled variance for the clipped Gaussian PDF"
+            return self._pdf.get_scaled_variance()
+        
+        def get_max_variance(self):
+            "returns the maximum variance for the clipped Gaussian PDF"
+            mean = self.get_mean()
+            return mean * (1.-mean)
+        
+        def integrate(self, interpolant_obj, integrator_intervals=100):
+            """Perform the convolution of the provided interpolant with the clipped Gaussian PDF.
+
+            Parameters
+            ----------
+            interpolant_obj : Tabprops Lagrange interpolant
+                Interpolant for evaluating the property in the convolution integrals.
+            integrator_intervals : Int
+                number of subintervals for integration, default 100
+            """
+            return self._pdf.integrate(interpolant_obj, integrator_intervals)
+
+
+    class BetaPDF:
+        """Beta presumed PDF leverages the Tabprops implementation with improved integration.
+
+        Parameters
+        ----------
+        scaled_variance_max_integrate : float
+            The maximum scalar variance for which integration is trusted. Any values higher than 
+            this will have the integral interpolated between the integration at scaled_variance_max_integrate and 1.
+            Default value is 0.86.
+        scaled_variance_min_integrate : float
+            The minimum scalar variance for which integration is trusted. Any values lower than 
+            this will have the integral interpolated between the integration at scaled_variance_min_integrate and 0.
+            Default value is 6e-4.
+        mean_boundary_integrate : float
+            The distance on either side of the [0,1] mean boundary for which integration is trusted. Any values within 
+            a shorter distance from the boundary will have the integral interpolated between the integration at 
+            the trusted distance and the nearest boundary.
+            Default value is 6e-5.
+        """
+        def __init__(self, 
+                     scaled_variance_max_integrate=0.86, 
+                     scaled_variance_min_integrate=6.e-4,
+                     mean_boundary_integrate=6.e-5):
+            self._oldbeta = BetaMixMdl() # Beta PDF in Tabprops
+            self._min_bound = 0. # lower bound for integral
+            self._max_bound = 1. # upper bound for integral
+            self._scaled_variance_max_integrate = scaled_variance_max_integrate
+            self._scaled_variance_min_integrate = scaled_variance_min_integrate
+            self._mean_boundary_integrate = mean_boundary_integrate
+
+        def __getstate__(self):
+            params = {}
+            params['scaled_variance_max_integrate'] = self._scaled_variance_max_integrate
+            params['scaled_variance_min_integrate'] = self._scaled_variance_min_integrate
+            params['mean_boundary_integrate'] = self._mean_boundary_integrate
+            return params
+
+        def __setstate__(self, state):
+            self.__init__(**state)
+
+        def get_pdf(self, x):
+            "Evaluate the Beta PDF"
+            return self._oldbeta.get_pdf(x)
+
+        def set_mean(self, mean):
+            "Set the mean for the Beta PDF"
+            self._oldbeta.set_mean(mean)
+
+        def set_variance(self, variance):
+            "Set the variance for the Beta PDF"
+            self._oldbeta.set_variance(variance)
+
+        def set_scaled_variance(self, variance):
+            "Set the scaled variance for the Beta PDF"
+            self._oldbeta.set_scaled_variance(variance)
+
+        def get_mean(self):
+            "returns the mean for the Beta PDF"
+            return self._oldbeta.get_mean()
+
+        def get_variance(self):
+            "returns the variance for the Beta PDF"
+            return self._oldbeta.get_variance()
+
+        def get_scaled_variance(self):
+            "returns the scaled variance for the Beta PDF"
+            return self._oldbeta.get_scaled_variance()
+        
+        def get_max_variance(self):
+            "returns the maximum variance for the Beta PDF"
+            mean = self.get_mean()
+            return mean * (1.-mean)
+        
+        def _compute_unmixed_state(self, interpolant):
+            "the convolution at a scaled variance of 1"
+            mean = self.get_mean()
+            t0 = interpolant(0.)
+            t1 = interpolant(1.)
+            return t1 * mean + t0*(1.-mean)
+        
+        def _compute_mixed_state(self, interpolant):
+            "the convolution at a scaled variance of 0"
+            return interpolant(self.get_mean())
+
+        def _interp_variance(self, integral_dict, scaled_variance_copy, bound):
+            "convolution is interpolated between trusted variance and boundary"
+            if bound=='max':
+                bound_integral = self._compute_unmixed_state(integral_dict['interpolant'])
+                bound_var = 1.
+                integrate_var = self._scaled_variance_max_integrate
+            else:
+                bound_integral = self._compute_mixed_state(integral_dict['interpolant'])
+                bound_var = 0.
+                integrate_var = self._scaled_variance_min_integrate
+            self.set_scaled_variance(integrate_var)
+            cutoff = integrate.quad(integral_dict['integrand'], self._min_bound, self._max_bound, limit=integral_dict['integrator_intervals'], points=integral_dict['points'], full_output=1, epsabs=integral_dict['epsabs'], epsrel=integral_dict['epsrel'])[0]
+            self.set_scaled_variance(scaled_variance_copy)
+            return cutoff + (bound_integral - cutoff) / (bound_var - integrate_var) * (scaled_variance_copy - integrate_var)
+
+        def _interp_mean(self, integral_dict, mean_copy, withvariance=False, variance_bound=None):
+            "convolution is interpolated between trusted mean and boundary"
+            scaled_variance_copy = np.copy(self.get_scaled_variance())
+            if mean_copy<self._mean_boundary_integrate:
+                bound_var = 0.
+                integrate_var=self._mean_boundary_integrate
+            else:
+                bound_var = 1.
+                integrate_var=1.-self._mean_boundary_integrate
+            bound_integral = integral_dict['interpolant'](bound_var)
+            self.set_mean(integrate_var)
+            self.set_scaled_variance(scaled_variance_copy)
+            if withvariance:
+                cutoff = self._interp_variance(integral_dict, scaled_variance_copy, variance_bound)
+            else:
+                cutoff = integrate.quad(integral_dict['integrand'], self._min_bound, self._max_bound, limit=integral_dict['integrator_intervals'], points=integral_dict['points'], full_output=1, epsabs=integral_dict['epsabs'], epsrel=integral_dict['epsrel'])[0]
+            self.set_mean(mean_copy)
+            self.set_scaled_variance(scaled_variance_copy)
+            return cutoff + (bound_integral - cutoff) / (bound_var - integrate_var) * (mean_copy - integrate_var)
+
+        def integrate(self, interpolant_obj, integrator_intervals=100):
+            """Perform the convolution of the provided interpolant with the Beta PDF.
+
+            Parameters
+            ----------
+            interpolant_obj : Tabprops Lagrange interpolant
+                Interpolant for evaluating the property in the convolution integrals.
+            integrator_intervals : Int
+                upper bound on the number of subintervals used in the adaptive algorithm, default 100
+            """
+            tbl = StateTable()
+            tbl.add_entry("val", interpolant_obj, ['x'])
+            interpolant = lambda x: tbl.query("val", x)
+
+            scaled_variance = self.get_scaled_variance()
+            mean = self.get_mean()
+
+            zerotol = 1.e-12
+            if mean<zerotol or mean>=1.-zerotol:
+                return interpolant(mean)
+            
+            if self.get_variance() < 1.e-8:  # use mean values
+                return self._compute_mixed_state(interpolant)
+            elif scaled_variance > 0.99: # use unmixed values
+                return self._compute_unmixed_state(interpolant)
+            else:
+                epsabs = 1.e-10 if scaled_variance<1.e-3 else 1.49e-8
+                epsrel=epsabs
+
+                def integrand(x):
+                    return interpolant(x) * self.get_pdf(x)
+
+                integral_dict = {}
+                integral_dict['integrand'] = integrand
+                integral_dict['interpolant'] = interpolant
+                integral_dict['integrator_intervals'] = integrator_intervals
+                integral_dict['epsabs'] = epsabs
+                integral_dict['epsrel'] = epsrel
+                integral_dict['points'] = [0.,1.]
+                
+                if scaled_variance > self._scaled_variance_max_integrate: # interpolate variance
+                    if mean<self._mean_boundary_integrate or mean>1.-self._mean_boundary_integrate: # interpolate mean
+                        return self._interp_mean(integral_dict, mean, True, 'max')
+                    else:
+                        return self._interp_variance(integral_dict, scaled_variance,'max')
+
+                elif scaled_variance < self._scaled_variance_min_integrate: # interpolate variance
+                    if mean<self._mean_boundary_integrate or mean>1.-self._mean_boundary_integrate: # interpolate mean
+                        return self._interp_mean(integral_dict, mean, True, 'min')
+                    else:
+                        return self._interp_variance(integral_dict, scaled_variance,'min')
+                else:
+                    if mean<self._mean_boundary_integrate or mean>1.-self._mean_boundary_integrate: # interpolate mean
+                        return self._interp_mean(integral_dict, mean, False)
+                    else: # integrate
+                        return integrate.quad(integrand, self._min_bound, self._max_bound, limit=integral_dict['integrator_intervals'], points=integral_dict['points'], full_output=1, epsabs=integral_dict['epsabs'], epsrel=integral_dict['epsrel'])[0]
+
+
+    class DoubleDeltaPDF:
+        """Double Delta PDF."""
+        def __init__(self):
+            self._mean = 0.
+            self._variance = 0.
+            self._scaled_variance = 0.
+            self._max_variance = 0.
+
+        def set_mean(self, mean):
+            "set the mean for the Double Delta PDF"
+            self._mean = mean
+            self._varmax = mean * (1. - mean)
+
+        def set_variance(self, variance):
+            "set the variance for the Double Delta PDF"
+            self._variance = variance
+            if self._varmax > 0:
+                self._scaled_variance = variance / self._varmax
+            else:
+                self._scaled_variance = 0.
+
+        def set_scaled_variance(self, scaled_variance):
+            "set the scaled variance for the Double Delta PDF"
+            self._scaled_variance = scaled_variance
+            self._variance = scaled_variance * self._varmax
+
+        def get_mean(self):
+            "returns the mean of the Double Delta PDF"
+            return self._mean
+
+        def get_variance(self):
+            "returns the variance of the Double Delta PDF"
+            return self._variance
+
+        def get_scaled_variance(self):
+            "returns the scaled variance of the Double Delta PDF"
+            return self._scaled_variance
+
+        def find_bounds(self):
+            "returns the left and right delta location along with the left delta weight"
+            left = self._mean - np.sqrt(self._variance)
+            right = self._mean + np.sqrt(self._variance)
+            weight_left = 0.5
+            if left < 0.:
+                left = 0.
+                weight_left = 1. - self._mean**2/(self._variance + self._mean**2)
+                right = self._mean / (1.-weight_left)
+            elif right > 1.:
+                right = 1.
+                weight_left = (1.-self._mean)**2 / (self._variance + (1.-self._mean)**2)
+                left = 1. - (1.-self._mean)/weight_left
+            if left < 0. or right > 1.:
+                raise ValueError(f"cannot support (mean, scaled variance) of ({self._mean:.2f}, {self._scaled_variance:.2e}) on domain [0,1].")
+            return left,right,weight_left
+
+        def get_pdf(self, x):
+            "evaluate the Double Delta PDF integral"
+            left,right,weight_left = self.find_bounds()
+            pdf = np.zeros_like(x)
+            pdf[x==left] = weight_left
+            pdf[x==right] = 1.-weight_left
+            return pdf
+        
+        def _compute_unmixed_state(self, interpolant):
+            "the convolution at a scaled variance of 1"
+            mean = self.get_mean()
+            t0 = interpolant(0.)
+            t1 = interpolant(1.)
+            return t1 * mean + t0*(1.-mean)
+        
+        def _compute_mixed_state(self, interpolant):
+            "the convolution at a scaled variance of 0"
+            return interpolant(self.get_mean())
+        
+        def integrate(self, interpolant_obj, integrator_intervals=100):
+            """Perform the convolution of the provided interpolant with the Double Delta PDF.
+
+            Parameters
+            ----------
+            interpolant_obj : Tabprops Lagrange interpolant
+                Interpolant for evaluating the property in the convolution integrals.
+            integrator_intervals : Int
+                This variable is not used for Double Delta integration
+            """
+            tbl = StateTable()
+            tbl.add_entry("val", interpolant_obj, ['x'])
+            interpolant = lambda x: tbl.query("val", x)
+            if self.get_variance() < 1.e-8:  # use mean values
+                return self._compute_mixed_state(interpolant)
+            elif self.get_scaled_variance() > 0.99: # use unmixed values
+                return self._compute_unmixed_state(interpolant)
+            else:
+                left,right,weight_left = self.find_bounds()
+                return weight_left*interpolant(left) + (1.-weight_left)*interpolant(right)
+
+
+    def compute_pdf_max_integration_errors(pdf, means, scaled_variances, relative_tolerance=1.e-6, integrator_intervals=100):
+        """Compute the maximum relative error magnitude for the provided PDF satisfying the following 3 integrals over a range of means and scaled variances
+            
+            1. :math:`1 = \\int_{-\infty}^\infty P(\\phi) \\mathrm{d}\\phi`
+
+            2. :math:`\\bar{\\phi} = \\int_{-\infty}^\infty \\phi P(\\phi) \\mathrm{d}\\phi`
+
+            3. :math:`\\sigma_{\\phi}^2 = \\int_{-\infty}^\infty (\\phi - \\bar{\\phi})^2 P(\\phi) \\mathrm{d}\\phi`
+
+            Parameters
+            ----------
+            pdf : a constructed pdf class
+                the pdf for which to evaluate the integral errors
+            means : numpy array or list
+                the set of means at which to evaluate the integral errors
+            scaled_variances : numpy array or list
+                the set of scaled variances at which to evaluate the integral errors
+            relative_tolerance : float
+                the offset used in the denominator for computing relative errors
+            integrator_intervals : float
+                subintervals for integration when applicable
+
+            Returns
+            -------
+            maximum relative error for satisfying integral 1, maximum relative error for satisfying integral 2, maximum relative error for satisfying integral 3
+        """
+        errors = np.zeros((scaled_variances.size * means.size))
+        linspace = means.copy()
+        interp = LagrangeInterpolant1D(3, linspace, np.ones_like(linspace), False)
+        i = 0
+        for svar in scaled_variances:
+            for mean in means:
+                pdf.set_mean(mean)
+                pdf.set_scaled_variance(svar)
+                integral = pdf.integrate(interp, integrator_intervals)
+                errors[i] = integral - 1.
+                i += 1
+        maxerr_pdf = np.max(np.abs(errors))
+
+        interp = LagrangeInterpolant1D(3, linspace, linspace, False)
+        i = 0
+        for svar in scaled_variances:
+            for mean in means:
+                pdf.set_mean(mean)
+                pdf.set_scaled_variance(svar)
+                integral = pdf.integrate(interp, integrator_intervals)
+                errors[i] = (integral - mean)/(mean+relative_tolerance)
+                i += 1
+        maxerr_mean = np.max(np.abs(errors))
+    
+        i = 0
+        for svar in scaled_variances:
+            for mean in means:
+                pdf.set_mean(mean)
+                pdf.set_scaled_variance(svar)
+                maxvar = mean * (1.-mean)
+                interp = LagrangeInterpolant1D(3, linspace, (linspace-mean)**2, False)
+                integral = pdf.integrate(interp, integrator_intervals)
+                errors[i] = (integral - svar*maxvar)/(svar*maxvar+relative_tolerance)
+                i += 1
+        maxerr_var = np.max(np.abs(errors))
+
+        return maxerr_pdf, maxerr_mean, maxerr_var
+
+
 except ImportError:
     pass
 
 
 def require_pytabprops(method_name):
     try:
-        from pytabprops import ClippedGaussMixMdl, BetaMixMdl, LagrangeInterpolant1D
+        from pytabprops import ClippedGaussMixMdl, BetaMixMdl, LagrangeInterpolant1D, StateTable
     except ImportError:
         raise ModuleNotFoundError(f'{method_name} requires the pytabprops package')
 
 
-def _apply_presumed_pdf_1var(library, variable_name, pdf_spec, added_suffix=_mean_suffix, num_procs=1, verbose=False):
+def _apply_presumed_pdf_1var(library, variable_name, pdf_spec, added_suffix=_mean_suffix, num_procs=1, parallel_type='default', verbose=False):
     require_pytabprops('apply_presumed_PDF_model')
 
     index = 0
@@ -966,14 +1562,14 @@ def _apply_presumed_pdf_1var(library, variable_name, pdf_spec, added_suffix=_mea
             _pdf_spec.variance_name = variable_name + '_variance'
 
     if index == 0:
-        library_t = _extend_presumed_pdf_first_dim(library, _pdf_spec, added_suffix, num_procs, verbose)
+        library_t = _extend_presumed_pdf_first_dim(library, _pdf_spec, added_suffix, num_procs, parallel_type, verbose)
     else:
         swapped_dims = library.dims
         swapped_dims[index], swapped_dims[0] = swapped_dims[0], swapped_dims[index]
         swapped_lib = Library(*swapped_dims)
         for p in library.props:
             swapped_lib[p] = np.swapaxes(library[p], 0, index)
-        swapped_lib_t = _extend_presumed_pdf_first_dim(swapped_lib, _pdf_spec, added_suffix, num_procs, verbose)
+        swapped_lib_t = _extend_presumed_pdf_first_dim(swapped_lib, _pdf_spec, added_suffix, num_procs, parallel_type, verbose)
         swapped_lib_t_dims = copy.copy(swapped_lib_t.dims)
         swapped_lib_t_dims[0], swapped_lib_t_dims[index] = swapped_lib_t_dims[index], swapped_lib_t_dims[0]
         library_t = Library(*swapped_lib_t_dims)
@@ -1000,7 +1596,7 @@ class PDFSpec:
         Parameters
         ----------
         pdf : str, or custom object type
-            the PDF, either 'ClipGauss' or 'Beta' for TabProps methods, or any custom object that implements the
+            the PDF, either 'ClipGauss' or 'Beta' for TabProps methods, 'DoubleDelta', or any custom object that implements the
             set_mean(), set_variance() or set_scaled_variance(), and integrate(scipy.interpolate.interp1d) methods.
         scaled_variance_values : np.array
             array of values of the scaled variance (varies between zero and one), provide this or variance_values
@@ -1029,7 +1625,7 @@ class PDFSpec:
         self.log_scaled = log_scaled
 
 
-def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_procs=1, verbose=False):
+def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_procs=1, parallel_type='default', verbose=False):
     """Take an existing tabulated chemistry library and incorporate subgrid variation in each reaction variable with a
         presumed PDF model. This requires statistical independence of the reaction variables. If a reaction variable
         is not included in the mixing_spec dictionary, a delta PDF is presumed for it.
@@ -1044,6 +1640,10 @@ def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_proc
         string to add to each name, for instance '_mean' if this is the first PDF convolution, or '' if a successive convolution
     num_procs : Int
         how many processors over which to distribute the parallel extinction solves
+    parallel_type : str 
+        parallelization options include 'property' for properties alone, 'property-mean' for means and properties,
+        'property-variance' for variances and properties, 'full' for means, variances, and properties,
+        or 'default' which estimates the fastest option based on the pdf type
     verbose : bool
         whether or not (default False) to print information about the PDF convolution
 
@@ -1051,7 +1651,6 @@ def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_proc
     -------
     library : spitfire.Library instance
         the library with any nontrivial variance dimensions added
-
     """
     require_pytabprops('apply_mixing_model')
 
@@ -1079,6 +1678,7 @@ def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_proc
         extensions.append({'variable_name': key,
                            'pdf_spec': mixing_spec[key],
                            'num_procs': num_procs,
+                           'parallel_type': parallel_type,
                            'verbose': verbose})
 
     def get_size(element):
