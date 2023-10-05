@@ -154,14 +154,14 @@ try:
                 # parallel options
                 slfm = build_adiabatic_slfm_library(fs, diss_rate_values=np.logspace(-1,1,3), verbose=False)
                 slfm_serial = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=1, verbose=False)
-                slfm_prop   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='property', verbose=False)
-                slfm_mean   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='property-mean', verbose=False)
-                slfm_var    = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='property-variance', verbose=False)
-                slfm_full   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='full', verbose=False)
-                slfm_def    = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='default', verbose=False)
+                slfm_prop   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv, parallel_type='property')}, num_procs=2, verbose=False)
+                slfm_mean   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv, parallel_type='property-mean')}, num_procs=2, verbose=False)
+                slfm_var    = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv, parallel_type='property-variance')}, num_procs=2, verbose=False)
+                slfm_full   = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv, parallel_type='full')}, num_procs=2, verbose=False)
+                slfm_def    = apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv, parallel_type='default')}, num_procs=2, verbose=False)
 
                 try:
-                    apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv)}, num_procs=2, parallel_type='mean', verbose=False)
+                    apply_mixing_model(slfm, {'mixture_fraction': PDFSpec('DoubleDelta', z_svv, parallel_type='mean')}, num_procs=2, verbose=False)
                     self.assertTrue(False)
                 except:
                     self.assertTrue(True)

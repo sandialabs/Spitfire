@@ -118,7 +118,7 @@ PDFs can be specified using the ``PDFspec`` class with the strings ``'ClipGauss'
 ``apply_mixing_model`` will perform the integrals over all properties and mixture fraction values in the laminar library, as well as over all provided variance values.
 The default behavior is to compute these integrals in serial.
 This can be slow for large tables, so Spitfire supports a variety of parallel computing options when ``num_procs`` is greater than one.
-These options are specified through ``parallel_type`` and include
+These options are specified through ``parallel_type`` in the ``PDFspec`` and include
 
 - ``'property'``: parallelize over properties
 

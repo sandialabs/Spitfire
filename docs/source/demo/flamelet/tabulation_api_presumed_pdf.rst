@@ -268,7 +268,7 @@ feature to be shown in following demonstrations.
 
 When calling ``apply_mixing_model`` on particularly large laminar
 libraries, speedup through parallelism can be achieved when ``num_procs`` is greater than 1 
-by setting ``parallel_type`` to one of the following options:
+by setting ``parallel_type`` in the ``PDFSpec`` to one of the following options:
 
 - ``'property'``: parallelize over properties
 

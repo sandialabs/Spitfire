@@ -881,7 +881,8 @@ try:
         use_scaled_variance = pdf_spec.scaled_variance_values is not None
         variance_range = pdf_spec.scaled_variance_values if use_scaled_variance else pdf_spec.variance_values
         prop_turb = turb_lib[p]
-        prop_lam = lam_lib[p]
+        norm_fac = np.max(lam_lib[p]) - np.min(lam_lib[p]) if np.max(lam_lib[p]) - np.min(lam_lib[p])>0. else 1.
+        prop_lam = lam_lib[p] / norm_fac
         is_custom_pdf, pdf_obj = _pdf_object_and_info(pdf_spec.pdf)
 
         for ((izm, zm), (isvm, svm)) in itertools.product(enumerate(turb_lib.dims[0].values),
@@ -902,7 +903,7 @@ try:
                                                          turb_lib.dims[0].values.ravel(),
                                                          prop_lam[tuple(lam_line_list)].ravel(),
                                                          pdf_spec.convolution_spline_order,
-                                                         pdf_spec.integrator_intervals)
+                                                         pdf_spec.integrator_intervals) * norm_fac
         if managed_dict is None:
             return prop_turb
         else:
@@ -936,13 +937,13 @@ try:
             return ans
 
 
-    def _emplace_single_mean_variance(output_dict, name, mean_index, var_index, convolve_output):
+    def _emplace_single_mean_variance(output_dict, name, mean_index, var_index, norm_fac, convolve_output):
         ndims = len(output_dict.dims)
         if ndims>2:
             indices = [mean_index,*[slice(None) for i in range(ndims-2)], var_index]
-            output_dict[name][tuple(indices)] = convolve_output
+            output_dict[name][tuple(indices)] = convolve_output * norm_fac
         else:
-            output_dict[name][mean_index, var_index] = convolve_output
+            output_dict[name][mean_index, var_index] = convolve_output * norm_fac
 
 
     def _convolve_single_mean(data, mean, variances, mean_range, pdf_spec):
@@ -974,13 +975,13 @@ try:
         return toreturn
 
 
-    def _emplace_single_mean(output_dict, name, mean_index, convolve_output):
+    def _emplace_single_mean(output_dict, name, mean_index, norm_fac, convolve_output):
         ndims = len(output_dict.dims)
         if ndims>2:
             indices = [mean_index,*[slice(None) for i in range(ndims-1)]]
-            output_dict[name][tuple(indices)] = convolve_output
+            output_dict[name][tuple(indices)] = convolve_output * norm_fac
         else:
-            output_dict[name][mean_index, :] = convolve_output
+            output_dict[name][mean_index, :] = convolve_output * norm_fac
 
 
     def _convolve_single_variance(data, means, variance, pdf_spec):
@@ -1012,16 +1013,16 @@ try:
         return toreturn
 
 
-    def _emplace_single_variance(output_dict, name, var_index, convolve_output):
+    def _emplace_single_variance(output_dict, name, var_index, norm_fac, convolve_output):
         ndims = len(output_dict.dims)
         if ndims>2:
             indices = [*[slice(None) for i in range(ndims-1)], var_index]
-            output_dict[name][tuple(indices)] = convolve_output
+            output_dict[name][tuple(indices)] = convolve_output * norm_fac
         else:
-            output_dict[name][:, var_index] = convolve_output
+            output_dict[name][:, var_index] = convolve_output * norm_fac
 
 
-    def _extend_presumed_pdf_first_dim(lam_lib, pdf_spec, added_suffix, num_procs, parallel_type='default', verbose=False):
+    def _extend_presumed_pdf_first_dim(lam_lib, pdf_spec, added_suffix, num_procs, verbose=False):
         turb_dims = [Dimension(d.name + added_suffix, d.values, d.log_scaled) for d in lam_lib.dims]
         if pdf_spec.pdf != 'delta':
             turb_dims.append(Dimension(pdf_spec.variance_name,
@@ -1048,6 +1049,7 @@ try:
             for p in turb_lib.props:
                 turb_lib[p] = _convolve_full_property(p, None, turb_lib, lam_lib, pdf_spec)
         else:
+            parallel_type = pdf_spec.parallel_type
             if parallel_type=='default':
                 if isinstance(pdf_spec.pdf, str):
                     parallel_type = 'property-mean' if pdf_spec.pdf.lower() == 'beta' else 'property-variance'
@@ -1061,10 +1063,12 @@ try:
                     tasks = set()
                     for name in lam_lib.props:
                         data = lam_lib[name]
+                        norm_fac = np.max(data) - np.min(data) if np.max(data) - np.min(data)>0. else 1.
+                        data /= norm_fac
                         for mean_index, mean in enumerate(mean_range):
                             for var_index, variance in enumerate(variance_range):
                                 tasks.add(pool.apply_async(partial(_convolve_single_mean_variance, data, mean, variance, mean_range, pdf_spec), 
-                                                           callback=partial(_emplace_single_mean_variance, turb_lib, name, mean_index, var_index)))
+                                                           callback=partial(_emplace_single_mean_variance, turb_lib, name, mean_index, var_index, norm_fac)))
                     for t in tasks:
                         t.get()
             elif parallel_type=='property-variance':
@@ -1074,9 +1078,11 @@ try:
                     tasks = set()
                     for name in lam_lib.props:
                         data = lam_lib[name]
+                        norm_fac = np.max(data) - np.min(data) if np.max(data) - np.min(data)>0. else 1.
+                        data /= norm_fac
                         for var_index, variance in enumerate(variance_range):
                             tasks.add(pool.apply_async(partial(_convolve_single_variance, data, mean_range, variance, pdf_spec), 
-                                                       callback=partial(_emplace_single_variance, turb_lib, name, var_index)))
+                                                       callback=partial(_emplace_single_variance, turb_lib, name, var_index, norm_fac)))
                     for t in tasks:
                         t.get()
             elif parallel_type=='property-mean':
@@ -1086,9 +1092,11 @@ try:
                     tasks = set()
                     for name in lam_lib.props:
                         data = lam_lib[name]
+                        norm_fac = np.max(data) - np.min(data) if np.max(data) - np.min(data)>0. else 1.
+                        data /= norm_fac
                         for mean_index, mean in enumerate(mean_range):
                             tasks.add(pool.apply_async(partial(_convolve_single_mean, data, mean, variance_range, mean_range, pdf_spec), 
-                                                       callback=partial(_emplace_single_mean, turb_lib, name, mean_index)))
+                                                       callback=partial(_emplace_single_mean, turb_lib, name, mean_index, norm_fac)))
                     for t in tasks:
                         t.get()
             elif parallel_type=='property':
@@ -1542,7 +1550,7 @@ def require_pytabprops(method_name):
         raise ModuleNotFoundError(f'{method_name} requires the pytabprops package')
 
 
-def _apply_presumed_pdf_1var(library, variable_name, pdf_spec, added_suffix=_mean_suffix, num_procs=1, parallel_type='default', verbose=False):
+def _apply_presumed_pdf_1var(library, variable_name, pdf_spec, added_suffix=_mean_suffix, num_procs=1, verbose=False):
     require_pytabprops('apply_presumed_PDF_model')
 
     index = 0
@@ -1562,14 +1570,14 @@ def _apply_presumed_pdf_1var(library, variable_name, pdf_spec, added_suffix=_mea
             _pdf_spec.variance_name = variable_name + '_variance'
 
     if index == 0:
-        library_t = _extend_presumed_pdf_first_dim(library, _pdf_spec, added_suffix, num_procs, parallel_type, verbose)
+        library_t = _extend_presumed_pdf_first_dim(library, _pdf_spec, added_suffix, num_procs, verbose)
     else:
         swapped_dims = library.dims
         swapped_dims[index], swapped_dims[0] = swapped_dims[0], swapped_dims[index]
         swapped_lib = Library(*swapped_dims)
         for p in library.props:
             swapped_lib[p] = np.swapaxes(library[p], 0, index)
-        swapped_lib_t = _extend_presumed_pdf_first_dim(swapped_lib, _pdf_spec, added_suffix, num_procs, parallel_type, verbose)
+        swapped_lib_t = _extend_presumed_pdf_first_dim(swapped_lib, _pdf_spec, added_suffix, num_procs, verbose)
         swapped_lib_t_dims = copy.copy(swapped_lib_t.dims)
         swapped_lib_t_dims[0], swapped_lib_t_dims[index] = swapped_lib_t_dims[index], swapped_lib_t_dims[0]
         library_t = Library(*swapped_lib_t_dims)
@@ -1590,7 +1598,8 @@ class PDFSpec:
                  convolution_spline_order=3,
                  integrator_intervals=100,
                  variance_name=None,
-                 log_scaled=False):
+                 log_scaled=False,
+                 parallel_type='default'):
         """Specification of a presumed PDF and integrator/spline details for a given single dimension in a library.
 
         Parameters
@@ -1613,6 +1622,10 @@ class PDFSpec:
             of the dimension being convolved, or use "scaled_scalar_variance_mean" for "mixture_fraction"
         log_scaled : bool
             whether or not the dimension is populated with log-scaled values, default False
+        parallel_type : str
+            parallelization options include 'property' for properties alone, 'property-mean' for means and properties,
+            'property-variance' for variances and properties, 'full' for means, variances, and properties,
+            or 'default' which estimates the fastest option based on the pdf type
         """
         require_pytabprops('PDFSpec')
 
@@ -1624,8 +1637,14 @@ class PDFSpec:
         self.variance_name = variance_name
         self.log_scaled = log_scaled
 
+        supported_parallel_types = ['full', 'property', 'property-variance', 'property-mean', 'default']
+        if parallel_type not in supported_parallel_types:
+            raise ValueError(f"Unsupported parallel_type '{parallel_type}'. Options include: {supported_parallel_types}")
+        else:
+            self.parallel_type = parallel_type
 
-def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_procs=1, parallel_type='default', verbose=False):
+
+def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_procs=1, verbose=False):
     """Take an existing tabulated chemistry library and incorporate subgrid variation in each reaction variable with a
         presumed PDF model. This requires statistical independence of the reaction variables. If a reaction variable
         is not included in the mixing_spec dictionary, a delta PDF is presumed for it.
@@ -1640,10 +1659,6 @@ def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_proc
         string to add to each name, for instance '_mean' if this is the first PDF convolution, or '' if a successive convolution
     num_procs : Int
         how many processors over which to distribute the parallel extinction solves
-    parallel_type : str 
-        parallelization options include 'property' for properties alone, 'property-mean' for means and properties,
-        'property-variance' for variances and properties, 'full' for means, variances, and properties,
-        or 'default' which estimates the fastest option based on the pdf type
     verbose : bool
         whether or not (default False) to print information about the PDF convolution
 
@@ -1678,7 +1693,6 @@ def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_proc
         extensions.append({'variable_name': key,
                            'pdf_spec': mixing_spec[key],
                            'num_procs': num_procs,
-                           'parallel_type': parallel_type,
                            'verbose': verbose})
 
     def get_size(element):
