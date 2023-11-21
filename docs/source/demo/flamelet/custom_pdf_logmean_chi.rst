@@ -107,11 +107,12 @@ for the integration in Spitfire.
    seems pretty simple to integrate. In general, adaptive quadrature
    should be used to guarantee accurate results.
 -  ``get_pdf(self, x)``: completely unnecessary for integration with the
-   PDF, but convenient for visualization
+   PDF, but convenient for visualization.
+-  override the ``__str__(self)`` method as shown for more verbose error messaging.
 
 .. code:: ipython3
 
-    from scipy.integrate import simpson
+    from scipy.integrate import simps as simpson
     
     class LogMean1ParamPDF:
         def __init__(self, sigma):
@@ -120,12 +121,15 @@ for the integration in Spitfire.
             self._s2pi = np.sqrt(2. * np.pi)
             self._xt = np.logspace(-6, 6, 1000)
             self._pdft = np.zeros_like(self._xt)
-            
+
+        def __str__(self):
+            return f'LogMean1ParamPDF, sigma={self._sigma}'
+
         def get_pdf(self, x):
             s = self._sigma
             m = self._mu
             return 1. / (x * s * self._s2pi) * np.exp(-(np.log(x) - m) * (np.log(x) - m) / (2. * s * s))
-        
+
         def set_mean(self, mean):
             self._mu = np.log(mean) - 0.5 * self._sigma * self._sigma
             self._pdft = self.get_pdf(self._xt)

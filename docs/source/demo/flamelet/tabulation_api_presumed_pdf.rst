@@ -260,11 +260,17 @@ Spitfire provides optimized PDF integrators for the following PDFs:
 
 - double delta PDF (``'DoubleDelta'``)
 
+- delta PDF (``'Delta'``)
+
 Tabprops handles integration of the clipped Gaussian while
 ``scipy.integrate.quad`` handles integration of the Beta PDF. The
 DoubleDelta PDF allows for analytic solutions. In addition to these
 supported PDFs, Spitfire allows you to “roll your own” PDF integrator, a
 feature to be shown in following demonstrations.
+
+Use ``mean_values`` in the ``PDFSpec`` to specify an arbitrary (e.g., smaller)
+grid for the convolutions. The ``'Delta'`` PDF can be used to interpolate the
+property data onto the ``mean_values`` grid.
 
 When calling ``apply_mixing_model`` on particularly large laminar
 libraries, speedup through parallelism can be achieved when ``num_procs`` is greater than 1 
@@ -471,6 +477,22 @@ supported PDFs. We will pick a single property profile.
 
 .. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_19_2.png
 
+
+Below is an example of using the delta PDF to interpolate onto a smaller grid.
+
+.. code:: ipython3
+
+    smaller_lib = apply_mixing_model(sampled_lib, {'mixture_fraction': PDFSpec(pdf='delta', mean_values=sampled_lib.mixture_fraction_values[::2])}, verbose=True)
+    print('temperature difference between original and subsampled libraries:',np.max(np.abs(smaller_lib['temperature'] - sampled_lib['temperature'][::2])))
+    print('original library size:', sampled_lib.shape)
+    print('subsampled library size:', smaller_lib.shape)
+
+.. parsed-literal::
+
+    scaled_scalar_variance_mean: computing 17 integrals... completed in 0.0 seconds, average = 10699 integrals/s.
+    temperature difference between original and subsampled libraries: 4.547473508864641e-13
+    original library size: (34,)
+    subsampled library size: (17,)
 
 All PDFs, :math:`P(\phi)`, must satisfy the following integrals:
 
