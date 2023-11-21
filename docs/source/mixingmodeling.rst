@@ -113,6 +113,7 @@ This takes an existing tabulated chemistry library and incorporates subgrid vari
 A delta PDF is presumed for each reaction variable that is not included in the ``mixing_spec`` dictionary.
 If nontrivial (not delta) PDFs are given for multiple variables, the integrals are computed sequentially as in :eq:`independent_pdf_eqn`.
 PDFs can be specified using the ``PDFspec`` class with the strings ``'ClipGauss'``, ``'Beta'``, or ``'DoubleDelta'`` to use the clipped Gaussian, :math:`\beta`, or double delta PDFs, respectively, shown above.
+A ``'Delta'`` PDF may also be used to interpolate the property data onto a different (e.g., smaller) grid by providing ``PDFspec`` with ``mean_values``.
 ``PDFspec`` can also take custom PDF objects.
 
 ``apply_mixing_model`` will perform the integrals over all properties and mixture fraction values in the laminar library, as well as over all provided variance values.

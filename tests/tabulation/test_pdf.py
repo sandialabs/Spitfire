@@ -1,8 +1,10 @@
 try:
     import unittest
-    from spitfire import BetaPDF, DoubleDeltaPDF, apply_mixing_model, PDFSpec, Library, Dimension, compute_pdf_max_integration_errors
+    from spitfire import BetaPDF, DoubleDeltaPDF, DeltaPDF, apply_mixing_model, PDFSpec, Library, Dimension, compute_pdf_max_integration_errors
     import numpy as np
     from pytabprops import LagrangeInterpolant1D
+    from scipy.interpolate import interp1d
+    from numpy.testing import assert_allclose
 
 
     class TestPDF(unittest.TestCase):
@@ -101,12 +103,13 @@ try:
         def test_supported_pdfs(self):
             lib = Library(Dimension('mixture_fraction', np.linspace(0,1,100)))
             lib['prop'] = lib.mixture_fraction_values**2+0.1
+            test_val = np.array([1.e-3])
             for pdfname in ['ClipGauss', 'Beta', 'DoubleDelta']:
                 try:
-                    lib1 = apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf=pdfname, scaled_variance_values=np.array([1.e-3]))}, verbose=False)
+                    lib1 = apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf=pdfname, scaled_variance_values=test_val)}, verbose=False)
                     self.assertTrue(True)
                     if pdfname=='Beta':
-                        lib2 = apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf='beta', scaled_variance_values=np.array([1.e-3]))}, verbose=False)
+                        lib2 = apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf='beta', scaled_variance_values=test_val)}, verbose=False)
                         self.assertTrue(True)
                         for prop in lib1.props:
                             maxerr=np.max(np.abs(lib1[prop]-lib2[prop]))
@@ -118,10 +121,70 @@ try:
                     self.assertTrue(False)
             for pdfname in ['UNKNOWN']:
                 try:
-                    apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf=pdfname, scaled_variance_values=np.array([1.e-3]))}, verbose=False)
+                    apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf=pdfname, scaled_variance_values=test_val)}, verbose=False)
                     self.assertTrue(False)
                 except:
                     self.assertTrue(True)
+
+            # too many variances specified
+            for pdf in ['ClipGauss', 'Beta', 'DoubleDelta', 'Delta']:
+                try:
+                    apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf, variance_values=test_val, scaled_variance_values=test_val)}, num_procs=1, verbose=False)
+                    self.assertTrue(False)
+                except:
+                    self.assertTrue(True)
+            # not enough variances specified
+            for pdf in ['ClipGauss', 'Beta', 'DoubleDelta']:
+                try:
+                    apply_mixing_model(lib, {'mixture_fraction': PDFSpec(pdf)}, num_procs=1, verbose=False)
+                    self.assertTrue(False)
+                except:
+                    self.assertTrue(True)
+            # too many means specified
+            try:
+                apply_mixing_model(lib, {'mixture_fraction': PDFSpec('delta', mean_values=test_val, scaled_mean_values=test_val)}, num_procs=1, verbose=False)
+                self.assertTrue(False)
+            except:
+                self.assertTrue(True)
+            # cannot specify any variance for DeltaPDF
+            try:
+                apply_mixing_model(lib, {'mixture_fraction': PDFSpec('delta', variance_values=np.array([0.]))}, num_procs=1, verbose=False)
+                self.assertTrue(False)
+            except:
+                self.assertTrue(True)
+            try:
+                apply_mixing_model(lib, {'mixture_fraction': PDFSpec('delta', scaled_variance_values=np.array([0.]))}, num_procs=1, verbose=False)
+                self.assertTrue(False)
+            except:
+                self.assertTrue(True)
+
+
+        def test_lagrange_versus_scipy(self):
+            ivars = np.linspace(0,1,100)
+            dvars = ivars**2.1
+            l_interp = LagrangeInterpolant1D(3, ivars, dvars, False)
+            s_interp = interp1d(ivars, dvars, kind=3)
+            mean = 0.523
+            var = 0.11
+            for pdftype in [DeltaPDF, DoubleDeltaPDF, BetaPDF]:
+                ans = []
+                for use_lagrange in [True, False]:
+                    pdf = pdftype()
+                    pdf.set_mean(mean)
+                    pdf.set_scaled_variance(var)
+                    ans.append(pdf.integrate(l_interp) if use_lagrange else pdf.integrate(s_interp))
+                self.assertIsNone(assert_allclose(*ans))
+
+
+        def test_within_bounds(self):
+            from spitfire.chemistry.tabulation import _outside_bounds
+            lib = Library(Dimension('mixture_fraction', np.linspace(0,1,100)))
+            lib['prop'] = lib.mixture_fraction_values+0.1
+
+            ans = lib['prop'][-1] + 1.
+            self.assertTrue(_outside_bounds(ans, lib['prop']))
+            ans = lib['prop'][0] - 1.
+            self.assertTrue(_outside_bounds(ans, lib['prop']))
 
 
     if __name__ == '__main__':

@@ -20,6 +20,7 @@ from .chemistry.tabulation import build_adiabatic_eq_library, \
     BetaPDF, \
     DoubleDeltaPDF, \
     ClipGaussPDF, \
+    DeltaPDF, \
     compute_pdf_max_integration_errors
 
 from .griffon.griffon import PyCombustionKernels

@@ -8,7 +8,7 @@ try:
     from spitfire.chemistry.mechanism import ChemicalMechanismSpec
     from spitfire.chemistry.library import Library, Dimension
     from spitfire.chemistry.flamelet import FlameletSpec
-    from spitfire.chemistry.tabulation import build_adiabatic_eq_library, apply_mixing_model, PDFSpec, build_adiabatic_slfm_library
+    from spitfire.chemistry.tabulation import build_adiabatic_eq_library, apply_mixing_model, PDFSpec, build_adiabatic_slfm_library, build_nonadiabatic_defect_transient_slfm_library
 
     import cantera
     import cantera as ct
@@ -177,6 +177,40 @@ try:
                         self.assertTrue(False)
                     if np.max(np.abs(slfm_serial[prop] - slfm_def[prop])) > 1.e-16:
                         self.assertTrue(False)
+
+                # too few points in air_temperature dimension for default spline order 3
+                try:
+                    apply_mixing_model(eq_lib3, {'mixture_fraction': PDFSpec('ClipGauss', z_svv),
+                                                 'air_temperature':PDFSpec('delta')}, num_procs=1, verbose=False)
+                    self.assertTrue(False)
+                except:
+                    self.assertTrue(True)
+                # now it's okay with specified spline order 2
+                testlib = apply_mixing_model(eq_lib3, {'mixture_fraction': PDFSpec('ClipGauss', z_svv),
+                                                       'air_temperature':PDFSpec('delta', convolution_spline_order=2)}, num_procs=1, verbose=False)
+                self.assertFalse(np.any(np.isnan(testlib['temperature'])))
+
+                # DeltaPDF w/ and w/o scaled means
+                downsize = apply_mixing_model(eq_lib3,
+                                              {'mixture_fraction': PDFSpec('delta', mean_values=eq_lib3.mixture_fraction_values[::2]),
+                                               'fuel_temperature': PDFSpec('delta', mean_values=eq_lib3.fuel_temperature_values[::2])},
+                                              num_procs=1, verbose=False)
+                scaled_z = (eq_lib3.mixture_fraction_values[::2] - eq_lib3.mixture_fraction_values.min())/(eq_lib3.mixture_fraction_values.max() - eq_lib3.mixture_fraction_values.min())
+                scaled_f = (eq_lib3.fuel_temperature_values[::2] - eq_lib3.fuel_temperature_values.min())/(eq_lib3.fuel_temperature_values.max() - eq_lib3.fuel_temperature_values.min())
+                downsize_sc = apply_mixing_model(eq_lib3,
+                                              {'mixture_fraction': PDFSpec('delta', scaled_mean_values=scaled_z),
+                                               'fuel_temperature': PDFSpec('delta', scaled_mean_values=scaled_f)},
+                                              num_procs=1, verbose=False)
+                self.assertIsNone(assert_allclose(downsize['temperature'], eq_lib3['temperature'][::2,::2,:]))
+                self.assertIsNone(assert_allclose(downsize_sc['temperature'], eq_lib3['temperature'][::2,::2,:]))
+
+                # DeltaPDF with decreasing indepvar (gamma)
+                nonad = build_nonadiabatic_defect_transient_slfm_library(fs, diss_rate_values=np.logspace(-1,1,3), n_defect_st=9, verbose=False)
+                downsize = apply_mixing_model(nonad,
+                                              {'mixture_fraction': PDFSpec('delta', mean_values=nonad.mixture_fraction_values[::2]),
+                                               'enthalpy_defect_stoich': PDFSpec('delta', mean_values=nonad.enthalpy_defect_stoich_values[::2])},
+                                              num_procs=1, verbose=False)
+                self.assertIsNone(assert_allclose(downsize['temperature'], nonad['temperature'][::2,:,::2]))
 
 
         if __name__ == '__main__':
