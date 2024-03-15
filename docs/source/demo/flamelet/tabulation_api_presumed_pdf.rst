@@ -1,16 +1,19 @@
 Tabulation API Example: Presumed PDF SLFM Tables
 ================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
 *Highlights*
 
-- Building presumed PDF adiabatic and nonadiabatic SFLM libraries for turbulent flows
+-  Building presumed PDF adiabatic and nonadiabatic SFLM libraries for
+   turbulent flows
+-  Using Spitfire’s wrapper around the Python interface of
+   ```TabProps`` <https://multiscale.utah.edu/software/>`__ to easily
+   extend tables with clipped Gaussian and Beta PDFs
 
-- Using Spitfire’s wrapper around the Python interface of ``TabProps`` <https://multiscale.utah.edu/software/> to easily extend tables with clipped Gaussian and Beta PDFs
-
-In this demo, we build reaction models and then incorporate the presumed PDF mixing models outlined in the mixing model documentation.
+In this demo, we build reaction models and then incorporate the presumed
+PDF mixing models outlined in the mixing model documentation.
 
 The Reaction Models
 -------------------
@@ -28,7 +31,7 @@ following prior demonstrations.
     import matplotlib.pyplot as plt
     import numpy as np
     
-    mech = ChemicalMechanismSpec(cantera_xml='heptane-liu-hewson-chen-pitsch-highT.xml', 
+    mech = ChemicalMechanismSpec(cantera_input='heptane-liu-hewson-chen-pitsch-highT.yaml', 
                                  group_name='gas')
     
     pressure = 101325.
@@ -50,10 +53,7 @@ following prior demonstrations.
     l_na = build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                             diss_rate_values=np.logspace(-1, 2, 8),
                                                             diss_rate_ref='stoichiometric',
-                                                            n_defect_st=16,
-                                                            integration_args={'transient_tolerance': 1.e-12})
-    # note here: the transient_tolerance is specified to avoid seeing "failure" messages,
-    # but in absence of this flag, Spitfire will automatically iterate after failures to obtain a solution
+                                                            n_defect_st=16)
 
 
 .. parsed-literal::
@@ -61,47 +61,47 @@ following prior demonstrations.
     ----------------------------------------------------------------------------------
     building nonadiabatic (defect) SLFM library
     ----------------------------------------------------------------------------------
-    - mechanism: heptane-liu-hewson-chen-pitsch-highT.xml
+    - mechanism: heptane-liu-hewson-chen-pitsch-highT.yaml
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
     ----------------------------------------------------------------------------------
     building adiabatic SLFM library
     ----------------------------------------------------------------------------------
-    - mechanism: heptane-liu-hewson-chen-pitsch-highT.xml
+    - mechanism: heptane-liu-hewson-chen-pitsch-highT.yaml
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   8 (chi_stoich =  1.0e-01 1/s)  converged in   0.68 s, T_max = 2122.1
-       2/   8 (chi_stoich =  2.7e-01 1/s)  converged in   0.01 s, T_max = 2089.8
-       3/   8 (chi_stoich =  7.2e-01 1/s)  converged in   0.01 s, T_max = 2055.4
-       4/   8 (chi_stoich =  1.9e+00 1/s)  converged in   0.07 s, T_max = 2027.5
-       5/   8 (chi_stoich =  5.2e+00 1/s)  converged in   0.08 s, T_max = 1984.7
-       6/   8 (chi_stoich =  1.4e+01 1/s)  converged in   0.08 s, T_max = 1924.2
-       7/   8 (chi_stoich =  3.7e+01 1/s)  converged in   0.08 s, T_max = 1840.6
-       8/   8 (chi_stoich =  1.0e+02 1/s)  converged in   0.11 s, T_max = 1695.0
+       1/   8 (chi_stoich =  1.0e-01 1/s)  converged in   1.06 s, T_max = 2122.1
+       2/   8 (chi_stoich =  2.7e-01 1/s)  converged in   0.02 s, T_max = 2089.8
+       3/   8 (chi_stoich =  7.2e-01 1/s)  converged in   0.02 s, T_max = 2055.4
+       4/   8 (chi_stoich =  1.9e+00 1/s)  converged in   0.08 s, T_max = 2027.5
+       5/   8 (chi_stoich =  5.2e+00 1/s)  converged in   0.09 s, T_max = 1984.7
+       6/   8 (chi_stoich =  1.4e+01 1/s)  converged in   0.10 s, T_max = 1924.2
+       7/   8 (chi_stoich =  3.7e+01 1/s)  converged in   0.10 s, T_max = 1840.6
+       8/   8 (chi_stoich =  1.0e+02 1/s)  converged in   0.12 s, T_max = 1695.0
     ----------------------------------------------------------------------------------
-    library built in   1.27 s
+    library built in   1.70 s
     ----------------------------------------------------------------------------------
     expanding (transient) enthalpy defect dimension ...
-    chi_st =  1.0e-01 1/s converged in  13.95 s
-    chi_st =  2.7e-01 1/s converged in  13.38 s
-    chi_st =  7.2e-01 1/s converged in  13.06 s
-    chi_st =  1.9e+00 1/s converged in  12.70 s
-    chi_st =  5.2e+00 1/s converged in  12.90 s
-    chi_st =  1.4e+01 1/s converged in  12.35 s
-    chi_st =  3.7e+01 1/s converged in  15.03 s
-    chi_st =  1.0e+02 1/s converged in  14.13 s
+    chi_st =  1.0e-01 1/s converged in   3.78 s
+    chi_st =  2.7e-01 1/s converged in  11.23 s
+    chi_st =  7.2e-01 1/s converged in   4.64 s
+    chi_st =  1.9e+00 1/s converged in  10.14 s
+    chi_st =  5.2e+00 1/s converged in   9.30 s
+    chi_st =  1.4e+01 1/s converged in   3.14 s
+    chi_st =  3.7e+01 1/s converged in   3.76 s
+    chi_st =  1.0e+02 1/s converged in   3.57 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in 107.50 s
+    enthalpy defect dimension expanded in  49.56 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--50%--60%--70%--80%--100%
-    Structured enthalpy defect dimension built in   3.35 s
+    Structured enthalpy defect dimension built in   2.30 s
     ----------------------------------------------------------------------------------
-    library built in 112.14 s
+    library built in  53.57 s
     ----------------------------------------------------------------------------------
 
 
@@ -254,37 +254,39 @@ variation for all dimensions and adds the (default) suffix ``_mean``.
 
 Spitfire provides optimized PDF integrators for the following PDFs:
 
-- clipped Gaussian (``'ClipGauss'``)
+-  clipped Gaussian (``'ClipGauss'``)
 
-- :math:`\beta` PDF (``'Beta'``)
+-  :math:`\beta` PDF (``'Beta'``)
 
-- double delta PDF (``'DoubleDelta'``)
+-  double delta PDF (``'DoubleDelta'``)
 
-- delta PDF (``'Delta'``)
+-  delta PDF (``'Delta'``)
 
 Tabprops handles integration of the clipped Gaussian while
-``scipy.integrate.quad`` handles integration of the Beta PDF. The
-DoubleDelta PDF allows for analytic solutions. In addition to these
+``scipy.integrate.quad`` handles integration of the Beta PDF. The Delta
+and DoubleDelta PDF allow for analytic solutions. In addition to these
 supported PDFs, Spitfire allows you to “roll your own” PDF integrator, a
 feature to be shown in following demonstrations.
 
-Use ``mean_values`` in the ``PDFSpec`` to specify an arbitrary (e.g., smaller)
-grid for the convolutions. The ``'Delta'`` PDF can be used to interpolate the
-property data onto the ``mean_values`` grid.
+Use ``mean_values`` in the ``PDFSpec`` to specify an arbitrary (e.g.,
+smaller) grid for the convolutions. The ``'Delta'`` PDF can be used to
+interpolate the property data onto the ``mean_values`` grid.
 
 When calling ``apply_mixing_model`` on particularly large laminar
-libraries, speedup through parallelism can be achieved when ``num_procs`` is greater than 1 
-by setting ``parallel_type`` in the ``PDFSpec`` to one of the following options:
+libraries, speedup through parallelism can be achieved when
+``num_procs`` is greater than 1 by setting ``parallel_type`` in the
+``PDFSpec`` to one of the following options:
 
-- ``'property'``: parallelize over properties
+-  ``'property'``: parallelize over properties
 
-- ``'property-mean'``: parallelize over mean and properties
+-  ``'property-mean'``: parallelize over mean and properties
 
-- ``'property-variance'``: parallelize over variance and properties
+-  ``'property-variance'``: parallelize over variance and properties
 
-- ``'full'``: parallelize over mean, variance, and properties
+-  ``'full'``: parallelize over mean, variance, and properties
 
-- ``'default'``: use the fastest parallel method on average depending on the pdf
+-  ``'default'``: use the fastest parallel method on average depending
+   on the pdf
 
 .. code:: ipython3
 
@@ -300,8 +302,10 @@ by setting ``parallel_type`` in the ``PDFSpec`` to one of the following options:
 
 .. parsed-literal::
 
-    scaled_scalar_variance_mean: computing 10880 integrals... completed in 2.9 seconds, average = 3759 integrals/s.
-    scaled_scalar_variance_mean: computing 174080 integrals... completed in 42.5 seconds, average = 4098 integrals/s.
+    scaled_scalar_variance_mean: computing 10880 integrals... 
+    completed in 2.4 seconds, average = 4560 integrals/s.
+    scaled_scalar_variance_mean: computing 174080 integrals... 
+    completed in 30.8 seconds, average = 5645 integrals/s.
 
 
 Now take a quick look at the tables. Input dimensions have been suffixed
@@ -322,29 +326,29 @@ between 0 and 1) is incorporated as the final dimension. Futher, the
     Spitfire Library with 3 dimensions and 4 properties
     ------------------------------------------
     1. Dimension "mixture_fraction_mean" spanning [0.0, 1.0] with 34 points
-    2. Dimension "dissipation_rate_stoich_mean" spanning [0.1, 100.0] with 8 points
+    2. Dimension "dissipation_rate_stoich_mean" spanning [0.09999999999999999, 100.0] with 8 points
     3. Dimension "scaled_scalar_variance_mean" spanning [0.0, 1.0] with 10 points
     ------------------------------------------
-    temperature         , min = 300.0 max = 2122.096955226145
-    viscosity           , min = 1.2370131775920866e-05 max = 6.906467776682902e-05
-    enthalpy            , min = -1739935.6849118916 max = 1901.8191601112542
-    heat_capacity_cp    , min = 1011.3329912202539 max = 2422.2079033535088
-    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f5f929b5a90>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a2cfd0>, 'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a2cc10>}}
+    temperature         , min = 299.99999999999994 max = 2122.096955226139
+    viscosity           , min = 1.2370131775920798e-05 max = 6.906467776683119e-05
+    enthalpy            , min = -1739935.6849118914 max = 1901.8191601112544
+    heat_capacity_cp    , min = 1011.3329912202538 max = 2422.2079033534988
+    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f09512f0d50>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f0950d2c7d0>}}
     ------------------------------------------
     
     
     Spitfire Library with 4 dimensions and 4 properties
     ------------------------------------------
     1. Dimension "mixture_fraction_mean" spanning [0.0, 1.0] with 34 points
-    2. Dimension "dissipation_rate_stoich_mean" spanning [0.1, 100.0] with 8 points
-    3. Dimension "enthalpy_defect_stoich_mean" spanning [-2140766.3110727593, 0.0] with 16 points
+    2. Dimension "dissipation_rate_stoich_mean" spanning [0.09999999999999999, 100.0] with 8 points
+    3. Dimension "enthalpy_defect_stoich_mean" spanning [-2140683.3798015513, 0.0] with 16 points
     4. Dimension "scaled_scalar_variance_mean" spanning [0.0, 1.0] with 10 points
     ------------------------------------------
-    temperature         , min = 299.99999999999994 max = 2122.096955226145
-    viscosity           , min = 1.2370131775920852e-05 max = 6.906467776682902e-05
-    enthalpy            , min = -2521383.376793081 max = 1901.8191601113015
-    heat_capacity_cp    , min = 1011.3329912202539 max = 2422.2079033535088
-    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f5f900e7a50>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a2cfd0>, 'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f92a8af10>, 'enthalpy_defect_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f5f900cd9d0>}}
+    temperature         , min = 299.99999999999994 max = 2122.096955226139
+    viscosity           , min = 1.2370131775920718e-05 max = 6.906467776683119e-05
+    enthalpy            , min = -2521367.43587239 max = 1901.8191601113401
+    heat_capacity_cp    , min = 1011.3329912202537 max = 2422.2079033534988
+    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f0950e07850>, 'mixing_spec': {'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f0950d2c7d0>}}
     ------------------------------------------
     
 
@@ -359,7 +363,7 @@ To finish things off we can show some simple visualiations of the data.
 .. code:: ipython3
 
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     z = np.squeeze(t_cg_prop_ad.mixture_fraction_mean_grid[:, :, 0])
     x = np.squeeze(np.log10(t_cg_prop_ad.dissipation_rate_stoich_mean_grid[:, :, 0]))
     v_list = t_cg_prop_ad.scaled_scalar_variance_mean_values
@@ -378,7 +382,8 @@ To finish things off we can show some simple visualiations of the data.
     plt.show()
 
 
-.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_15_1.png
+
+.. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_15_0.png
 
 
 .. code:: ipython3
@@ -433,9 +438,12 @@ supported PDFs. We will pick a single property profile.
 
 .. parsed-literal::
 
-    scaled_scalar_variance_mean: computing 340 integrals... completed in 0.2 seconds, average = 1961 integrals/s.
-    scaled_scalar_variance_mean: computing 340 integrals... completed in 3.9 seconds, average = 86 integrals/s.
-    scaled_scalar_variance_mean: computing 340 integrals... completed in 0.0 seconds, average = 35079 integrals/s.
+    scaled_scalar_variance_mean: computing 340 integrals... 
+    completed in 0.3 seconds, average = 1299 integrals/s.
+    scaled_scalar_variance_mean: computing 340 integrals... 
+    completed in 3.6 seconds, average = 93 integrals/s.
+    scaled_scalar_variance_mean: computing 340 integrals... 
+    completed in 0.0 seconds, average = 12779 integrals/s.
 
 
 .. code:: ipython3
@@ -478,7 +486,8 @@ supported PDFs. We will pick a single property profile.
 .. image:: tabulation_api_presumed_pdf_files/tabulation_api_presumed_pdf_19_2.png
 
 
-Below is an example of using the delta PDF to interpolate onto a smaller grid.
+Below is an example of using the delta PDF to interpolate onto a smaller
+grid.
 
 .. code:: ipython3
 
@@ -487,12 +496,15 @@ Below is an example of using the delta PDF to interpolate onto a smaller grid.
     print('original library size:', sampled_lib.shape)
     print('subsampled library size:', smaller_lib.shape)
 
+
 .. parsed-literal::
 
-    scaled_scalar_variance_mean: computing 17 integrals... completed in 0.0 seconds, average = 10699 integrals/s.
-    temperature difference between original and subsampled libraries: 4.547473508864641e-13
+    scaled_scalar_variance_mean: computing 17 integrals... 
+    completed in 0.0 seconds, average = 5476 integrals/s.
+    temperature difference between original and subsampled libraries: 2.2737367544323206e-13
     original library size: (34,)
     subsampled library size: (17,)
+
 
 All PDFs, :math:`P(\phi)`, must satisfy the following integrals:
 
@@ -525,5 +537,6 @@ for the ``BetaPDF`` parameters.
 
 .. parsed-literal::
 
-    (0.0005913180615271241, 2.4555011311778803e-06, 0.009900892069395257)
+    (0.000591317734758956, 2.4555011311778803e-06, 0.009900892069395255)
+
 

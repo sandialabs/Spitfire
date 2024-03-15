@@ -1,11 +1,13 @@
 Tabulation API Example: Nonadiabatic Flamelet Models
 ====================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - using ``build_nonadiabatic*`` methods in Spitfire to
-build nonadiabatic equilibrium, Burke-Schumann, and SLFM models
+*Highlights*
+
+-  using ``build_nonadiabatic*`` methods in Spitfire to build
+   nonadiabatic equilibrium, Burke-Schumann, and SLFM models
 
 This example builds nonadiabatic flamelet models and compares profiles
 of the temperature, mass fractions, and enthalpy defect of several
@@ -22,7 +24,7 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     import matplotlib.pyplot as plt
     import numpy as np
     
-    mech = ChemicalMechanismSpec(cantera_xml='heptane-liu-hewson-chen-pitsch-highT.xml', group_name='gas')
+    mech = ChemicalMechanismSpec(cantera_input='heptane-liu-hewson-chen-pitsch-highT.yaml', group_name='gas')
     pressure = 101325.
     air = mech.stream(stp_air=True)
     air.TP = 300., pressure
@@ -48,41 +50,41 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     ----------------------------------------------------------------------------------
     building nonadiabatic (defect) SLFM library
     ----------------------------------------------------------------------------------
-    - mechanism: heptane-liu-hewson-chen-pitsch-highT.xml
+    - mechanism: heptane-liu-hewson-chen-pitsch-highT.yaml
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
     ----------------------------------------------------------------------------------
     building adiabatic SLFM library
     ----------------------------------------------------------------------------------
-    - mechanism: heptane-liu-hewson-chen-pitsch-highT.xml
+    - mechanism: heptane-liu-hewson-chen-pitsch-highT.yaml
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   7.67 s, T_max = 2249.2
-       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.52 s, T_max = 2186.1
-       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   1.46 s, T_max = 2109.4
-       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   3.72 s, T_max = 1998.4
-       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.18 s, T_max = 1768.7
+       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   5.44 s, T_max = 2249.2
+       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.25 s, T_max = 2186.1
+       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   1.37 s, T_max = 2109.4
+       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   2.32 s, T_max = 1998.4
+       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.08 s, T_max = 1768.7
     ----------------------------------------------------------------------------------
-    library built in  13.91 s
+    library built in   9.84 s
     ----------------------------------------------------------------------------------
     expanding (transient) enthalpy defect dimension ...
-    chi_st =  1.0e-02 1/s converged in  20.59 s
-    chi_st =  1.0e-01 1/s converged in  19.66 s
-    chi_st =  1.0e+00 1/s converged in  16.75 s
-    chi_st =  1.0e+01 1/s converged in  14.22 s
-    chi_st =  1.0e+02 1/s converged in  12.63 s
+    chi_st =  1.0e-02 1/s converged in  14.84 s
+    chi_st =  1.0e-01 1/s converged in  13.01 s
+    chi_st =  1.0e+00 1/s converged in  11.88 s
+    chi_st =  1.0e+01 1/s converged in   9.99 s
+    chi_st =  1.0e+02 1/s converged in   9.79 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in  83.85 s
+    enthalpy defect dimension expanded in  59.51 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--50%--100%
-    Structured enthalpy defect dimension built in   9.68 s
+    Structured enthalpy defect dimension built in   7.27 s
     ----------------------------------------------------------------------------------
-    library built in 107.46 s
+    library built in  76.64 s
     ----------------------------------------------------------------------------------
 
 
@@ -101,41 +103,41 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     ----------------------------------------------------------------------------------
     building nonadiabatic (defect) SLFM library
     ----------------------------------------------------------------------------------
-    - mechanism: heptane-liu-hewson-chen-pitsch-highT.xml
+    - mechanism: heptane-liu-hewson-chen-pitsch-highT.yaml
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
     ----------------------------------------------------------------------------------
     building adiabatic SLFM library
     ----------------------------------------------------------------------------------
-    - mechanism: heptane-liu-hewson-chen-pitsch-highT.xml
+    - mechanism: heptane-liu-hewson-chen-pitsch-highT.yaml
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   7.15 s, T_max = 2249.2
-       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.45 s, T_max = 2186.1
-       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   1.41 s, T_max = 2109.4
-       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   3.27 s, T_max = 1998.4
-       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.17 s, T_max = 1768.7
+       1/   5 (chi_stoich =  1.0e-02 1/s)  converged in   3.81 s, T_max = 2249.2
+       2/   5 (chi_stoich =  1.0e-01 1/s)  converged in   0.21 s, T_max = 2186.1
+       3/   5 (chi_stoich =  1.0e+00 1/s)  converged in   0.92 s, T_max = 2109.4
+       4/   5 (chi_stoich =  1.0e+01 1/s)  converged in   1.94 s, T_max = 1998.4
+       5/   5 (chi_stoich =  1.0e+02 1/s)  converged in   0.09 s, T_max = 1768.7
     ----------------------------------------------------------------------------------
-    library built in  12.83 s
+    library built in   7.34 s
     ----------------------------------------------------------------------------------
     expanding (steady) enthalpy defect dimension ...
-    chi_st =  1.0e-02 1/s converged in 124.93 s
-    chi_st =  1.0e-01 1/s converged in  47.30 s
-    chi_st =  1.0e+00 1/s converged in  27.73 s
-    chi_st =  1.0e+01 1/s converged in  19.77 s
-    chi_st =  1.0e+02 1/s converged in  35.97 s
+    chi_st =  1.0e-02 1/s converged in  53.47 s
+    chi_st =  1.0e-01 1/s converged in  23.62 s
+    chi_st =  1.0e+00 1/s converged in  15.73 s
+    chi_st =  1.0e+01 1/s converged in  11.91 s
+    chi_st =  1.0e+02 1/s converged in  18.46 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in 255.75 s
+    enthalpy defect dimension expanded in 123.22 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--50%--100%
-    Structured enthalpy defect dimension built in  10.35 s
+    Structured enthalpy defect dimension built in   8.31 s
     ----------------------------------------------------------------------------------
-    library built in 278.96 s
+    library built in 138.89 s
     ----------------------------------------------------------------------------------
 
 
@@ -214,16 +216,34 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     plt.show()
 
 
+.. parsed-literal::
 
-.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_5_0.png
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
 
 
 
 .. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_5_1.png
 
 
+.. parsed-literal::
 
-.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_5_2.png
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+
+
+
+.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_5_3.png
+
+
+.. parsed-literal::
+
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+
+
+
+.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_5_5.png
 
 
 .. code:: ipython3
@@ -232,7 +252,7 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     from matplotlib.colors import Normalize
     
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     z = l_ts.mixture_fraction_grid[:, :, 0]
     x = np.log10(l_ts.dissipation_rate_stoich_grid[:, :, 0])
     for ih in range(0, l_ts.enthalpy_defect_stoich_npts, 6):
@@ -249,7 +269,7 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     plt.show()
     
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     for ih in range(0, l_ts.enthalpy_defect_stoich_npts, 6):
         dh = l_ts.enthalpy_defect_stoich_values[ih]
         ax.contourf(z, x, l_ts['mass fraction OH'][:, :, ih], offset=dh / 1.e6, 
@@ -265,18 +285,34 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     plt.show()
 
 
+.. parsed-literal::
 
-.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_6_0.png
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+
+
+.. parsed-literal::
+
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
 
 
 
-.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_6_1.png
+.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_6_2.png
+
+
+.. parsed-literal::
+
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+
+
+
+.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_6_4.png
 
 
 .. code:: ipython3
 
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     z = l_ts.mixture_fraction_grid[:, 0, :]
     g = l_ts.enthalpy_defect_stoich_grid[:, 0, :] / 1.e6
     for ichi in range(0, l_ts.dissipation_rate_stoich_npts):
@@ -293,7 +329,17 @@ nonadiabatic flamelet tabulation techniques for n-heptane chemistry.
     plt.show()
 
 
+.. parsed-literal::
 
-.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_7_0.png
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+
+
+.. parsed-literal::
+
+    INFO:matplotlib.mathtext:Substituting symbol Z from STIXNonUnicode
+
+
+
+.. image:: example_nonadiabatic_flamelets_files/example_nonadiabatic_flamelets_7_2.png
 
 

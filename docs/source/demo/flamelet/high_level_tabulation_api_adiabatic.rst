@@ -1,11 +1,13 @@
 Tabulation API Example: Adiabatic Flamelet Models
 =================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Building adiabatic equilibrium, Burke-Schumann, and
-strained laminar flamelet (SLFM) models
+*Highlights*
+
+-  Building adiabatic equilibrium, Burke-Schumann, and strained laminar
+   flamelet (SLFM) models
 
 In the introductory flamelet demonstration we used methods on the
 ``Flamelet`` class to compute steady and unsteady solutions to the
@@ -27,7 +29,7 @@ similar libraries without having to even make a ``Flamelet`` instance.
     import matplotlib.pyplot as plt
     import numpy as np
     
-    mech = ChemicalMechanismSpec(cantera_xml='heptane-liu-hewson-chen-pitsch-highT.xml', group_name='gas')
+    mech = ChemicalMechanismSpec(cantera_input='heptane-liu-hewson-chen-pitsch-highT.yaml', group_name='gas')
     
     pressure = 101325.
     

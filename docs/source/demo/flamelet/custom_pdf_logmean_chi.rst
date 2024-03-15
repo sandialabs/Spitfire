@@ -1,17 +1,20 @@
 Custom Presumed PDF: log-mean PDF of the scalar dissipation rate
 ================================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
 *Highlights*
 
-- Building presumed PDF adiabatic and nonadiabatic SFLM libraries for turbulent flows
+-  Building presumed PDF adiabatic and nonadiabatic SFLM libraries for
+   turbulent flows
+-  Using Spitfire’s wrapper around the Python interface of
+   ```TabProps`` <https://multiscale.utah.edu/software/>`__ to easily
+   extend tables with clipped Gaussian and Beta PDFs
 
-- Using Spitfire’s wrapper around the Python interface of ``TabProps`` <https://multiscale.utah.edu/software/> to easily extend tables with clipped Gaussian and Beta PDFs
-
-In this demo, we build reaction models and then incorporate custom built presumed PDF mixing models to perform the convolution integrals outlined in the mixing model documentation.
-
+In this demo, we build reaction models and then incorporate custom built
+presumed PDF mixing models to perform the convolution integrals outlined
+in the mixing model documentation.
 
 Reaction Model
 --------------
@@ -35,7 +38,7 @@ where the discontinuity of extinction is clear.
     from matplotlib.colors import Normalize
     import numpy as np
     
-    mech = ChemicalMechanismSpec(cantera_xml='heptane-liu-hewson-chen-pitsch-highT.xml', 
+    mech = ChemicalMechanismSpec(cantera_input='heptane-liu-hewson-chen-pitsch-highT.yaml', 
                                  group_name='gas')
     
     flamelet_specs = FlameletSpec(mech_spec=mech, 
@@ -108,7 +111,8 @@ for the integration in Spitfire.
    should be used to guarantee accurate results.
 -  ``get_pdf(self, x)``: completely unnecessary for integration with the
    PDF, but convenient for visualization.
--  override the ``__str__(self)`` method as shown for more verbose error messaging.
+-  override the ``__str__(self)`` method as shown for more verbose error
+   messaging.
 
 .. code:: ipython3
 
@@ -121,15 +125,15 @@ for the integration in Spitfire.
             self._s2pi = np.sqrt(2. * np.pi)
             self._xt = np.logspace(-6, 6, 1000)
             self._pdft = np.zeros_like(self._xt)
-
+    
         def __str__(self):
             return f'LogMean1ParamPDF, sigma={self._sigma}'
-
+            
         def get_pdf(self, x):
             s = self._sigma
             m = self._mu
             return 1. / (x * s * self._s2pi) * np.exp(-(np.log(x) - m) * (np.log(x) - m) / (2. * s * s))
-
+        
         def set_mean(self, mean):
             self._mu = np.log(mean) - 0.5 * self._sigma * self._sigma
             self._pdft = self.get_pdf(self._xt)
@@ -147,7 +151,7 @@ for the integration in Spitfire.
     lm_pdf = LogMean1ParamPDF(1.0)
     
     xtest = np.logspace(-3, np.log10(400), 10000)
-        
+    
     for mean in [20., 50., 100.0, 200, 300]:
         lm_pdf.set_mean(mean)
         plt.plot(xtest, lm_pdf.get_pdf(xtest))
@@ -197,17 +201,29 @@ when we print the library - it doesn’t have a
 
 .. parsed-literal::
 
-    dissipation_rate_stoich_variance: computing 2560 integrals... completed in 1.1 seconds, average = 2374 integrals/s.
-    scaled_scalar_variance_mean: computing 20480 integrals... completed in 4.5 seconds, average = 4562 integrals/s.
+    dissipation_rate_stoich_variance: computing 2560 integrals... 
+
+
+.. parsed-literal::
+
+    /tmp/ipykernel_3916/3178755948.py:31: DeprecationWarning: 'scipy.integrate.simps' is deprecated in favour of 'scipy.integrate.simpson' and will be removed in SciPy 1.14.0
+      return simpson(ig, x=self._xt)
+
+
+.. parsed-literal::
+
+    completed in 1.3 seconds, average = 1932 integrals/s.
+    scaled_scalar_variance_mean: computing 20480 integrals... 
+    completed in 1.4 seconds, average = 14261 integrals/s.
     
     Spitfire Library with 3 dimensions and 1 properties
     ------------------------------------------
     1. Dimension "mixture_fraction_mean" spanning [0.0, 1.0] with 64 points
-    2. Dimension "dissipation_rate_stoich_mean" spanning [0.1, 10000.0] with 40 points
+    2. Dimension "dissipation_rate_stoich_mean" spanning [0.09999999999999999, 10000.0] with 40 points
     3. Dimension "scaled_scalar_variance_mean" spanning [0.0, 1.0] with 8 points
     ------------------------------------------
-    temperature         , min = 299.99991531427054 max = 2144.707709229305
-    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f8b4393ee10>, 'mixing_spec': {'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f8b3d2935d0>, 'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f8b3d293590>}}
+    temperature         , min = 299.9999153013872 max = 2144.7073313303486
+    Extra attributes: {'mech_spec': <spitfire.chemistry.mechanism.ChemicalMechanismSpec object at 0x7f37b6ab5f50>, 'mixing_spec': {'dissipation_rate_stoich': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f37b704f850>, 'mixture_fraction': <spitfire.chemistry.tabulation.PDFSpec object at 0x7f37b7098b50>}}
     ------------------------------------------
     
 
@@ -285,7 +301,7 @@ dissipation rate.
 .. code:: ipython3
 
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     z = np.squeeze(slfm_t.mixture_fraction_mean_grid[:, :, 0])
     x = np.squeeze(np.log10(slfm_t.dissipation_rate_stoich_mean_grid[:, :, 0]))
     v_list = slfm_t.scaled_scalar_variance_mean_values

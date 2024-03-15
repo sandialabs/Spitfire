@@ -1,13 +1,15 @@
 Introduction to Flamelet Models & Spitfire
 ==========================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - What is a flamelet? What is a ``Flamelet`` in Spitfire? -
-Computing steady flamelets and transient extinction trajectories -
-Building a steady laminar flamelet model (SLFM) table - Building a
-flamelet progress variable (FPV) table
+*Highlights*
+
+-  What is a flamelet? What is a ``Flamelet`` in Spitfire?
+-  Computing steady flamelets and transient extinction trajectories
+-  Building a steady laminar flamelet model (SLFM) table
+-  Building a flamelet progress variable (FPV) table
 
 Introduction
 ------------
@@ -67,7 +69,7 @@ mixture.
 
 .. code:: ipython3
 
-    mech = ChemicalMechanismSpec('heptane-liu-hewson-chen-pitsch-highT.xml', 'gas')
+    mech = ChemicalMechanismSpec('heptane-liu-hewson-chen-pitsch-highT.yaml', 'gas')
     
     air = mech.stream(stp_air=True)
     fuel = mech.stream('TPX', (372, air.P, 'NXC7H16:1'))
@@ -126,7 +128,7 @@ checking until you try to build the ``Flamelet`` itself.
 Initial Conditions
 ------------------
 
-Note above that we used the “unreacted,”equilibrium," and
+Note above that we used the “unreacted,”equilibrium,” and
 “Burke-Schumann” strings for the ``initial_condition`` argument. The
 temperature and fuel mass fraction profiles for these special states are
 plotted below. An unreacted mixture is only mixed, with linear species
@@ -317,45 +319,49 @@ profiles to the extinguished state.
 .. parsed-literal::
 
     
-     2021-02-25 13:09 : Spitfire running case with method: Kennedy/Carpenter ESDIRK64
+     2024-03-15 15:00 : Spitfire running case with method: Kennedy/Carpenter ESDIRK64
+
+
+.. parsed-literal::
+
     
     |number of  | simulation | time step  | diff. eqn. | total cpu  | cput per |
     |time steps | time (s)   | size (s)   | |residual| | time (s)   | step (ms)|
     ---------------------------------------------------------------------------|
-    | 100       | 9.26e-07   | 2.95e-08   | 2.60e+05   | 1.88e+00   | 1.88e+01 |
-    | 200       | 9.78e-06   | 1.49e-07   | 4.83e+04   | 4.21e+00   | 2.10e+01 |
-    | 300       | 3.22e-05   | 5.43e-07   | 1.35e+04   | 7.21e+00   | 2.40e+01 |
-    | 400       | 1.58e-04   | 2.70e-06   | 1.67e+02   | 1.03e+01   | 2.58e+01 |
+    | 100       | 9.26e-07   | 2.95e-08   | 2.60e+05   | 2.05e+00   | 2.05e+01 |
+    | 200       | 9.93e-06   | 1.85e-07   | 4.78e+04   | 4.93e+00   | 2.46e+01 |
+    | 300       | 3.51e-05   | 5.35e-07   | 1.19e+04   | 8.08e+00   | 2.69e+01 |
+    | 400       | 1.71e-04   | 3.02e-06   | 1.04e+02   | 1.11e+01   | 2.78e+01 |
     
     Integration successfully completed!
     
     Statistics:
-    - number of time steps : 446
-    - final simulation time: 0.000587475337460484
+    - number of time steps : 441
+    - final simulation time: 0.0005785683448238627
     - smallest time step   : 1e-09
-    - average time step    : 1.3172092768172287e-06
-    - largest time step    : 3.73510924976309e-05
+    - average time step    : 1.3119463601448133e-06
+    - largest time step    : 3.645598666367488e-05
     
       CPU time
-    - total    (s) : 1.152887e+01
-    - per step (ms): 2.584949e+01
+    - total    (s) : 1.261241e+01
+    - per step (ms): 2.859956e+01
     
       Nonlinear iterations
-    - total   : 11480
-    - per step: 25.7
+    - total   : 11358
+    - per step: 25.8
     
       Linear iterations
-    - total     : 11480
-    - per step  : 25.7
+    - total     : 11358
+    - per step  : 25.8
     - per nliter: 1.0
     
       Jacobian setups
     - total     : 156
-    - steps per : 2.9
-    - nliter per: 73.6
-    - liter per : 73.6
+    - steps per : 2.8
+    - nliter per: 72.8
+    - liter per : 72.8
     
-     2021-02-25 13:09 : Spitfire finished in 1.15288734e+01 seconds!
+     2024-03-15 15:01 : Spitfire finished in 1.26124073e+01 seconds!
     
 
 
@@ -462,6 +468,10 @@ dynamics are not included in the table.
 
      chi_st (Hz) | T_max (K)   
     ---------------------------
+
+
+.. parsed-literal::
+
          1.0e-03 | 2237.9      
          2.1e-03 | 2233.3      
          4.2e-03 | 2225.9      
@@ -481,44 +491,44 @@ dynamics are not included in the table.
          1.0e+02 | 1729.9      
     ---------------------------
     
-     2021-02-25 13:09 : Spitfire running case with method: Kennedy/Carpenter ESDIRK64
+     2024-03-15 15:01 : Spitfire running case with method: Kennedy/Carpenter ESDIRK64
     
     |number of  | simulation | time step  | diff. eqn. | total cpu  | cput per |
     |time steps | time (s)   | size (s)   | |residual| | time (s)   | step (ms)|
     ---------------------------------------------------------------------------|
-    | 100       | 9.69e-06   | 1.28e-07   | 4.25e+04   | 2.52e+00   | 2.52e+01 |
-    | 200       | 2.29e-05   | 4.89e-07   | 1.95e+04   | 4.51e+00   | 2.25e+01 |
-    | 300       | 1.22e-04   | 1.95e-06   | 6.35e+02   | 7.60e+00   | 2.53e+01 |
+    | 100       | 9.75e-06   | 1.42e-07   | 4.23e+04   | 3.13e+00   | 3.13e+01 |
+    | 200       | 2.68e-05   | 4.88e-07   | 1.63e+04   | 6.46e+00   | 3.23e+01 |
+    | 300       | 1.37e-04   | 2.23e-06   | 3.77e+02   | 9.97e+00   | 3.32e+01 |
     
     Integration successfully completed!
     
     Statistics:
-    - number of time steps : 363
-    - final simulation time: 0.0006048045588230816
-    - smallest time step   : 2.5051492225523748e-08
-    - average time step    : 1.6661282612206103e-06
-    - largest time step    : 3.877850229434712e-05
+    - number of time steps : 356
+    - final simulation time: 0.0006127058998654938
+    - smallest time step   : 2.5051515715328323e-08
+    - average time step    : 1.7210839883862185e-06
+    - largest time step    : 3.957011632481511e-05
     
       CPU time
-    - total    (s) : 9.151398e+00
-    - per step (ms): 2.521046e+01
+    - total    (s) : 1.150595e+01
+    - per step (ms): 3.232008e+01
     
       Nonlinear iterations
-    - total   : 10054
-    - per step: 27.7
+    - total   : 10118
+    - per step: 28.4
     
       Linear iterations
-    - total     : 10054
-    - per step  : 27.7
+    - total     : 10118
+    - per step  : 28.4
     - per nliter: 1.0
     
       Jacobian setups
-    - total     : 195
+    - total     : 185
     - steps per : 1.9
-    - nliter per: 51.6
-    - liter per : 51.6
+    - nliter per: 54.7
+    - liter per : 54.7
     
-     2021-02-25 13:09 : Spitfire finished in 9.15139817e+00 seconds!
+     2024-03-15 15:01 : Spitfire finished in 1.15059470e+01 seconds!
     
 
 

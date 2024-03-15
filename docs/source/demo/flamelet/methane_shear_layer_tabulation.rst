@@ -1,7 +1,7 @@
 Tabulation API Example: Methane Shear Layer
 ===========================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
 In this demonstration we show how to build several adiabatic chemistry
@@ -25,7 +25,7 @@ release rate.
 
 .. code:: ipython3
 
-    mech = ChemicalMechanismSpec(cantera_xml='methane-lu30.xml', group_name='methane-lu30')
+    mech = ChemicalMechanismSpec(cantera_input='methane-lu30.yaml', group_name='methane-lu30')
     
     pressure = 101325.
     
@@ -81,48 +81,52 @@ implicit Runge-Kutta methods. Typically this is unnecessary.
     ----------------------------------------------------------------------------------
     building adiabatic SLFM library
     ----------------------------------------------------------------------------------
-    - mechanism: methane-lu30.xml
+    - mechanism: methane-lu30.yaml
     - 30 species, 184 reactions
     - stoichiometric mixture fraction: 0.500
     ----------------------------------------------------------------------------------
-       1/  36 (chi_stoich =  1.0e-04 1/s)  converged in   2.26 s, T_max = 1505.4
-       2/  36 (chi_stoich =  1.3e-04 1/s)  converged in   0.03 s, T_max = 1504.8
-       3/  36 (chi_stoich =  1.8e-04 1/s)  converged in   0.03 s, T_max = 1504.5
-       4/  36 (chi_stoich =  2.3e-04 1/s)  converged in   0.03 s, T_max = 1504.1
-       5/  36 (chi_stoich =  3.1e-04 1/s)  converged in   0.93 s, T_max = 1503.7
-       6/  36 (chi_stoich =  4.1e-04 1/s)  converged in   0.05 s, T_max = 1503.3
-       7/  36 (chi_stoich =  5.5e-04 1/s)  converged in   6.99 s, T_max = 1502.8
-       8/  36 (chi_stoich =  7.2e-04 1/s)  converged in   0.04 s, T_max = 1502.2
-       9/  36 (chi_stoich =  9.6e-04 1/s)  converged in   0.04 s, T_max = 1501.6
-      10/  36 (chi_stoich =  1.3e-03 1/s)  converged in   0.04 s, T_max = 1501.0
-      11/  36 (chi_stoich =  1.7e-03 1/s)  converged in   0.04 s, T_max = 1500.2
-      12/  36 (chi_stoich =  2.2e-03 1/s)  converged in   0.04 s, T_max = 1499.4
+       1/  36 (chi_stoich =  1.0e-04 1/s) 
+
+.. parsed-literal::
+
+     converged in   4.14 s, T_max = 1505.4
+       2/  36 (chi_stoich =  1.3e-04 1/s)  converged in   0.05 s, T_max = 1504.8
+       3/  36 (chi_stoich =  1.8e-04 1/s)  converged in   0.08 s, T_max = 1504.5
+       4/  36 (chi_stoich =  2.3e-04 1/s)  converged in   0.11 s, T_max = 1504.1
+       5/  36 (chi_stoich =  3.1e-04 1/s)  converged in   1.80 s, T_max = 1503.7
+       6/  36 (chi_stoich =  4.1e-04 1/s)  converged in   1.68 s, T_max = 1503.2
+       7/  36 (chi_stoich =  5.5e-04 1/s)  converged in   0.04 s, T_max = 1502.8
+       8/  36 (chi_stoich =  7.2e-04 1/s)  converged in   0.99 s, T_max = 1502.2
+       9/  36 (chi_stoich =  9.6e-04 1/s)  converged in   0.05 s, T_max = 1501.6
+      10/  36 (chi_stoich =  1.3e-03 1/s)  converged in   0.06 s, T_max = 1501.0
+      11/  36 (chi_stoich =  1.7e-03 1/s)  converged in   0.05 s, T_max = 1500.2
+      12/  36 (chi_stoich =  2.2e-03 1/s)  converged in   0.05 s, T_max = 1499.4
       13/  36 (chi_stoich =  3.0e-03 1/s)  converged in   0.04 s, T_max = 1498.6
       14/  36 (chi_stoich =  4.0e-03 1/s)  converged in   0.04 s, T_max = 1497.6
-      15/  36 (chi_stoich =  5.3e-03 1/s)  converged in   0.04 s, T_max = 1496.5
-      16/  36 (chi_stoich =  7.0e-03 1/s)  converged in   0.04 s, T_max = 1495.2
-      17/  36 (chi_stoich =  9.3e-03 1/s)  converged in   0.04 s, T_max = 1493.8
-      18/  36 (chi_stoich =  1.2e-02 1/s)  converged in   0.04 s, T_max = 1492.2
-      19/  36 (chi_stoich =  1.6e-02 1/s)  converged in   0.04 s, T_max = 1490.6
-      20/  36 (chi_stoich =  2.2e-02 1/s)  converged in   0.04 s, T_max = 1488.9
-      21/  36 (chi_stoich =  2.9e-02 1/s)  converged in   0.04 s, T_max = 1487.0
-      22/  36 (chi_stoich =  3.8e-02 1/s)  converged in   0.04 s, T_max = 1485.0
-      23/  36 (chi_stoich =  5.1e-02 1/s)  converged in   0.04 s, T_max = 1482.8
-      24/  36 (chi_stoich =  6.7e-02 1/s)  converged in   0.05 s, T_max = 1480.4
-      25/  36 (chi_stoich =  8.9e-02 1/s)  converged in   0.04 s, T_max = 1477.8
-      26/  36 (chi_stoich =  1.2e-01 1/s)  converged in   0.04 s, T_max = 1475.2
-      27/  36 (chi_stoich =  1.6e-01 1/s)  converged in   0.05 s, T_max = 1472.2
-      28/  36 (chi_stoich =  2.1e-01 1/s)  converged in   0.04 s, T_max = 1468.7
-      29/  36 (chi_stoich =  2.8e-01 1/s)  converged in   0.04 s, T_max = 1464.8
-      30/  36 (chi_stoich =  3.7e-01 1/s)  converged in   0.04 s, T_max = 1460.2
-      31/  36 (chi_stoich =  4.9e-01 1/s)  converged in   0.04 s, T_max = 1455.2
-      32/  36 (chi_stoich =  6.4e-01 1/s)  converged in   0.05 s, T_max = 1449.6
-      33/  36 (chi_stoich =  8.6e-01 1/s)  converged in   0.05 s, T_max = 1442.6
-      34/  36 (chi_stoich =  1.1e+00 1/s)  converged in   0.05 s, T_max = 1434.7
-      35/  36 (chi_stoich =  1.5e+00 1/s)  converged in   0.06 s, T_max = 1424.6
-      36/  36 (chi_stoich =  2.0e+00 1/s)  converged in   0.06 s, T_max = 1411.1
+      15/  36 (chi_stoich =  5.3e-03 1/s)  converged in   0.06 s, T_max = 1496.5
+      16/  36 (chi_stoich =  7.0e-03 1/s)  converged in   0.08 s, T_max = 1495.2
+      17/  36 (chi_stoich =  9.3e-03 1/s)  converged in   0.05 s, T_max = 1493.8
+      18/  36 (chi_stoich =  1.2e-02 1/s)  converged in   0.05 s, T_max = 1492.3
+      19/  36 (chi_stoich =  1.6e-02 1/s)  converged in   0.06 s, T_max = 1490.6
+      20/  36 (chi_stoich =  2.2e-02 1/s)  converged in   0.06 s, T_max = 1488.9
+      21/  36 (chi_stoich =  2.9e-02 1/s)  converged in   0.06 s, T_max = 1487.0
+      22/  36 (chi_stoich =  3.8e-02 1/s)  converged in   0.05 s, T_max = 1485.0
+      23/  36 (chi_stoich =  5.1e-02 1/s)  converged in   0.05 s, T_max = 1482.9
+      24/  36 (chi_stoich =  6.7e-02 1/s)  converged in   0.07 s, T_max = 1480.4
+      25/  36 (chi_stoich =  8.9e-02 1/s)  converged in   0.06 s, T_max = 1477.9
+      26/  36 (chi_stoich =  1.2e-01 1/s)  converged in   0.07 s, T_max = 1475.2
+      27/  36 (chi_stoich =  1.6e-01 1/s)  converged in   0.06 s, T_max = 1472.2
+      28/  36 (chi_stoich =  2.1e-01 1/s)  converged in   0.06 s, T_max = 1468.7
+      29/  36 (chi_stoich =  2.8e-01 1/s)  converged in   0.08 s, T_max = 1464.8
+      30/  36 (chi_stoich =  3.7e-01 1/s)  converged in   0.08 s, T_max = 1460.2
+      31/  36 (chi_stoich =  4.9e-01 1/s)  converged in   0.11 s, T_max = 1455.2
+      32/  36 (chi_stoich =  6.4e-01 1/s)  converged in   0.08 s, T_max = 1449.6
+      33/  36 (chi_stoich =  8.6e-01 1/s)  converged in   0.10 s, T_max = 1442.6
+      34/  36 (chi_stoich =  1.1e+00 1/s)  converged in   0.09 s, T_max = 1434.7
+      35/  36 (chi_stoich =  1.5e+00 1/s)  converged in   0.10 s, T_max = 1424.6
+      36/  36 (chi_stoich =  2.0e+00 1/s)  converged in   0.11 s, T_max = 1411.1
     ----------------------------------------------------------------------------------
-    library built in  11.94 s
+    library built in  11.12 s
     ----------------------------------------------------------------------------------
 
 

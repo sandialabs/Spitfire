@@ -1,12 +1,15 @@
 Custom Tabulation Example: 4D Coal Combustion Model
 ===================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - building a table with user-defined continuation loops -
-varying the fuel stream and incorporating nonadiabatic effects in a
-quasisteady manner - stacking contour plots to visualize a 3D field
+*Highlights*
+
+-  building a table with user-defined continuation loops
+-  varying the fuel stream and incorporating nonadiabatic effects in a
+   quasisteady manner
+-  stacking contour plots to visualize a 3D field
 
 This example showcases a flamelet library built with manual loops over
 the tabulation dimensions. We build a four-dimensional table of states
@@ -57,7 +60,7 @@ and make an air stream.
 
 .. code:: ipython3
 
-    mechanism = ChemicalMechanismSpec(cantera_xml='methane-gri30.xml', group_name='gri30_mix')
+    mechanism = ChemicalMechanismSpec(cantera_input='methane-gri30.yaml', group_name='gri30_mix')
     
     pressure = 101325.
     
@@ -192,64 +195,68 @@ libraries after the fact.
 .. parsed-literal::
 
     Running alpha = 0.00 ...
-    Converged adiabatic solutions in   2.94 s                          | total cpu time is   2.94 s
-              heat loss solutions for chi_st = 1.00e-01 Hz in   2.90 s |                is   5.84 s
-              heat loss solutions for chi_st = 3.73e-01 Hz in   0.75 s |                is   6.59 s
-              heat loss solutions for chi_st = 1.39e+00 Hz in   0.69 s |                is   7.28 s
-              heat loss solutions for chi_st = 5.18e+00 Hz in   0.68 s |                is   7.96 s
-              heat loss solutions for chi_st = 1.93e+01 Hz in   0.68 s |                is   8.64 s
-              heat loss solutions for chi_st = 7.20e+01 Hz in   0.69 s |                is   9.34 s
-              heat loss solutions for chi_st = 2.68e+02 Hz in   0.68 s |                is  10.01 s
-              heat loss solutions for chi_st = 1.00e+03 Hz in   0.68 s |                is  10.69 s
-    Completed alpha = 0.00 in  10.69 s
+
+
+.. parsed-literal::
+
+    Converged adiabatic solutions in   4.35 s                          | total cpu time is   4.35 s
+              heat loss solutions for chi_st = 1.00e-01 Hz in   3.87 s |                is   8.22 s
+              heat loss solutions for chi_st = 3.73e-01 Hz in   1.02 s |                is   9.24 s
+              heat loss solutions for chi_st = 1.39e+00 Hz in   0.92 s |                is  10.16 s
+              heat loss solutions for chi_st = 5.18e+00 Hz in   1.41 s |                is  11.57 s
+              heat loss solutions for chi_st = 1.93e+01 Hz in   0.89 s |                is  12.46 s
+              heat loss solutions for chi_st = 7.20e+01 Hz in   0.87 s |                is  13.33 s
+              heat loss solutions for chi_st = 2.68e+02 Hz in   1.02 s |                is  14.35 s
+              heat loss solutions for chi_st = 1.00e+03 Hz in   0.76 s |                is  15.12 s
+    Completed alpha = 0.00 in  15.12 s
     -----------------------------------------------------------------------------------------------
     Running alpha = 0.10 ...
-    Converged adiabatic solutions in   9.16 s                          | total cpu time is  19.85 s
-              heat loss solutions for chi_st = 1.00e-01 Hz in  29.99 s |                is  49.84 s
-              heat loss solutions for chi_st = 3.73e-01 Hz in  13.01 s |                is  62.86 s
-              heat loss solutions for chi_st = 1.39e+00 Hz in   1.28 s |                is  64.14 s
-              heat loss solutions for chi_st = 5.18e+00 Hz in   0.80 s |                is  64.94 s
-              heat loss solutions for chi_st = 1.93e+01 Hz in   0.76 s |                is  65.70 s
-              heat loss solutions for chi_st = 7.20e+01 Hz in   0.73 s |                is  66.43 s
-              heat loss solutions for chi_st = 2.68e+02 Hz in   0.73 s |                is  67.16 s
-              heat loss solutions for chi_st = 1.00e+03 Hz in   0.76 s |                is  67.92 s
-    Completed alpha = 0.10 in  57.23 s
+    Converged adiabatic solutions in  11.43 s                          | total cpu time is  26.55 s
+              heat loss solutions for chi_st = 1.00e-01 Hz in  34.36 s |                is  60.91 s
+              heat loss solutions for chi_st = 3.73e-01 Hz in  16.77 s |                is  77.69 s
+              heat loss solutions for chi_st = 1.39e+00 Hz in   1.66 s |                is  79.35 s
+              heat loss solutions for chi_st = 5.18e+00 Hz in   1.09 s |                is  80.44 s
+              heat loss solutions for chi_st = 1.93e+01 Hz in   0.86 s |                is  81.30 s
+              heat loss solutions for chi_st = 7.20e+01 Hz in   0.83 s |                is  82.12 s
+              heat loss solutions for chi_st = 2.68e+02 Hz in   0.86 s |                is  82.99 s
+              heat loss solutions for chi_st = 1.00e+03 Hz in   0.77 s |                is  83.76 s
+    Completed alpha = 0.10 in  68.64 s
     -----------------------------------------------------------------------------------------------
     Running alpha = 0.30 ...
-    Converged adiabatic solutions in   5.95 s                          | total cpu time is  73.87 s
-              heat loss solutions for chi_st = 1.00e-01 Hz in  30.48 s |                is 104.35 s
-              heat loss solutions for chi_st = 3.73e-01 Hz in  17.18 s |                is 121.53 s
-              heat loss solutions for chi_st = 1.39e+00 Hz in   1.35 s |                is 122.88 s
-              heat loss solutions for chi_st = 5.18e+00 Hz in   0.80 s |                is 123.68 s
-              heat loss solutions for chi_st = 1.93e+01 Hz in   0.74 s |                is 124.42 s
-              heat loss solutions for chi_st = 7.20e+01 Hz in   0.75 s |                is 125.17 s
-              heat loss solutions for chi_st = 2.68e+02 Hz in   0.74 s |                is 125.90 s
-              heat loss solutions for chi_st = 1.00e+03 Hz in   0.74 s |                is 126.64 s
-    Completed alpha = 0.30 in  58.72 s
+    Converged adiabatic solutions in   7.68 s                          | total cpu time is  91.44 s
+              heat loss solutions for chi_st = 1.00e-01 Hz in  37.23 s |                is 128.67 s
+              heat loss solutions for chi_st = 3.73e-01 Hz in  21.49 s |                is 150.16 s
+              heat loss solutions for chi_st = 1.39e+00 Hz in   1.48 s |                is 151.65 s
+              heat loss solutions for chi_st = 5.18e+00 Hz in   0.91 s |                is 152.55 s
+              heat loss solutions for chi_st = 1.93e+01 Hz in   1.01 s |                is 153.56 s
+              heat loss solutions for chi_st = 7.20e+01 Hz in   0.98 s |                is 154.54 s
+              heat loss solutions for chi_st = 2.68e+02 Hz in   0.92 s |                is 155.45 s
+              heat loss solutions for chi_st = 1.00e+03 Hz in   0.78 s |                is 156.24 s
+    Completed alpha = 0.30 in  72.48 s
     -----------------------------------------------------------------------------------------------
     Running alpha = 0.50 ...
-    Converged adiabatic solutions in   6.25 s                          | total cpu time is 132.89 s
-              heat loss solutions for chi_st = 1.00e-01 Hz in  25.93 s |                is 158.82 s
-              heat loss solutions for chi_st = 3.73e-01 Hz in  12.21 s |                is 171.03 s
-              heat loss solutions for chi_st = 1.39e+00 Hz in   1.31 s |                is 172.34 s
-              heat loss solutions for chi_st = 5.18e+00 Hz in   0.91 s |                is 173.25 s
-              heat loss solutions for chi_st = 1.93e+01 Hz in   0.77 s |                is 174.01 s
-              heat loss solutions for chi_st = 7.20e+01 Hz in   0.77 s |                is 174.78 s
-              heat loss solutions for chi_st = 2.68e+02 Hz in   0.77 s |                is 175.55 s
-              heat loss solutions for chi_st = 1.00e+03 Hz in   0.78 s |                is 176.33 s
-    Completed alpha = 0.50 in  49.69 s
+    Converged adiabatic solutions in   8.09 s                          | total cpu time is 164.33 s
+              heat loss solutions for chi_st = 1.00e-01 Hz in  35.17 s |                is 199.50 s
+              heat loss solutions for chi_st = 3.73e-01 Hz in  17.21 s |                is 216.71 s
+              heat loss solutions for chi_st = 1.39e+00 Hz in   1.47 s |                is 218.18 s
+              heat loss solutions for chi_st = 5.18e+00 Hz in   0.94 s |                is 219.12 s
+              heat loss solutions for chi_st = 1.93e+01 Hz in   0.94 s |                is 220.06 s
+              heat loss solutions for chi_st = 7.20e+01 Hz in   0.81 s |                is 220.87 s
+              heat loss solutions for chi_st = 2.68e+02 Hz in   0.86 s |                is 221.73 s
+              heat loss solutions for chi_st = 1.00e+03 Hz in   0.86 s |                is 222.59 s
+    Completed alpha = 0.50 in  66.36 s
     -----------------------------------------------------------------------------------------------
     Running alpha = 0.70 ...
-    Converged adiabatic solutions in   7.56 s                          | total cpu time is 183.90 s
-              heat loss solutions for chi_st = 1.00e-01 Hz in  23.49 s |                is 207.39 s
-              heat loss solutions for chi_st = 3.73e-01 Hz in   8.83 s |                is 216.21 s
-              heat loss solutions for chi_st = 1.39e+00 Hz in   1.02 s |                is 217.23 s
-              heat loss solutions for chi_st = 5.18e+00 Hz in   0.79 s |                is 218.02 s
-              heat loss solutions for chi_st = 1.93e+01 Hz in   0.79 s |                is 218.81 s
-              heat loss solutions for chi_st = 7.20e+01 Hz in   0.80 s |                is 219.60 s
-              heat loss solutions for chi_st = 2.68e+02 Hz in   0.80 s |                is 220.40 s
-              heat loss solutions for chi_st = 1.00e+03 Hz in   0.84 s |                is 221.24 s
-    Completed alpha = 0.70 in  44.90 s
+    Converged adiabatic solutions in  10.38 s                          | total cpu time is 232.98 s
+              heat loss solutions for chi_st = 1.00e-01 Hz in  31.82 s |                is 264.80 s
+              heat loss solutions for chi_st = 3.73e-01 Hz in  11.55 s |                is 276.35 s
+              heat loss solutions for chi_st = 1.39e+00 Hz in   1.10 s |                is 277.45 s
+              heat loss solutions for chi_st = 5.18e+00 Hz in   0.84 s |                is 278.30 s
+              heat loss solutions for chi_st = 1.93e+01 Hz in   0.88 s |                is 279.17 s
+              heat loss solutions for chi_st = 7.20e+01 Hz in   1.06 s |                is 280.23 s
+              heat loss solutions for chi_st = 2.68e+02 Hz in   0.89 s |                is 281.12 s
+              heat loss solutions for chi_st = 1.00e+03 Hz in   0.87 s |                is 281.99 s
+    Completed alpha = 0.70 in  59.39 s
     -----------------------------------------------------------------------------------------------
 
 
@@ -312,7 +319,7 @@ ingredient in soot formation.
     from matplotlib.colors import Normalize
     
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     z = library.mixture_fraction_grid[0, 0, :, :]
     x = np.log10(library.dissipation_rate_stoich_grid[0, 0, :, :])
     for ia, alpha in enumerate(adim.values):
@@ -328,7 +335,7 @@ ingredient in soot formation.
     plt.show()
     
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     for ia, alpha in enumerate(adim.values):
         ax.contourf(z, x, l['mass fraction OH'][ia, 0, :, :], offset=alpha, 
                     cmap='Purples', norm=Normalize(vmin=0, vmax=1e-2), alpha=0.8)
@@ -342,7 +349,7 @@ ingredient in soot formation.
     plt.show()
     
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     for ia, alpha in enumerate(adim.values):
         ax.contourf(z, x, l['mass fraction C2H2'][ia, 0, :, :], offset=alpha, 
                     cmap='Oranges', norm=Normalize(vmin=0, vmax=1e-2), alpha=0.8)

@@ -1,12 +1,14 @@
 Transient Flamelet Example: Ignition Sensitivity to Rate Parameter
 ==================================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Solving transient flamelet ignition trajectories -
-Observing sensitivity of the ignition behavior to a key reaction rate
-parameter
+*Highlights*
+
+-  Solving transient flamelet ignition trajectories
+-  Observing sensitivity of the ignition behavior to a key reaction rate
+   parameter
 
 In this demonstration we use the ``integrate_to_steady`` method as in
 previous notebooks, this time to look at how ignition behavior is
@@ -20,11 +22,10 @@ and modify the reaction rate accordingly.
     from spitfire import ChemicalMechanismSpec, Flamelet, FlameletSpec
     import matplotlib.pyplot as plt
     import numpy as np
-    from os.path import abspath, join
 
 .. code:: ipython3
 
-    sol = ct.Solution('h2-burke.xml', 'h2-burke')
+    sol = ct.Solution('h2-burke.yaml', 'h2-burke')
     
     Tair = 1200.
     pressure = 101325.
@@ -46,14 +47,13 @@ and modify the reaction rate accordingly.
         new_rate = ct.Arrhenius(k1mult * A0_original,
                                 r0.rate.temperature_exponent,
                                 r0.rate.activation_energy)
-        new_rxn = ct.ElementaryReaction(r0.reactants, r0.products)
-        new_rxn.rate = new_rate
+        new_rxn = ct.Reaction(r0.reactants, r0.products, new_rate)
         sol.modify_reaction(0, new_rxn)
     
         m = ChemicalMechanismSpec.from_solution(sol)
         air = m.stream(stp_air=True)
         air.TP = Tair, pressure
-        fuel = m.mix_fuels_for_stoich_mixture_fraction(m.stream('X', 'H2:1'), m.stream('X', 'N2:1'), zstoich, air)
+        fuel = m.mix_fuels_for_stoich_mixture_fraction(m.stream('TPX', (Tair, pressure, 'H2:1')), m.stream('TPX', (Tair, pressure, 'N2:1')), zstoich, air)
         fuel.TP = 300., pressure
     
         flamelet_specs = FlameletSpec(mech_spec=m, 

@@ -1,11 +1,13 @@
 Transient Flamelet Example: Ignition and Advanced Time Integration
 ==================================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Computing a transient ignition trajectory - Advanced time
-integration parameters
+*Highlights*
+
+-  Computing a transient ignition trajectory
+-  Advanced time integration parameters
 
 Introduction
 ------------
@@ -33,7 +35,7 @@ fraction. These are sent to a ``FlameletSpec`` object for later.
 
 .. code:: ipython3
 
-    sol = ct.Solution('h2-burke.xml', 'h2-burke')
+    sol = ct.Solution('h2-burke.yaml', 'h2-burke')
     mech = ChemicalMechanismSpec.from_solution(sol)
     
     Tair = 1200.
@@ -42,7 +44,7 @@ fraction. These are sent to a ``FlameletSpec`` object for later.
     
     air = mech.stream(stp_air=True)
     air.TP = Tair, pressure
-    fuel = mech.mix_fuels_for_stoich_mixture_fraction(mech.stream('X', 'H2:1'), mech.stream('X', 'N2:1'), zstoich, air)
+    fuel = mech.mix_fuels_for_stoich_mixture_fraction(mech.stream('TPX', (Tair, pressure, 'H2:1')), mech.stream('TPX', (Tair, pressure, 'N2:1')), zstoich, air)
     fuel.TP = 300., pressure
     
     flamelet_specs = FlameletSpec(mech_spec=mech, 
@@ -177,16 +179,20 @@ followed by some results and discussion.
 
 .. parsed-literal::
 
-    Running w/BDF1 , tolerance 1.0e-07 ... done in  5199 time steps in  5.8 s, mean cput/step of 1.1 ms
-    Running w/Kv-P3, tolerance 1.0e-07 ... done in   872 time steps in  2.3 s, mean cput/step of 2.7 ms
-    Running w/KC-P3, tolerance 1.0e-07 ... done in   396 time steps in  2.0 s, mean cput/step of 5.0 ms
-    Running w/KC-P4, tolerance 1.0e-07 ... done in   153 time steps in  1.1 s, mean cput/step of 7.2 ms
-    Running w/KC-P5, tolerance 1.0e-07 ... done in   112 time steps in  1.1 s, mean cput/step of 9.5 ms
-    Running w/BDF1 , tolerance 1.0e-08 ... done in 16227 time steps in 20.4 s, mean cput/step of 1.3 ms
-    Running w/Kv-P3, tolerance 1.0e-10 ... done in  8580 time steps in 12.9 s, mean cput/step of 1.5 ms
-    Running w/KC-P3, tolerance 1.0e-10 ... done in  3677 time steps in  7.3 s, mean cput/step of 2.0 ms
-    Running w/KC-P4, tolerance 1.0e-11 ... done in  1169 time steps in  4.4 s, mean cput/step of 3.7 ms
-    Running w/KC-P5, tolerance 1.0e-12 ... done in   774 time steps in  4.2 s, mean cput/step of 5.5 ms
+    Running w/BDF1 , tolerance 1.0e-07 ... 
+
+.. parsed-literal::
+
+    done in  5195 time steps in  6.6 s, mean cput/step of 1.3 ms
+    Running w/Kv-P3, tolerance 1.0e-07 ... done in   872 time steps in  2.9 s, mean cput/step of 3.3 ms
+    Running w/KC-P3, tolerance 1.0e-07 ... done in   396 time steps in  2.4 s, mean cput/step of 6.1 ms
+    Running w/KC-P4, tolerance 1.0e-07 ... done in   153 time steps in  1.2 s, mean cput/step of 8.1 ms
+    Running w/KC-P5, tolerance 1.0e-07 ... done in   112 time steps in  1.2 s, mean cput/step of 10.6 ms
+    Running w/BDF1 , tolerance 1.0e-08 ... done in 16227 time steps in 18.9 s, mean cput/step of 1.2 ms
+    Running w/Kv-P3, tolerance 1.0e-10 ... done in  8580 time steps in 13.0 s, mean cput/step of 1.5 ms
+    Running w/KC-P3, tolerance 1.0e-10 ... done in  3677 time steps in  7.6 s, mean cput/step of 2.1 ms
+    Running w/KC-P4, tolerance 1.0e-11 ... done in  1169 time steps in  4.9 s, mean cput/step of 4.2 ms
+    Running w/KC-P5, tolerance 1.0e-12 ... done in   774 time steps in  4.9 s, mean cput/step of 6.4 ms
 
 
 From the plot of maximum flamelet temperature, we can see that the
@@ -318,12 +324,16 @@ evaluation/factorization is the dominant cost.
 
 .. parsed-literal::
 
-    Running w/KC-P5-1Jac     , tolerance 1.0e-12 ... done in   776 time steps in  3.5 s, mean cput/step of 4.5 ms
-    Running w/KC-P5-2Jac     , tolerance 1.0e-12 ... done in   774 time steps in  3.5 s, mean cput/step of 4.6 ms
-    Running w/KC-P5-5Jac     , tolerance 1.0e-12 ... done in   769 time steps in  3.8 s, mean cput/step of 5.0 ms
-    Running w/KC-P5-20Jac    , tolerance 1.0e-12 ... done in   778 time steps in  4.7 s, mean cput/step of 6.1 ms
-    Running w/KC-P5-100Jac   , tolerance 1.0e-12 ... done in   780 time steps in  5.6 s, mean cput/step of 7.2 ms
-    Running w/KC-P5-fullJac  , tolerance 1.0e-12 ... done in   773 time steps in  8.5 s, mean cput/step of 11.0 ms
+    Running w/KC-P5-1Jac     , tolerance 1.0e-12 ... 
+
+.. parsed-literal::
+
+    done in   777 time steps in  4.2 s, mean cput/step of 5.4 ms
+    Running w/KC-P5-2Jac     , tolerance 1.0e-12 ... done in   774 time steps in  4.2 s, mean cput/step of 5.5 ms
+    Running w/KC-P5-5Jac     , tolerance 1.0e-12 ... done in   769 time steps in  4.3 s, mean cput/step of 5.6 ms
+    Running w/KC-P5-20Jac    , tolerance 1.0e-12 ... done in   779 time steps in  5.4 s, mean cput/step of 7.0 ms
+    Running w/KC-P5-100Jac   , tolerance 1.0e-12 ... done in   779 time steps in  6.2 s, mean cput/step of 8.0 ms
+    Running w/KC-P5-fullJac  , tolerance 1.0e-12 ... done in   773 time steps in 12.7 s, mean cput/step of 16.5 ms
 
 
 .. code:: ipython3
@@ -345,8 +355,8 @@ evaluation/factorization is the dominant cost.
 
 .. parsed-literal::
 
-    Running w/KC-P5-fullJac  , tolerance 1.0e-04 ... done in    72 time steps in  1.4 s, mean cput/step of 19.2 ms
-    Running w/KC-P5-fullJac  , tolerance 1.0e-07 ... done in   106 time steps in  1.8 s, mean cput/step of 17.4 ms
+    Running w/KC-P5-fullJac  , tolerance 1.0e-04 ... done in    72 time steps in  2.0 s, mean cput/step of 27.6 ms
+    Running w/KC-P5-fullJac  , tolerance 1.0e-07 ... done in   106 time steps in  2.7 s, mean cput/step of 25.2 ms
 
 
 .. code:: ipython3
