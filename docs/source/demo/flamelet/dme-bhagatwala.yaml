@@ -1,6 +1,6 @@
 generator: ctml2yaml
 cantera-version: 3.0.0
-date: Fri, 15 Mar 2024 13:31:28 -0600
+date: Fri, 15 Mar 2024 13:30:43 -0600
 input-files: [dme-bhagatwala.xml]
 
 phases:
@@ -1160,17 +1160,21 @@ reactions:
 - equation: HCOOH + M <=> CO + H2O + M
   type: three-body
   rate-constant: {A: 2.3e+10, b: 0.0, Ea: 5.0e+04 cal/mol}
+  duplicate: true
 - equation: HCOOH + M <=> CO2 + H2 + M
   type: three-body
   rate-constant: {A: 1.5e+13, b: 0.0, Ea: 5.7e+04 cal/mol}
+  duplicate: true
 - equation: HCOOH <=> HCO + OH
   rate-constant: {A: 4.593e+18, b: -0.46, Ea: 1.083e+05 cal/mol}
 - equation: HCOOH + OH <=> H2O + CO2 + H
   rate-constant: {A: 2620.0, b: 2.06, Ea: 916.0 cal/mol}
 - equation: HCOOH + OH <=> H2O + CO + OH
   rate-constant: {A: 1.85e+04, b: 1.51, Ea: -962.0 cal/mol}
+  duplicate: true
 - equation: HCOOH + H <=> H2 + CO2 + H
   rate-constant: {A: 4240.0, b: 2.1, Ea: 4868.0 cal/mol}
+  duplicate: true
 - equation: HCOOH + H <=> H2 + CO + OH
   rate-constant: {A: 6.03e+10, b: -0.35, Ea: 2988.0 cal/mol}
 - equation: HCOOH + CH3 <=> CH4 + CO + OH

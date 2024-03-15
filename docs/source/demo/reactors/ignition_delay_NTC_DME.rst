@@ -1,18 +1,20 @@
 Ignition Delay Profiles for a Two-Stage Ignition Fuel
 =====================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Computing the ignition delay of a DME-air mixture for a
-range of temperatures and pressures
+*Highlights*
+
+-  Computing the ignition delay of a DME-air mixture for a range of
+   temperatures and pressures
 
 Introduction
 ------------
 
 This demonstration shows how to use Spitfire to compute the ignition
 delay of a homogeneous mixture. Next, we vary the temperature and
-pressure to show the surprising ’’negative temperature coefficient"
+pressure to show the surprising ’’negative temperature coefficient”
 (NTC) behavior in fuels that undergo two-stage ignition.
 
 .. code:: ipython3
@@ -26,7 +28,7 @@ mixture.
 
 .. code:: ipython3
 
-    mech = ChemicalMechanismSpec(cantera_xml='dme-bhagatwala.xml', group_name='dme-bhagatwala')
+    mech = ChemicalMechanismSpec(cantera_input='dme-bhagatwala.yaml', group_name='dme-bhagatwala')
     
     air = mech.stream(stp_air=True)
     fuel = mech.stream('X', 'CH3OCH3:1, CH4:1')

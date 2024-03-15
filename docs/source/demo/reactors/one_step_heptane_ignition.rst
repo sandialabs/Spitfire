@@ -1,11 +1,13 @@
 One-step Ignition Mechanism for n-heptane/air Combustion
 ========================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Building a simple mechanism from Python with Cantera -
-Comparing n-heptane ignition behavior for two reaction mechanisms
+*Highlights*
+
+-  Building a simple mechanism from Python with Cantera
+-  Comparing n-heptane ignition behavior for two reaction mechanisms
 
 Introduction
 ------------
@@ -32,7 +34,7 @@ Specifying the Reaction
 
 Cantera provides several formats for chemical reaction mechanism - see
 `here <https://cantera.org/tutorials/input-files.html>`__ for the
-details. We use the CTI format below to create the following reaction
+details. We use the YAML format below to create the following reaction
 and its non-elementary rate expression. A standard Arrhenius rate
 constant is employed.
 
@@ -54,11 +56,10 @@ sense.
 
 .. code:: ipython3
 
-    reaction_cti = '''
-    reaction(
-    '2 NXC7H16 + 22 O2 => 14 CO2 + 16 H2O', 
-    [2e7, 0, (30.0, 'kcal/mol')], 
-    order='NXC7H16:0.25 O2:1.5')
+    reaction_yaml = '''
+    equation: '2 NXC7H16 + 22 O2 => 14 CO2 + 16 H2O'
+    rate-constant: {A: 2e7, b: 0.0, Ea: 30.0 kcal/mol}
+    orders: { NXC7H16: 0.25, O2: 1.5 }
     '''
 
 Specifying Species Properties
@@ -73,8 +74,8 @@ Cantera ``Species`` objects required for the one-step mechanism.
 
     species_in_model = ['NXC7H16', 'O2', 'H2O', 'CO2', 'N2']
     
-    liu_xml_file = 'heptane-liu-hewson-chen-pitsch-highT.xml'
-    species_data = ct.Species.listFromFile(liu_xml_file)
+    liu_data_file = 'heptane-liu-hewson-chen-pitsch-highT.yaml'
+    species_data = ct.Species.list_from_file(liu_data_file)
     
     species_list = list()
     for sp in species_data:
@@ -89,10 +90,14 @@ listed species and the reaction(s) defined above.
 
 .. code:: ipython3
 
-    s = ct.Solution(thermo='IdealGas',
-                    kinetics='GasKinetics',
+    gasph = ct.Solution(thermo='ideal-gas',
+                        kinetics='gas',
+                        species=species_list)
+    
+    s = ct.Solution(thermo='ideal-gas',
+                    kinetics='gas',
                     species=species_list,
-                    reactions=[ct.Reaction.fromCti(reaction_cti)])
+                    reactions=[ct.Reaction.from_yaml(reaction_yaml, gasph)])
 
 Comparing Ignition Behavior
 ---------------------------
@@ -110,7 +115,7 @@ temperature are plotted over time in the following figures.
 .. code:: ipython3
 
     mech_1step = ChemicalMechanismSpec.from_solution(s)
-    mech_liu = ChemicalMechanismSpec(cantera_xml=xml_file_for_species, group_name='gas')
+    mech_liu = ChemicalMechanismSpec(cantera_input=liu_data_file, group_name='gas')
     
     solutions = dict()
     

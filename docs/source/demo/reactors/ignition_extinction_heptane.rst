@@ -1,13 +1,16 @@
 Steady State Multiplicity in n-heptane/air Mixtures
 ===================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Solving for the steady ignition and extinction
-trajectories of a heptane-air mixture, which show the existence of
-multiple steady states and path-dependence - Observing the sensitivity
-of ignition/extinction behavior to temperature and stoichiometry
+*Highlights*
+
+-  Solving for the steady ignition and extinction trajectories of a
+   heptane-air mixture, which show the existence of multiple steady
+   states and path-dependence
+-  Observing the sensitivity of ignition/extinction behavior to
+   temperature and stoichiometry
 
 Introduction
 ------------
@@ -47,7 +50,7 @@ produced.
     import matplotlib.pyplot as plt
     import numpy as np
     
-    mech = ChemicalMechanismSpec('heptane-liu-hewson-chen-pitsch-highT.xml', 'gas')
+    mech = ChemicalMechanismSpec('heptane-liu-hewson-chen-pitsch-highT.yaml', 'gas')
 
 So that we could easily run different chemistries, temperatures,
 pressures, etc., a function that returns the ignition and extinction
@@ -161,7 +164,7 @@ Interestingly, sensitivity to stoichiometry is almost nonexistent in the
 critical residence times for ignition and extinction. An important
 caveat at this point is that this chemical mechanism could be reduced in
 size and optimized for a limited range of temperatures, pressures,
-equivalence ratios, and combustion pregimes (e.g., nonpremixed vs
+equivalence ratios, and combustion regimes (e.g., nonpremixed vs
 premixed/homogeneous).
 
 Conclusions

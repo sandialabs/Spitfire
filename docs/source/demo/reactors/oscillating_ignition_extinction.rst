@@ -1,11 +1,12 @@
 A Time-Dependent Flow Reactor: Periodic Ignition/Extinction
 ===========================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - How to add time-dependence to a ``HomogeneousReactor``
-model
+*Highlights*
+
+-  How to add time-dependent inflow to a ``HomogeneousReactor`` model
 
 Introduction
 ------------
@@ -23,7 +24,7 @@ introduced with a Python ``lambda`` function.
 
 .. code:: ipython3
 
-    mech = ChemicalMechanismSpec(cantera_xml='h2-burke.xml', group_name='h2-burke')
+    mech = ChemicalMechanismSpec(cantera_input='h2-burke.yaml', group_name='h2-burke')
     
     air = mech.stream(stp_air=True)
     fuel = mech.stream('X', 'H2:1')
@@ -94,18 +95,18 @@ print to see all the fields available.
     ------------------------------------------
     1. Dimension "time" spanning [0.0, 0.2] with 3400 points
     ------------------------------------------
-    temperature         , min = 400.00023760816015 max = 1723.4172921512559
+    temperature         , min = 400.0002369336172 max = 1723.4175058596395
     pressure            , min = 101325.0 max = 101325.0
-    mass fraction HE    , min = -5.551115123125783e-16 max = 7.771561172376096e-16
-    mass fraction H     , min = 0.0 max = 0.004325863975340061
-    mass fraction H2    , min = 0.006810714712865773 max = 0.028634460764729135
-    mass fraction O     , min = 0.0 max = 0.015190690085155157
-    mass fraction OH    , min = 0.0 max = 0.01517887950146069
-    mass fraction H2O   , min = 0.0 max = 0.15018436327110132
-    mass fraction O2    , min = 0.06530244961447292 max = 0.22726263049348533
-    mass fraction HO2   , min = 0.0 max = 0.00029422117189264844
-    mass fraction H2O2  , min = 0.0 max = 5.528833951840396e-06
-    mass fraction N2    , min = 0.7441029087417855 max = 0.7441029087417855
+    mass fraction HE    , min = -1.1102230246251565e-15 max = 7.771561172376096e-16
+    mass fraction H     , min = 0.0 max = 0.0043260783925692875
+    mass fraction H2    , min = 0.006811052700193299 max = 0.028635883659904566
+    mass fraction O     , min = 0.0 max = 0.015190160615859661
+    mass fraction OH    , min = 0.0 max = 0.01517843114208942
+    mass fraction H2O   , min = 0.0 max = 0.15018056454013207
+    mass fraction O2    , min = 0.06530016317137514 max = 0.22725471362837954
+    mass fraction HO2   , min = 0.0 max = 0.0002942116396534905
+    mass fraction H2O2  , min = 0.0 max = 5.528673292061469e-06
+    mass fraction N2    , min = 0.744109402711716 max = 0.744109402711716
     mass fraction AR    , min = 0.0 max = 0.0
     Extra attributes: {}
     ------------------------------------------
@@ -134,4 +135,5 @@ Conclusions
 
 This notebook shows how to incorporate mass flow in a reactor model and
 have the temperature of the feed stream vary with time.
+
 

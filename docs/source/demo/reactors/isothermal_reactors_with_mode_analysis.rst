@@ -1,13 +1,15 @@
 Explosive Mode Analysis of Isothermal vs Adiabatic Reactors
 ===========================================================
 
-*This demo is part of Spitfire, with*\ `licensing and copyright info
+*This demo is part of Spitfire, with* `licensing and copyright info
 here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 
-*Highlights* - Simulating the ignition of a hypothetical isothermal
-reactor - How to compute quantities relevant to explosive mode analysis
-- Comparing isothermal (chemical feedback) vs adiabatic (thermal *and*
-chemical feedback) ignition
+*Highlights*
+
+-  Simulating the ignition of a hypothetical isothermal reactor
+-  How to compute quantities relevant to explosive mode analysis
+-  Comparing isothermal (chemical feedback) vs adiabatic (thermal *and*
+   chemical feedback) ignition
 
 Introduction
 ------------
@@ -24,11 +26,11 @@ further accelerates combustion, is removed.
 
 .. code:: ipython3
 
-    from spitfire import ChemicalMechanismSpec, HomogeneousReactor
+    from spitfire import ChemicalMechanismSpec, HomogeneousReactor, explosive_mode_analysis
     import matplotlib.pyplot as plt
     import numpy as np
     
-    mech = ChemicalMechanismSpec('h2-burke.xml', 'h2-burke')
+    mech = ChemicalMechanismSpec('h2-burke.yaml', 'h2-burke')
     
     air = mech.stream(stp_air=True)
     fuel = mech.stream('X', 'H2:1')
@@ -99,8 +101,8 @@ secondary explosive mode, so we turn it off here (it is off by default).
 
 .. code:: ipython3
 
-    plt.semilogx(iso.time_values * 1.e6, iso['temperature'], '--', label=f'{s} (iso)')
-    plt.semilogx(adi.time_values * 1.e6, adi['temperature'], '-', label=f'{s} (adi)')
+    plt.semilogx(iso.time_values * 1.e6, iso['temperature'], '--', label=f'isothermal')
+    plt.semilogx(adi.time_values * 1.e6, adi['temperature'], '-', label=f'adiabatic')
     plt.ylabel('T (K)')
     plt.xlabel('t (us)')
     plt.legend()
@@ -122,7 +124,7 @@ secondary explosive mode, so we turn it off here (it is off by default).
     plt.semilogx(iso.time_values * 1.e6, np.zeros_like(iso.time_values), 'k:')
     plt.ylabel('$\\lambda_{\\rm exp}$ (Hz)')
     plt.xlabel('t (us)')
-    plt.yscale('symlog', linthreshy=1e2)
+    plt.yscale('symlog', linthresh=1e2)
     plt.legend()
     plt.grid()
     plt.show()
@@ -132,7 +134,7 @@ secondary explosive mode, so we turn it off here (it is off by default).
     plt.semilogy(iso.time_values * 1.e6, np.zeros_like(iso.time_values), 'k:')
     plt.ylabel('$\\lambda_{\\rm exp}$ (Hz)')
     plt.xlabel('t (us)')
-    plt.yscale('symlog', linthreshy=1e2)
+    plt.yscale('symlog', linthresh=1e2)
     plt.xlim([2e2, 3e2])
     plt.legend()
     plt.grid()
@@ -200,7 +202,7 @@ Next we look at the explosion and participation indices.
         pi = iso['cema-pi1 ' + str(i)]
         if np.max(pi) > 0.2:
             plt.semilogx(iso.time_values * 1.e6, pi,
-                         label=mech.gas.reaction_equation(i))
+                         label=mech.gas.reaction(i).equation)
     plt.ylabel('Participation index')
     plt.xlabel('t (us)')
     plt.legend()
@@ -212,7 +214,7 @@ Next we look at the explosion and participation indices.
         pi = adi['cema-pi1 ' + str(i)]
         if np.max(pi) > 0.2:
             plt.semilogx(adi.time_values * 1.e6, pi,
-                         label=mech.gas.reaction_equation(i))
+                         label=mech.gas.reaction(i).equation)
     plt.ylabel('Participation index')
     plt.xlabel('t (us)')
     plt.legend()
