@@ -450,8 +450,12 @@ class ChemicalMechanismSpec(object):
                 else:
                     default_eff = rx.default_efficiency
                     efficiencies = rx.efficiencies
-                    hi_rate = rx.high_rate
-                    lo_rate = rx.low_rate
+                    if ctpre26:
+                        hi_rate = rx.high_rate
+                        lo_rate = rx.low_rate
+                    else:
+                        hi_rate = rx.rate.high_rate
+                        lo_rate = rx.rate.low_rate
 
                 if is_troe:
                     if ctpre26:
