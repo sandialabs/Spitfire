@@ -1,13 +1,16 @@
+1.3
+- Expanded mixing model options
+  - improved Beta PDF integration
+  - double Delta PDF support
+  - improved parallelism for large models
+- Expanded support for recent versions of cantera
+- Improved documentation of flamelet models
 
 1.02.01
 - Added explicit close/join to multiprocessing pools in all parallel operations
 - Simple fixes for GCC 10.3 compiler
 
-
 1.02.00
-
 - Added native presumed PDF tabulation capability, with the TabProps code from the University of Utah providing optimized Clipped Gaussian and Beta PDF integration. In serial this implementation is typically ~5x faster than a related internal code at Sandia, and through Spitfire's interface it may run in parallel for extreme speedup of the PDF convolution.
-
 - Added a configuration file to check the git status of a Spitfire buid/release to help with downstream SQA.
-
 - Add several thermochemistry datasets relevant to hydrocarbon pool fires simulations at Sandia.

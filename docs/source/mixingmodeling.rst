@@ -1,5 +1,5 @@
 Mixing Models
-------------------------
+=============
 
 .. toctree::
     :maxdepth: 1
