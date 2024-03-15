@@ -19,14 +19,14 @@ from spitfire.chemistry.ctversion import check as cantera_version_check
 
 class CanteraLoadError(Exception):
     def __init__(self, mech_file_path, group_name, error):
-        super().__init__(f'Cantera failed to build a Solution object for the given XML and group name. '
+        super().__init__(f'Cantera failed to build a Solution object for the given YAML/CTI/XML and group name. '
                          f'YAML/CTI/XML path provided: {mech_file_path}, '
                          f'group name provided: {group_name}, '
                          f'Error: {error}')
 
 
 class _CanteraWrapper(object):
-    def __init__(self, mech_file_path, group_name, solution=None):
+    def __init__(self, mech_file_path, group_name='gas', solution=None):
         self._mech_file_path = mech_file_path if mech_file_path is not None else 'cantera-input-not-given'
         self._group_name = group_name if group_name is not None else 'cantera-group-not-given'
         if solution is None:
@@ -56,12 +56,12 @@ class ChemicalMechanismSpec(object):
         This class facilitates some simple way of specifying the fuel and oxidizer streams for flamelets
         and of blending these streams to make mixtures for zero-dimensional simulations.
 
-        **Constructor**: specify a chemical mechanism file in cantera XML format
+        **Constructor**: specify a chemical mechanism file in cantera YAML/CTI/XML format
 
         Parameters
         ----------
         cantera_input : str
-            a cantera YAML/XML/CTI file describing the thermochemistry and (optionally) transport properties
+            a cantera YAML/CTI/XML file describing the thermochemistry and (optionally) transport properties
         group_name : str
             the phase to use (e.g. a phase with transport properties vs without, if such a split exists in the XML file)
         cantera_solution: ct.Solution
@@ -69,7 +69,7 @@ class ChemicalMechanismSpec(object):
 
     """
 
-    def __init__(self, cantera_input=None, group_name=None, cantera_solution=None, cantera_xml=None):
+    def __init__(self, cantera_input=None, group_name='gas', cantera_solution=None, cantera_xml=None):
         cantera_input = cantera_input
         if cantera_xml is not None:
             cantera_input = cantera_input if cantera_input is not None else cantera_xml
@@ -246,6 +246,9 @@ class ChemicalMechanismSpec(object):
 
     @classmethod
     def _build_cantera_solution(cls, gdata):
+        ctatlst3 = cantera_version_check('atleast', 3, 0)
+        ctpre26  = cantera_version_check('pre', 2, 6)
+
         p_ref = gdata['ref_pressure']
         species_list = list()
         for s in gdata['species']:
@@ -270,57 +273,87 @@ class ChemicalMechanismSpec(object):
             type, reactants_stoich, products_stoich, reversible = rxn[:4]
 
             if type == 'simple' or type == 'simple-special':
-                if cantera_version_check('pre', 2, 6, None):
+                if ctpre26:
                     ctrxn = ct.ElementaryReaction(reactants_stoich, products_stoich)
                     ctrxn.rate = ct.Arrhenius(*rxn[4:7])
                 else:
                     ctrxn = ct.Reaction(reactants_stoich, products_stoich, ct.ArrheniusRate(*rxn[4:7]))
             elif type == 'three-body' or type == 'three-body-special':
-                ctrxn = ct.ThreeBodyReaction(reactants_stoich, products_stoich)
-                ctrxn.rate = ct.Arrhenius(*rxn[4:7]) if cantera_version_check('pre', 2, 6, None) else ct.ArrheniusRate(*rxn[4:7])
-                ctrxn.efficiencies = rxn[7]
-                ctrxn.default_efficiency = rxn[8]
-            elif type == 'Lindemann' or type == 'Lindemann-special':
-                if cantera_version_check('pre', 2, 6, None):
-                    ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
+                if ctatlst3:
+                    third_body = ct.reaction.ThirdBody()
+                    third_body.efficiencies = rxn[7]
+                    third_body.default_efficiency = rxn[8]
+                    ctrxn = ct.Reaction(reactants_stoich, products_stoich, ct.ArrheniusRate(*rxn[4:7]), third_body=third_body)
+                else:
+                    ctrxn = ct.ThreeBodyReaction(reactants_stoich, products_stoich)
+                    ctrxn.rate = ct.Arrhenius(*rxn[4:7]) if ctpre26 else ct.ArrheniusRate(*rxn[4:7])
                     ctrxn.efficiencies = rxn[7]
                     ctrxn.default_efficiency = rxn[8]
-                    ctrxn.high_rate = ct.Arrhenius(*rxn[4:7])
-                    ctrxn.low_rate = ct.Arrhenius(*rxn[9:12])
-                    ctrxn.falloff = ct.Falloff()
-                else:
-                    ctrxn = ct.FalloffReaction(
+            elif type == 'Lindemann' or type == 'Lindemann-special':
+                if ctatlst3:
+                    third_body = ct.reaction.ThirdBody()
+                    third_body.efficiencies = rxn[7]
+                    third_body.default_efficiency = rxn[8]
+                    ctrxn = ct.Reaction(
                         reactants_stoich, 
                         products_stoich,
                         rate=ct.LindemannRate(low=ct.Arrhenius(*rxn[9:12]), high=ct.Arrhenius(*rxn[4:7])),
-                        efficiencies=rxn[7])
-                    ctrxn.default_efficiency = rxn[8]
+                        third_body=third_body)
+                else:
+                    if ctpre26:
+                        ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
+                        ctrxn.efficiencies = rxn[7]
+                        ctrxn.default_efficiency = rxn[8]
+                        ctrxn.high_rate = ct.Arrhenius(*rxn[4:7])
+                        ctrxn.low_rate = ct.Arrhenius(*rxn[9:12])
+                        ctrxn.falloff = ct.Falloff()
+                    else:
+                        ctrxn = ct.FalloffReaction(
+                            reactants_stoich, 
+                            products_stoich,
+                            rate=ct.LindemannRate(low=ct.Arrhenius(*rxn[9:12]), high=ct.Arrhenius(*rxn[4:7])),
+                            efficiencies=rxn[7])
+                        ctrxn.default_efficiency = rxn[8]
 
             elif type == 'Troe' or type == 'Troe-special':
-                if cantera_version_check('pre', 2, 6, None):
-                    ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
-                    ctrxn.efficiencies = rxn[7]
-                    ctrxn.default_efficiency = rxn[8]
-                    troe_params = rxn[12]
-                    ctrxn.high_rate = ct.Arrhenius(*rxn[4:7])
-                    ctrxn.low_rate = ct.Arrhenius(*rxn[9:12])
-                    if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
-                        ctrxn.falloff = ct.TroeFalloff(troe_params[:3])
-                    else:
-                        ctrxn.falloff = ct.TroeFalloff(troe_params)
-                else:
+                if ctatlst3:
                     troe_params = rxn[12]
                     if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
                         falloff_coeffs = troe_params[:3]
                     else:
                         falloff_coeffs = troe_params
-                    ctrxn = ct.FalloffReaction(
+                    third_body = ct.reaction.ThirdBody()
+                    third_body.efficiencies = rxn[7]
+                    third_body.default_efficiency = rxn[8]
+                    ctrxn = ct.Reaction(
                         reactants_stoich, 
                         products_stoich,
                         rate=ct.TroeRate(low=ct.Arrhenius(*rxn[9:12]), high=ct.Arrhenius(*rxn[4:7]), falloff_coeffs=falloff_coeffs),
-                        efficiencies=rxn[7])
-                    ctrxn.default_efficiency = rxn[8]
-
+                        third_body=third_body)
+                else:
+                    if ctpre26:
+                        ctrxn = ct.FalloffReaction(reactants_stoich, products_stoich)
+                        ctrxn.efficiencies = rxn[7]
+                        ctrxn.default_efficiency = rxn[8]
+                        troe_params = rxn[12]
+                        ctrxn.high_rate = ct.Arrhenius(*rxn[4:7])
+                        ctrxn.low_rate = ct.Arrhenius(*rxn[9:12])
+                        if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
+                            ctrxn.falloff = ct.TroeFalloff(troe_params[:3])
+                        else:
+                            ctrxn.falloff = ct.TroeFalloff(troe_params)
+                    else:
+                        troe_params = rxn[12]
+                        if len(troe_params) == 4 and abs(troe_params[3]) < 1e-300:
+                            falloff_coeffs = troe_params[:3]
+                        else:
+                            falloff_coeffs = troe_params
+                        ctrxn = ct.FalloffReaction(
+                            reactants_stoich, 
+                            products_stoich,
+                            rate=ct.TroeRate(low=ct.Arrhenius(*rxn[9:12]), high=ct.Arrhenius(*rxn[4:7]), falloff_coeffs=falloff_coeffs),
+                            efficiencies=rxn[7])
+                        ctrxn.default_efficiency = rxn[8]
 
             if 'special' in type:
                 ctrxn.orders = rxn[-1]
@@ -328,14 +361,14 @@ class ChemicalMechanismSpec(object):
             ctrxn.reversible = reversible
             reaction_list.append(ctrxn)
 
-        return ct.Solution(transport_model=None if 'transport-model' not in gdata else gdata['transport-model'], thermo='IdealGas', kinetics='GasKinetics', species=species_list, reactions=reaction_list)
+        return ct.Solution(transport_model=None if 'transport-model' not in gdata else gdata['transport-model'], thermo='ideal-gas', kinetics='gas', species=species_list, reactions=reaction_list)
 
     @classmethod
     def _get_cantera_element_mw_map(cls, ctsol: ct.Solution):
         species_list = [ct.Species(element_name, f'{element_name}: 1') for element_name in ctsol.element_names]
         for i in range(len(species_list)):
             species_list[i].thermo = ct.ConstantCp(300., 3000., 101325., (300., 0., 0., 1.e4))
-        element_only_ctsol = ct.Solution(thermo='IdealGas', kinetics='GasKinetics', species=species_list, reactions=[])
+        element_only_ctsol = ct.Solution(thermo='ideal-gas', kinetics='gas', species=species_list, reactions=[])
         return {name: mw for name, mw in zip(element_only_ctsol.species_names, element_only_ctsol.molecular_weights)}
 
     @classmethod
@@ -391,81 +424,87 @@ class ChemicalMechanismSpec(object):
 
         transport_model = None if (ctsol.transport_model == 'Transport' or ctsol.transport_model is None) else ctsol.transport_model
 
+        ctatlst3 = cantera_version_check('atleast', 3, 0)
+        ctpre26  = cantera_version_check('pre', 2, 6)
+
         for i in range(ctsol.n_reactions):
             rx = ctsol.reaction(i)
-            if isinstance(rx, ct.FalloffReaction):
-                if cantera_version_check('pre', 2, 6, None):
-                    f = rx.falloff
-                    if isinstance(f, ct.TroeFalloff):
-                        reac_temporary_list.append((3, dict({'type': 'Troe',
-                                                            'reversible': rx.reversible,
-                                                            'reactants': rx.reactants,
-                                                            'products': rx.products,
-                                                            'default-eff': rx.default_efficiency,
-                                                            'efficiencies': rx.efficiencies,
-                                                            'fwd-A': rx.high_rate.pre_exponential_factor,
-                                                            'fwd-b': rx.high_rate.temperature_exponent,
-                                                            'fwd-Ea': rx.high_rate.activation_energy,
-                                                            'flf-A': rx.low_rate.pre_exponential_factor,
-                                                            'flf-b': rx.low_rate.temperature_exponent,
-                                                            'flf-Ea': rx.low_rate.activation_energy,
-                                                            'Troe-params': rx.falloff.parameters})))
-                        if rx.orders:
-                            reac_temporary_list[-1][1]['orders'] = rx.orders
-                    else:
-                        reac_temporary_list.append((2, dict({'type': 'Lindemann',
-                                                            'reversible': rx.reversible,
-                                                            'reactants': rx.reactants,
-                                                            'products': rx.products,
-                                                            'default-eff': rx.default_efficiency,
-                                                            'efficiencies': rx.efficiencies,
-                                                            'fwd-A': rx.high_rate.pre_exponential_factor,
-                                                            'fwd-b': rx.high_rate.temperature_exponent,
-                                                            'fwd-Ea': rx.high_rate.activation_energy,
-                                                            'flf-A': rx.low_rate.pre_exponential_factor,
-                                                            'flf-b': rx.low_rate.temperature_exponent,
-                                                            'flf-Ea': rx.low_rate.activation_energy})))
-                        if rx.orders:
-                            reac_temporary_list[-1][1]['orders'] = rx.orders
+
+            if ctatlst3:
+                is_falloff = rx.rate.type == 'falloff'
+                is_troe    = rx.rate.sub_type == 'Troe'
+                is_lind    = rx.rate.sub_type == 'Lindemann'
+                is_3body   = rx.rate.type == 'Arrhenius' and isinstance(rx.third_body, ct.reaction.ThirdBody)
+            else:
+                is_falloff = isinstance(rx, ct.FalloffReaction)
+                is_troe    = isinstance(rx.rate, ct.TroeRate)
+                is_lind    = isinstance(rx.rate, ct.LindemannRate)
+                is_3body   = isinstance(rx, ct.ThreeBodyReaction)
+
+            if is_falloff:
+                if ctatlst3:
+                    default_eff = rx.third_body.default_efficiency
+                    efficiencies = rx.third_body.efficiencies
+                    hi_rate = rx.rate.high_rate
+                    lo_rate = rx.rate.low_rate
                 else:
-                    if isinstance(rx.rate, ct.TroeRate):
-                        reac_temporary_list.append((3, dict({'type': 'Troe',
-                                                            'reversible': rx.reversible,
-                                                            'reactants': rx.reactants,
-                                                            'products': rx.products,
-                                                            'default-eff': rx.default_efficiency,
-                                                            'efficiencies': rx.efficiencies,
-                                                            'fwd-A': rx.rate.high_rate.pre_exponential_factor,
-                                                            'fwd-b': rx.rate.high_rate.temperature_exponent,
-                                                            'fwd-Ea': rx.rate.high_rate.activation_energy,
-                                                            'flf-A': rx.rate.low_rate.pre_exponential_factor,
-                                                            'flf-b': rx.rate.low_rate.temperature_exponent,
-                                                            'flf-Ea': rx.rate.low_rate.activation_energy,
-                                                            'Troe-params': rx.rate.falloff_coeffs})))
-                        if rx.orders:
-                            reac_temporary_list[-1][1]['orders'] = rx.orders
+                    default_eff = rx.default_efficiency
+                    efficiencies = rx.efficiencies
+                    hi_rate = rx.high_rate
+                    lo_rate = rx.low_rate
+
+                if is_troe:
+                    if ctpre26:
+                        troe_params = rx.falloff.parameters
                     else:
-                        reac_temporary_list.append((2, dict({'type': 'Lindemann',
-                                                            'reversible': rx.reversible,
-                                                            'reactants': rx.reactants,
-                                                            'products': rx.products,
-                                                            'default-eff': rx.default_efficiency,
-                                                            'efficiencies': rx.efficiencies,
-                                                            'fwd-A': rx.rate.high_rate.pre_exponential_factor,
-                                                            'fwd-b': rx.rate.high_rate.temperature_exponent,
-                                                            'fwd-Ea': rx.rate.high_rate.activation_energy,
-                                                            'flf-A': rx.rate.low_rate.pre_exponential_factor,
-                                                            'flf-b': rx.rate.low_rate.temperature_exponent,
-                                                            'flf-Ea': rx.rate.low_rate.activation_energy})))
-                        if rx.orders:
-                            reac_temporary_list[-1][1]['orders'] = rx.orders
-            elif isinstance(rx, ct.ThreeBodyReaction):
+                        troe_params = rx.rate.falloff_coeffs
+
+                    reac_temporary_list.append((3, dict({'type': 'Troe',
+                                                        'reversible': rx.reversible,
+                                                        'reactants': rx.reactants,
+                                                        'products': rx.products,
+                                                        'default-eff': default_eff,
+                                                        'efficiencies': efficiencies,
+                                                        'fwd-A': hi_rate.pre_exponential_factor,
+                                                        'fwd-b': hi_rate.temperature_exponent,
+                                                        'fwd-Ea': hi_rate.activation_energy,
+                                                        'flf-A': lo_rate.pre_exponential_factor,
+                                                        'flf-b': lo_rate.temperature_exponent,
+                                                        'flf-Ea': lo_rate.activation_energy,
+                                                        'Troe-params': troe_params})))
+                    if rx.orders:
+                        reac_temporary_list[-1][1]['orders'] = rx.orders
+                elif is_lind:
+                    reac_temporary_list.append((2, dict({'type': 'Lindemann',
+                                                        'reversible': rx.reversible,
+                                                        'reactants': rx.reactants,
+                                                        'products': rx.products,
+                                                        'default-eff': default_eff,
+                                                        'efficiencies': efficiencies,
+                                                        'fwd-A': hi_rate.pre_exponential_factor,
+                                                        'fwd-b': hi_rate.temperature_exponent,
+                                                        'fwd-Ea': hi_rate.activation_energy,
+                                                        'flf-A': lo_rate.pre_exponential_factor,
+                                                        'flf-b': lo_rate.temperature_exponent,
+                                                        'flf-Ea': lo_rate.activation_energy})))
+                    if rx.orders:
+                        reac_temporary_list[-1][1]['orders'] = rx.orders
+                else:
+                    raise ValueError(f'Invalid falloff reaction type: {type(rx)}/{type(rx.rate)}')
+
+            elif is_3body:
+                if ctatlst3:
+                    default_eff = rx.third_body.default_efficiency
+                    efficiencies = rx.third_body.efficiencies
+                else:
+                    default_eff = rx.default_efficiency
+                    efficiencies = rx.efficiencies
                 reac_temporary_list.append((1, dict({'type': 'three-body',
                                                      'reversible': rx.reversible,
                                                      'reactants': rx.reactants,
                                                      'products': rx.products,
-                                                     'default-eff': rx.default_efficiency,
-                                                     'efficiencies': rx.efficiencies,
+                                                     'default-eff': default_eff,
+                                                     'efficiencies': efficiencies,
                                                      'A': rx.rate.pre_exponential_factor,
                                                      'b': rx.rate.temperature_exponent,
                                                      'Ea': rx.rate.activation_energy})))

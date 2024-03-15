@@ -6,6 +6,4 @@ except ImportError:
 
 def datafile(filename):
   """Obtain the complete path to the installed file in the src/spitfire/data directory."""
-  with pkg_resources.path('spitfire.data', filename) as p:
-    path = str(p)
-  return path
+  return str(pkg_resources.files('spitfire.data').joinpath(filename))

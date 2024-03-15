@@ -864,10 +864,10 @@ try:
         reltol = 1.e-16
         diff_min = (ans - depvars.min()) / (np.abs(depvars.min()) + reltol)
         diff_max = (ans - depvars.max()) / (np.abs(depvars.max()) + reltol)
-        if diff_min<zerotol:
-            return f'Integral exceeded min depvar by {-diff_min*100:.2f}%: (normalized) min obs: {depvars.min():.1e} vs integral:{ans:.1e}.' if errmsg else True
-        elif -diff_max<zerotol:
-            return f'Integral exceeded max depvar by { diff_max*100:.2f}%: (normalized) max obs: {depvars.max():.1e} vs integral:{ans:.1e}.' if errmsg else True
+        if diff_min < zerotol:
+            return f'Integral exceeded min depvar by {-diff_min*100:.2f}%: (normalized) min obs: {depvars.min():.1e} vs integral: {ans:.1e}.' if errmsg else True
+        elif -diff_max < zerotol:
+            return f'Integral exceeded max depvar by { diff_max*100:.2f}%: (normalized) max obs: {depvars.max():.1e} vs integral: {ans:.1e}.' if errmsg else True
         else:
             return False
 
@@ -875,14 +875,14 @@ try:
     def _single_integral(pdf_info, indepvars, depvars, convolution_spline_order, integrator_intervals, use_pytabprops, throw_on_integrator_failure, verbose):
         if use_pytabprops:
             sl = slice(None, None, -1) if indepvars[1] - indepvars[0] < 0. else slice(None, None, 1)
-            interp = LagrangeInterpolant1D(convolution_spline_order, indepvars[sl], depvars[sl], True)
+            interp = LagrangeInterpolant1D(convolution_spline_order, np.squeeze(indepvars[sl]), np.squeeze(depvars[sl]), True)
             ans = pdf_info['instance'].integrate(interp, integrator_intervals)
             if _outside_bounds(ans, depvars):
                 pdf_type = list(_pdf_type_dict().keys())[list(_pdf_type_dict().values()).index(type(pdf_info['instance']))] if not pdf_info['is-custom-pdf'] else pdf_info['instance']
                 pdf_mean = pdf_info['instance'].get_mean()
                 pdf_scl_var = pdf_info['instance'].get_scaled_variance()
                 err_msg = f"Cannot convolve the data accurately for {pdf_type} PDF at (mean, scaled variance)=({pdf_mean:.1e},{pdf_scl_var:.1e}) "
-                if convolution_spline_order==1:
+                if convolution_spline_order == 1:
                     if throw_on_integrator_failure:
                         raise ValueError(err_msg + _outside_bounds(ans, depvars, True))
                     else:
@@ -890,7 +890,7 @@ try:
                             print(err_msg + _outside_bounds(ans, depvars, True))
                         return ans
                 else:
-                    interp = LagrangeInterpolant1D(1, indepvars[sl], depvars[sl], True)
+                    interp = LagrangeInterpolant1D(1, np.squeeze(indepvars[sl]), np.squeeze(depvars[sl]), True)
                     ans = pdf_info['instance'].integrate(interp, integrator_intervals)
                     if _outside_bounds(ans, depvars):
                         if throw_on_integrator_failure:

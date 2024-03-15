@@ -267,7 +267,10 @@ def explosive_mode_analysis(mechanism,
     if cantera_version_check('pre', 2, 6, None):
         V_stoich = gas.product_stoich_coeffs() - gas.reactant_stoich_coeffs()
     else:
-        V_stoich = gas.product_stoich_coeffs3 - gas.reactant_stoich_coeffs3
+        if cantera_version_check('atleast', 3, 0):
+            V_stoich = gas.product_stoich_coeffs - gas.reactant_stoich_coeffs
+        else:
+            V_stoich = gas.product_stoich_coeffs3 - gas.reactant_stoich_coeffs3
     ns = gas.n_species
     ne = ns if configuration == 'isobaric' else ns + 1
     nr = mechanism.n_reactions
