@@ -1,23 +1,19 @@
 name: docs
 channels:
   - conda-forge
-  - anaconda
   - cantera
   - defaults
 dependencies:
+  - compilers
   - sphinx
   - nbsphinx
   - numpy
   - scipy
-  - compilers
   - Cython
   - matplotlib
   - numpydoc
   - setuptools
-  - ruamel.yaml
-  - pyyaml
   - gitpython
-  - pybind11
   - cantera
   - pip:
     - recommonmark
