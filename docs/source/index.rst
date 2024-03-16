@@ -8,20 +8,12 @@ Introduction
 Spitfire is a Python/C++ scientific computing code for chemistry and reaction-diffusion problems related to combustion and porous material decomposition.
 Spitfire is primarily used at Sandia National Laboratories to build advanced nonpremixed flamelet libraries for large-scale accidental fire simulations and small-scale pool fires.
 
-Researchers at Sandia Labs, the University of Utah, and the Université Libre de Bruxelles have used Spitfire for a number of applications:
-
-- Construct adiabatic and nonadiabatic flamelet libraries for single- and multi-phase turbulent combustion
-- Generate reactor, flamelet, and general reaction-diffusion datasets to train surrogate chemistry models
-- Perform fundamental studies of combustion in the MILD regime
-- Study chemical explosive modes and low-temperature oxidation of complex fuels in non-premixed systems
-- Study the formulation of state vectors and analytical Jacobian matrices for combustion simulation
-- Design specialized Runge-Kutta methods and advanced adaptive time stepping techniques
-
+Next we describe acquiring and installing Spitfire.
+You may jump to background and API documentation as well as a number of tutorials with the links below.
 
 .. toctree::
     :numbered:
-    :maxdepth: 1
-    :caption:  You may jump to background and API documentation as well as demonstrations at the links below. Next we describe acquiring and installing Spitfire.
+    :maxdepth: 2
 
     reactionmodeling
     mixingmodeling
@@ -36,6 +28,16 @@ Spitfire has been designed to be fast and extensible in meeting three key object
 - Solve canonical chemistry problems with complex reaction mechanisms using advanced numerical methods
 - Efficiently build tabulated chemistry models for reacting flow simulations
 - Rapidly prototype numerical methods for ordinary and partial differential equations
+
+Researchers at Sandia Labs, the University of Utah, and the Université Libre de Bruxelles have used Spitfire for a number of applications:
+
+- Construct adiabatic and nonadiabatic flamelet libraries for single- and multi-phase turbulent combustion
+- Generate reactor, flamelet, and general reaction-diffusion datasets to train surrogate chemistry models
+- Perform fundamental studies of combustion in the MILD regime
+- Study chemical explosive modes and low-temperature oxidation of complex fuels in non-premixed systems
+- Study the formulation of state vectors and analytical Jacobian matrices for combustion simulation
+- Design specialized Runge-Kutta methods and advanced adaptive time stepping techniques
+
 
 Access
 ------
@@ -100,9 +102,9 @@ To contribute to documentation (specifically demonstrations) you'll need jupyter
 
   conda install -y jupyter jupyterlab
 
-Conda Environment Setup
-"""""""""""""""""""""""
-Now clone and install Spitfire itself:
+Installing the ``spitfire`` Package
+"""""""""""""""""""""""""""""""""""
+Now clone and install Spitfire itself::
 
   git clone https://github.com/sandialabs/Spitfire.git
   cd Spitfire
@@ -115,8 +117,8 @@ To run the test suite you can simply execute::
   python3 -m unittest discover -s tests
 
 
-Building the Documentation
-""""""""""""""""""""""""""
+Building Documentation
+""""""""""""""""""""""
 To build the HTML documentation, simply do the following::
 
   cd docs

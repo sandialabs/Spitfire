@@ -1,26 +1,9 @@
 Reaction Models
 ===============
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Demonstrations:
 
-    demo/reactors/thermochemistry_Cantera_Spitfire_griffon
-    demo/reactors/one_step_heptane_ignition
-    demo/reactors/ignition_delay_NTC_DME
-    demo/reactors/oscillating_ignition_extinction
-    demo/reactors/isothermal_reactors_with_mode_analysis
-    demo/reactors/ignition_extinction_heptane
-    demo/flamelet/introduction_to_flamelets
-    demo/flamelet/high_level_tabulation_api_adiabatic
-    demo/flamelet/example_nonadiabatic_flamelets
-    demo/flamelet/methane_shear_layer_tabulation
-    demo/flamelet/transient_ignition_stepper_details
-    demo/flamelet/example_transient_flamelet_rate_sensitivity
-    demo/flamelet/example_coal_combustion_model
-
-
-
+Background
+----------
 The following sections detail the backround and some of the math behind Spitfire's reaction modeling capabilities.
 We present the background of non-premixed flamelet models and then of simpler homogeneous reactor systems,
 and supported reaction rate laws and thermodynamic property models.
@@ -649,7 +632,25 @@ NASA-7 polynomials must be used with two temperature regions, while any number o
 
 
 
+Tutorials
+---------
 
+.. toctree::
+    :maxdepth: 1
+
+    demo/reactors/thermochemistry_Cantera_Spitfire_griffon
+    demo/reactors/one_step_heptane_ignition
+    demo/reactors/ignition_delay_NTC_DME
+    demo/reactors/oscillating_ignition_extinction
+    demo/reactors/isothermal_reactors_with_mode_analysis
+    demo/reactors/ignition_extinction_heptane
+    demo/flamelet/introduction_to_flamelets
+    demo/flamelet/high_level_tabulation_api_adiabatic
+    demo/flamelet/example_nonadiabatic_flamelets
+    demo/flamelet/methane_shear_layer_tabulation
+    demo/flamelet/transient_ignition_stepper_details
+    demo/flamelet/example_transient_flamelet_rate_sensitivity
+    demo/flamelet/example_coal_combustion_model
 
 
 

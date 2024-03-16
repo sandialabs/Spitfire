@@ -1,13 +1,9 @@
 Mixing Models
 =============
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Demonstrations:
 
-    demo/flamelet/tabulation_api_presumed_pdf
-    demo/flamelet/custom_pdf_logmean_chi
-
+Background
+----------
 
 Tabulated chemistry models can often be split into two pieces: a reaction model and a mixing model.
 The reaction model describes small scale laminar flame structure, for instance equilibrium (fast chemistry) or diffusion-reaction (SLFM), possibly perturbed by radiative heat losses.
@@ -163,3 +159,12 @@ The amount of parallelism provided by the ``'full'`` option typically only becom
 
     Timings for convolutions with the double delta PDF over 20 properties, 161 mixture fraction means, and 10 scaled variances plotted over the number of processors.
     The timings labels refer to whether there is a balance or imbalance in the time to compute the integrals across the properties.
+
+Tutorials
+---------
+
+.. toctree::
+    :maxdepth: 1
+
+    demo/flamelet/tabulation_api_presumed_pdf
+    demo/flamelet/custom_pdf_logmean_chi
