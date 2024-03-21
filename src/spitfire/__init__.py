@@ -14,14 +14,20 @@ from .chemistry.tabulation import build_adiabatic_eq_library, \
     build_nonadiabatic_defect_bs_library, \
     build_nonadiabatic_defect_eq_library, \
     build_nonadiabatic_defect_transient_slfm_library, \
-    build_nonadiabatic_defect_steady_slfm_library, \
-    apply_mixing_model, \
-    PDFSpec, \
-    BetaPDF, \
-    DoubleDeltaPDF, \
-    ClipGaussPDF, \
-    DeltaPDF, \
-    compute_pdf_max_integration_errors
+    build_nonadiabatic_defect_steady_slfm_library
+
+try:
+    from pytabprops import ClippedGaussMixMdl, BetaMixMdl, LagrangeInterpolant1D, StateTable
+    from .chemistry.tabulation import apply_mixing_model, \
+                                      PDFSpec, \
+                                      BetaPDF, \
+                                      DoubleDeltaPDF, \
+                                      ClipGaussPDF, \
+                                      DeltaPDF, \
+                                      compute_pdf_max_integration_errors
+
+except:
+    pass
 
 from .griffon.griffon import PyCombustionKernels
 
