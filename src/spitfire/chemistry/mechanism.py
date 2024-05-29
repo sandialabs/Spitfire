@@ -685,13 +685,18 @@ class ChemicalMechanismSpec(object):
         atom_names = ['H', 'O']
         if 'C' in self._cantera_wrapper.solution.element_names:
             atom_names.append('C')
+        if 'Al' in self._cantera_wrapper.solution.element_names:
+            atom_names.append('Al')
         fuel_atoms = self._get_atoms_in_stream(fuel_stream, atom_names)
         oxy_atoms = self._get_atoms_in_stream(oxy_stream, atom_names)
         if 'C' not in self._cantera_wrapper.solution.element_names:
             fuel_atoms['C'] = 0
             oxy_atoms['C'] = 0
-        return -(oxy_atoms['O'] - 0.5 * oxy_atoms['H'] - 2.0 * oxy_atoms['C']) / (
-                fuel_atoms['O'] - 0.5 * fuel_atoms['H'] - 2.0 * fuel_atoms['C'])
+        if 'Al' not in self._cantera_wrapper.solution.element_names:
+            fuel_atoms['Al'] = 0
+            oxy_atoms['Al'] = 0
+        return -(oxy_atoms['O'] - 0.5 * oxy_atoms['H'] - 2.0 * oxy_atoms['C'] - 1.5 * oxy_atoms['Al']) / (
+                fuel_atoms['O'] - 0.5 * fuel_atoms['H'] - 2.0 * fuel_atoms['C'] - 1.5 * fuel_atoms['Al'])
 
     def stoich_mass_fuel_to_oxy_ratio(self, fuel_stream, oxy_stream):
         """Get the mass ratio of fuel to oxidizer at stoichiometric conditions.
