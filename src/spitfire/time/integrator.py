@@ -211,6 +211,21 @@ def _write_log(verbose,
     return log_count, log_title_count
 
 
+class FailedODESolveException(ValueError):
+    def __init__(self, msg, times, states):
+        super().__init__(msg)
+        self._times = times
+        self._states = states
+
+    @property
+    def times(self):
+        return self._times
+
+    @property
+    def states(self):
+        return self._states
+
+
 def odesolve(right_hand_side,
              initial_state,
              output_times=None,
@@ -250,7 +265,8 @@ def odesolve(right_hand_side,
              show_solver_stats_in_situ=False,
              return_info=False,
              throw_on_failure=True,
-             print_exception_on_failure=True):
+             print_exception_on_failure=True,
+             maximum_residual=None):
     """Solve a time integration problem with a wide variety of solvers, termination options, etc.
 
         Parameters
@@ -298,7 +314,7 @@ def odesolve(right_hand_side,
         verbose : bool
             whether or not to continually write out the integrator status and some statistics, turn off for best performance (default: False)
         debug_verbose : bool
-            whether or not to write A LOT of information during integration, do not use in any normal situation (default: True)
+            whether or not to write A LOT of information during integration, do not use in any normal situation (default: False)
         log_rate : Int
             how frequently verbose output should be written, increase or turn off output for best performance (default: 1 = every step)
         log_lines_per_header : Int
@@ -337,6 +353,8 @@ def odesolve(right_hand_side,
             whether or not to throw an exception on integrator/model failure (default: True)
         print_exception_on_failure : bool
             whether or not to print an exception message on integrator/model failure (default: True)
+        maximum_residual : float
+            maximum allowed residual to continue time stepping (default: None)
 
 
         Returns
@@ -535,6 +553,8 @@ def odesolve(right_hand_side,
             nlisslow = step_output.slow_nonlinear_convergence
             number_projector_setup += step_output.projector_setups if step_output.projector_setups is not None else 0
             residual = norm(dstate * norm_weighting, ord=np.Inf) / time_step_size
+            if maximum_residual is not None and residual > maximum_residual:
+                raise ValueError(f"residual of {residual:.2e} exceeded maximum_residual of {maximum_residual:.2e}.")
 
             recent_time_step_size = time_step_size
             if _check_state_update(debug_verbose, current_state, dstate,
@@ -614,9 +634,9 @@ def odesolve(right_hand_side,
                 continue_time_stepping = True
             if number_of_time_steps > maximum_time_step_count:
                 continue_time_stepping = False
-            if coerce_dt_at_final_step and current_time >= stop_at_time:
+            elif coerce_dt_at_final_step and current_time >= stop_at_time:
                 continue_time_stepping = False
-            if stop_at_steady_state and residual < steady_tolerance:
+            elif stop_at_steady_state and residual < steady_tolerance:
                 continue_time_stepping = False
 
         total_runtime = timer.perf_counter() - cpu_time_0
@@ -663,7 +683,16 @@ def odesolve(right_hand_side,
             logger.exception(error)
         logging.disable(level=logging.DEBUG)
         if throw_on_failure:
-            raise ValueError('odesolve failed to integrate the system due to an Exception being caught - see above')
+            msg = 'odesolve failed to integrate the system due to an Exception being caught:\n'
+            msg += str(error) + '\n'
+
+            if output_times is not None:
+                raise FailedODESolveException(msg=msg, times=output_times, states=output_states)
+            elif save_each_step:
+                raise FailedODESolveException(msg=msg, times=array(t_list), states=array(solution_list))
+            else:
+                raise FailedODESolveException(msg=msg, times=array([current_time]), states=array([current_state]))
+
 
     logging.disable(level=logging.DEBUG)
 
