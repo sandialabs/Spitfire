@@ -865,9 +865,9 @@ try:
         diff_min = (ans - depvars.min()) / (np.abs(depvars.min()) + reltol)
         diff_max = (ans - depvars.max()) / (np.abs(depvars.max()) + reltol)
         if diff_min < zerotol:
-            return f'Integral exceeded min depvar by {-diff_min*100:.2f}%: (normalized) min obs: {depvars.min():.1e} vs integral: {ans:.1e}.' if errmsg else True
+            return f'Integral exceeded min depvar by {-diff_min*100:.2f}%: (normalized) min obs: {depvars.min():.3e} vs integral: {ans:.3e}.' if errmsg else True
         elif -diff_max < zerotol:
-            return f'Integral exceeded max depvar by { diff_max*100:.2f}%: (normalized) max obs: {depvars.max():.1e} vs integral: {ans:.1e}.' if errmsg else True
+            return f'Integral exceeded max depvar by { diff_max*100:.2f}%: (normalized) max obs: {depvars.max():.3e} vs integral: {ans:.3e}.' if errmsg else True
         else:
             return False
 
@@ -881,7 +881,7 @@ try:
                 pdf_type = list(_pdf_type_dict().keys())[list(_pdf_type_dict().values()).index(type(pdf_info['instance']))] if not pdf_info['is-custom-pdf'] else pdf_info['instance']
                 pdf_mean = pdf_info['instance'].get_mean()
                 pdf_scl_var = pdf_info['instance'].get_scaled_variance()
-                err_msg = f"Cannot convolve the data accurately for {pdf_type} PDF at (mean, scaled variance)=({pdf_mean:.1e},{pdf_scl_var:.1e}) "
+                err_msg = f"Cannot convolve the data accurately for {pdf_type} PDF at (mean, scaled variance)=({pdf_mean:.2e},{pdf_scl_var:.2e}) "
                 if convolution_spline_order == 1:
                     if throw_on_integrator_failure:
                         raise ValueError(err_msg + _outside_bounds(ans, depvars, True))
@@ -1811,8 +1811,6 @@ class PDFSpec:
         array of values of a scaled mean (varies between zero and one), provide this or mean_values
     mean_values : np.array
         array of values of the mean, provide this or scaled_mean_values
-    variance_name : str
-        the name of the variance dimension added to the output library
     convolution_spline_order : Int or str
         the order of the 1-D reconstruction used in the convolution integrals,
         default is 'pchip' for the BetaPDF and 3 otherwise
