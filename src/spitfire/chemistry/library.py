@@ -313,6 +313,20 @@ class Library(object):
                 new_library.extra_attributes[ea] = library.extra_attributes[ea]
             return new_library
 
+    @classmethod
+    def swapaxes(cls, library, idx1, idx2):
+        """Swap the dimension of index idx1 with that of idx2"""
+        dim_names = library.dim_names
+        if len(dim_names)<2:
+            raise ValueError("Cannot perform swap on library with one dimension.")
+        dim_names[idx1], dim_names[idx2] = dim_names[idx2], dim_names[idx1]
+        swaplib = Library(*[Dimension(d, library.dims[library.dim_names.index(d)].values) for d in dim_names])
+        for p in library.props:
+            swaplib[p] = np.swapaxes(library[p], idx1, idx2)
+        for e in library.extra_attributes:
+            swaplib.extra_attributes[e] = library.extra_attributes[e]
+        return swaplib
+
     def __setitem__(self, quantity, values):
         """Use the bracket operator, as in lib['myprop'] = values, to add a property defined on the grid
            The np.ndarray of values must be shaped correctly"""

@@ -92,6 +92,13 @@ class Slice1D(unittest.TestCase):
         except LibraryIndexError:
             self.assertTrue(True)
 
+    def test_swap(self):
+        l1 = Library(Dimension('x', np.linspace(0, 1, 16)))
+        try:
+            Library.swapaxes(l1, 0, 1)
+            self.assertTrue(False)
+        except:
+            self.assertTrue(True)
 
 class Slice2D(unittest.TestCase):
     def test_full(self):
@@ -410,6 +417,22 @@ class Slice3D(unittest.TestCase):
         self.assertTrue(np.all(np.abs(l1[slices]['f'] - g) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(fvals[slices] - g) < 10. * machine_epsilon))
         self.assertTrue(np.all(np.abs(l2['f'] - g) < 10. * machine_epsilon))
+
+    def test_swap(self):
+        l1 = Library(Dimension('x', np.linspace(0, 1, 10)),
+                     Dimension('y', np.linspace(-1, 1, 4)),
+                     Dimension('z', np.logspace(-1, 1, 7)))
+        l1['f'] = np.exp(l1.x_grid) * np.cos(l1.y_grid) * np.log(l1.z_grid)
+        l2 = Library.swapaxes(l1, 0, 2)
+
+        self.assertTrue(np.all(np.abs(l2['f'] - np.swapaxes(l1['f'], 0, 2)) < 10. * machine_epsilon))
+        self.assertEqual(set(l1.props), set(l2.props))
+        self.assertEqual(set(l1.dim_names[0]), set(l2.dim_names[2]))
+        self.assertEqual(set(l1.dim_names[1]), set(l2.dim_names[1]))
+        self.assertEqual(set(l1.dim_names[2]), set(l2.dim_names[0]))
+        self.assertTrue(np.max(np.abs(l1.x_values - l2.x_values)) < 10. * machine_epsilon)
+        self.assertTrue(np.max(np.abs(l1.y_values - l2.y_values)) < 10. * machine_epsilon)
+        self.assertTrue(np.max(np.abs(l1.z_values - l2.z_values)) < 10. * machine_epsilon)
 
 
 if __name__ == '__main__':
