@@ -1356,7 +1356,7 @@ class Flamelet(object):
                             max_factor_line_search=1.5,
                             max_allowed_residual=1.e6,
                             min_allowable_state_var=-1.e-6,
-                            norm_order=np.Inf,
+                            norm_order=np.inf,
                             log_rate=100000,
                             verbose=True):
         """Use Newton's method to solve for the steady state of this flamelet.
@@ -1376,7 +1376,7 @@ class Flamelet(object):
                 the maximum allowable value of the residual
             min_allowable_state_var : float
                 the lowest value (negative or zero) that a state variable can take during the solution process
-            norm_order : int or np.Inf
+            norm_order : int or np.inf
                 the order of the norm used in measuring the residual
             log_rate : int
                 how often a message about the solution status is written
@@ -1500,7 +1500,7 @@ class Flamelet(object):
                            max_factor_line_search=1.5,
                            max_allowed_residual=1.e6,
                            log_rate=100000,
-                           norm_order=np.Inf,
+                           norm_order=np.inf,
                            _recursion_depth=0,
                            max_recursion_depth=20,
                            verbose=True):
@@ -1538,7 +1538,7 @@ class Flamelet(object):
                 maximum allowable value of the pseudo time step (default: 1.e4)
             max_recursion_depth : int
                 how many adaptive restarts may be attempted
-            norm_order : int or np.Inf
+            norm_order : int or np.inf
                 the order of the norm used in measuring the residual
             log_rate : int
                 how often a message about the solution status is written
