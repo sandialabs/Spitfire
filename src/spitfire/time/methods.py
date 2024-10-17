@@ -28,7 +28,7 @@ See the file: ``tests/time/test_time_order_of_accuracy.py``.
 #                    
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
-from numpy import sqrt, copy, array, sum, Inf, zeros_like
+from numpy import sqrt, copy, array, sum, inf, zeros_like
 from scipy.linalg import norm
 
 
@@ -47,8 +47,8 @@ class TimeStepperBase:
         whether or not the method computes embedded error estimates to enable adaptive time-stepping
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
     is_implicit : bool
         whether or not the method is implicit
     nonlinear_solver : int
@@ -73,7 +73,7 @@ class TimeStepperBase:
         self.n_stages = kwargs['n_stages'] if 'n_stages' in kwargs else 1
         self.is_adaptive = kwargs['is_adaptive'] if 'is_adaptive' in kwargs else False
         self.norm_weighting = kwargs['norm_weighting'] if 'norm_weighting' in kwargs else 1.
-        self.norm_order = kwargs['norm_order'] if 'norm_order' in kwargs else Inf
+        self.norm_order = kwargs['norm_order'] if 'norm_order' in kwargs else inf
         self.is_implicit = kwargs['is_implicit'] if 'is_implicit' in kwargs else False
         self.nonlinear_solver = kwargs['nonlinear_solver'] if 'nonlinear_solver' in kwargs else None
         self.implicit_coefficient = kwargs['implicit_coefficient'] if 'implicit_coefficient' in kwargs else None
@@ -155,12 +155,12 @@ class ExpTrapezoidalS2P2Q1(TimeStepperBase):
     ----------
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, norm_weighting=1., norm_order=Inf):
+    def __init__(self, norm_weighting=1., norm_order=inf):
         super().__init__(name='ERK2 trapezoidal', order=2, n_stages=2,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
 
@@ -189,12 +189,12 @@ class BogackiShampineS4P3Q2(TimeStepperBase):
     ----------
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, norm_weighting=1., norm_order=Inf):
+    def __init__(self, norm_weighting=1., norm_order=inf):
         super().__init__(name='ERK4 Bogacki-Shampine', order=3, n_stages=4,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
 
@@ -228,12 +228,12 @@ class CashKarpS6P5Q4(TimeStepperBase):
     ----------
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, norm_weighting=1., norm_order=Inf):
+    def __init__(self, norm_weighting=1., norm_order=inf):
         super().__init__(name='Cash/Karp RK5', order=5, n_stages=6,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
 
@@ -262,12 +262,12 @@ class ZonneveldS5P4Q3(TimeStepperBase):
     ----------
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, norm_weighting=1., norm_order=Inf):
+    def __init__(self, norm_weighting=1., norm_order=inf):
         super().__init__(name='Zonneveld RK4', order=4, n_stages=5,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
 
@@ -294,12 +294,12 @@ class ExpKennedyCarpetnerS6P4Q3(TimeStepperBase):
     ----------
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, norm_weighting=1., norm_order=Inf):
+    def __init__(self, norm_weighting=1., norm_order=inf):
         super().__init__(name='Kennedy/Carpenter explicit RK4', order=4, n_stages=6,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
 
@@ -346,12 +346,12 @@ class BackwardEulerS1P1Q1(TimeStepperBase):
         the solver used in each implicit stage
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=inf):
         super().__init__(name='backward Euler', order=1, n_stages=1,
                          is_implicit=True, implicit_coefficient=1., nonlinear_solver=nonlinear_solver,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
@@ -448,8 +448,8 @@ class KennedyCarpenterS6P4Q3(TimeStepperBase):
         the solver used in each implicit stage
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43', 'a51', 'a52', 'a53', 'a54',
@@ -457,7 +457,7 @@ class KennedyCarpenterS6P4Q3(TimeStepperBase):
                  'b1', 'b2', 'b3', 'b4', 'b5', 'b6',
                  'b1h', 'b2h', 'b3h', 'b4h', 'b5h', 'b6h', 'A', 'c']
 
-    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=inf):
         super().__init__(name='Kennedy/Carpenter ESDIRK64', order=4, n_stages=6,
                          is_implicit=True, implicit_coefficient=0.25, nonlinear_solver=nonlinear_solver,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
@@ -622,15 +622,15 @@ class KvaernoS4P3Q2(TimeStepperBase):
         the solver used in each implicit stage
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43',
                  'b1', 'b2', 'b3', 'b4',
                  'b1h', 'b2h', 'b3h', 'b4h', 'A', 'c']
 
-    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=inf):
         super().__init__(name='Kvaerno ESDIRK43', order=3, n_stages=4,
                          is_implicit=True, implicit_coefficient=0.4358665215, nonlinear_solver=nonlinear_solver,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
@@ -749,15 +749,15 @@ class KennedyCarpenterS4P3Q2(TimeStepperBase):
         the solver used in each implicit stage
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43',
                  'b1', 'b2', 'b3', 'b4',
                  'b1h', 'b2h', 'b3h', 'b4h', 'A', 'c']
 
-    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=inf):
         super().__init__(name='Kennedy/Carpenter ESDIRK43', order=3, n_stages=4,
                          is_implicit=True, implicit_coefficient=1767732205903. / 4055673282236.,
                          nonlinear_solver=nonlinear_solver,
@@ -877,8 +877,8 @@ class KennedyCarpenterS8P5Q4(TimeStepperBase):
         the solver used in each implicit stage
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
     __slots__ = ['gamma', 'a21', 'a31', 'a32', 'a41', 'a42', 'a43', 'a51', 'a52', 'a53', 'a54',
@@ -888,7 +888,7 @@ class KennedyCarpenterS8P5Q4(TimeStepperBase):
                  'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8',
                  'b1h', 'b2h', 'b3h', 'b4h', 'b5h', 'b6h', 'b7h', 'b8h', 'A', 'c']
 
-    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=Inf):
+    def __init__(self, nonlinear_solver, norm_weighting=1., norm_order=inf):
         super().__init__(name='Kennedy/Carpenter ESDIRK85', order=5, n_stages=8,
                          is_implicit=True, implicit_coefficient=41. / 200., nonlinear_solver=nonlinear_solver,
                          is_adaptive=True, norm_weighting=norm_weighting, norm_order=norm_order)
@@ -1115,12 +1115,12 @@ class GeneralAdaptiveERK(TimeStepperBase):
         embedded error estimation quadrature coefficients (default: None - not adaptive)
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, name, order, A, b, bhat=None, norm_weighting=1., norm_order=Inf):
+    def __init__(self, name, order, A, b, bhat=None, norm_weighting=1., norm_order=inf):
         # todo: should add checks that A is explicit and that the coefficients match the provided error
         self.A = copy(A)
         self.b = copy(b)
@@ -1179,12 +1179,12 @@ class GeneralAdaptiveERKMultipleEmbedded(TimeStepperBase):
         list of embedded error estimation quadrature coefficients
     norm_weighting : float or np.ndarray the size of the state vector
         multiplies the embedded error estimate prior to computing the norm (default: 1.)
-    norm_order : int or np.Inf
-        order of the norm of the error estimate (default: np.Inf)
+    norm_order : int or np.inf
+        order of the norm of the error estimate (default: np.inf)
 
     """
 
-    def __init__(self, name, order, A, b, bhats, norm_weighting=1., norm_order=Inf):
+    def __init__(self, name, order, A, b, bhats, norm_weighting=1., norm_order=inf):
         # todo: add checks that A is explicit and that the coefficients match the provided error
         self.A = copy(A)
         self.b = copy(b)

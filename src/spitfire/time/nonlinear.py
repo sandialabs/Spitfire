@@ -13,7 +13,7 @@ At the moment this is simply Newton's method.
 
 import numpy as np
 from numpy import copy as numpy_copy
-from numpy import any, logical_or, isinf, isnan, abs, Inf
+from numpy import any, logical_or, isinf, isnan, abs, inf
 from scipy.linalg import norm
 
 
@@ -101,7 +101,7 @@ class NonlinearSolver(object):
         whether or not the solver must converge to a solution within max_nonlinear_iter (default: False)
     norm_weighting : np.ndarray or float
         how the temporal error estimate is weighted in its norm calculation (default: 1)
-    norm_order : int or np.Inf
+    norm_order : int or np.inf
         the order of the norm used in the temporal error estimate (default: Inf)
     raise_naninf : bool
         whether or not to check for NaN/Inf values in the solution and residual and raise an exception if found (default: False)
@@ -113,11 +113,11 @@ class NonlinearSolver(object):
     """
 
     defaults = {'max_nonlinear_iter': 20,
-                'slowness_detection_iter': Inf,
+                'slowness_detection_iter': inf,
                 'must_converge': False,
                 'tolerance': 1.e-12,
                 'norm_weighting': 1.,
-                'norm_order': Inf,
+                'norm_order': inf,
                 'raise_naninf': False,
                 'custom_solution_check': None,
                 'setup_projector_in_governor': True}
@@ -157,7 +157,7 @@ class SimpleNewtonSolver(NonlinearSolver):
         whether or not the solver must converge to a solution within max_nonlinear_iter (default: False)
     norm_weighting : np.ndarray or float
         how the temporal error estimate is weighted in its norm calculation (default: 1)
-    norm_order : int or np.Inf
+    norm_order : int or np.inf
         the order of the norm used in the temporal error estimate (default: Inf)
     raise_naninf : bool
         whether or not to check for NaN/Inf values in the solution and residual and raise an exception if found (default: False)

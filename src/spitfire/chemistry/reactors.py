@@ -234,7 +234,7 @@ class HomogeneousReactor(object):
         else:
             message = 'mass transfer is set to open'
             if self._check_necessary_argument(mixing_tau, 'mixing_tau', message):
-                self._mixing_tau = np.Inf if mixing_tau is None else mixing_tau
+                self._mixing_tau = np.inf if mixing_tau is None else mixing_tau
 
             if self._check_necessary_argument(feed_temperature, 'feed_temperature', message):
                 self._feed_temperature = feed_temperature

@@ -16,7 +16,7 @@ In many cases the Jacobian/preconditioner can be lagged for several time steps t
 # Questions? Contact Mike Hansen (mahanse@sandia.gov)    
 
 import numpy as np
-from numpy import any, logical_or, isinf, isnan, min, max, array, Inf, diag_indices, zeros
+from numpy import any, logical_or, isinf, isnan, min, max, array, inf, diag_indices, zeros
 from scipy.linalg import norm
 from spitfire.time.stepcontrol import ConstantTimeStep, PIController
 from spitfire.time.methods import KennedyCarpenterS6P4Q3
@@ -235,7 +235,7 @@ def odesolve(right_hand_side,
              stop_at_time=None,
              stop_at_steady=None,
              minimum_time_step_count=0,
-             maximum_time_step_count=Inf,
+             maximum_time_step_count=inf,
              pre_step_callback=None,
              post_step_callback=None,
              step_update_callback=None,
@@ -552,7 +552,7 @@ def odesolve(right_hand_side,
             nlsuccess = step_output.nonlinear_converged
             nlisslow = step_output.slow_nonlinear_convergence
             number_projector_setup += step_output.projector_setups if step_output.projector_setups is not None else 0
-            residual = norm(dstate * norm_weighting, ord=np.Inf) / time_step_size
+            residual = norm(dstate * norm_weighting, ord=np.inf) / time_step_size
             if maximum_residual is not None and residual > maximum_residual:
                 raise ValueError(f"residual of {residual:.2e} exceeded maximum_residual of {maximum_residual:.2e}.")
 

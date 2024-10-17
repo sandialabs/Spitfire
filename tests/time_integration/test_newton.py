@@ -1,6 +1,6 @@
 import unittest
 from spitfire import SimpleNewtonSolver
-from numpy import abs, imag, any, Inf, zeros, array, NaN
+from numpy import abs, imag, any, inf, zeros, array, nan
 from numpy import copy as numpy_copy
 
 
@@ -95,7 +95,7 @@ class LinearScalarTest(unittest.TestCase):
                                     max_nonlinear_iter=4,
                                     must_converge=True,
                                     norm_weighting=1.,
-                                    norm_order=Inf,
+                                    norm_order=inf,
                                     raise_naninf=True,
                                     custom_solution_check=make_sure_is_real)
         newton.slowness_detection_iter = 0  # to tests detection of slow convergence
@@ -158,7 +158,7 @@ class QuadraticScalarTest(unittest.TestCase):
                                     max_nonlinear_iter=25,
                                     must_converge=True,
                                     norm_weighting=1.,
-                                    norm_order=Inf,
+                                    norm_order=inf,
                                     raise_naninf=True,
                                     custom_solution_check=make_sure_is_real)
         output = newton(residual_method=quadratic_problem_residual,
@@ -186,7 +186,7 @@ class QuadraticScalarTest(unittest.TestCase):
                                     max_nonlinear_iter=10,
                                     must_converge=True,
                                     norm_weighting=1.,
-                                    norm_order=Inf,
+                                    norm_order=inf,
                                     raise_naninf=True,
                                     custom_solution_check=make_sure_is_real)
         output = newton(residual_method=problem.residual,
@@ -246,7 +246,7 @@ class CubicScalarTest(unittest.TestCase):
                                     max_nonlinear_iter=40,
                                     must_converge=True,
                                     norm_weighting=1.,
-                                    norm_order=Inf,
+                                    norm_order=inf,
                                     raise_naninf=True,
                                     custom_solution_check=make_sure_is_real)
         output = newton(residual_method=cubic_problem_residual,
@@ -274,7 +274,7 @@ class CubicScalarTest(unittest.TestCase):
                                     max_nonlinear_iter=10,
                                     must_converge=True,
                                     norm_weighting=1.,
-                                    norm_order=Inf,
+                                    norm_order=inf,
                                     raise_naninf=True,
                                     custom_solution_check=make_sure_is_real)
         output = newton(residual_method=problem.residual,
@@ -304,7 +304,7 @@ class CubicScalarTest(unittest.TestCase):
                                     max_nonlinear_iter=40,
                                     must_converge=True,
                                     norm_weighting=1.,
-                                    norm_order=Inf,
+                                    norm_order=inf,
                                     raise_naninf=True,
                                     custom_solution_check=make_sure_is_real)
 
@@ -337,7 +337,7 @@ class CubicScalarTest(unittest.TestCase):
         newton.must_converge = True  # reset
 
         # tests that if we give it a NaN with raise_naninf=True (set above), it does in fact raise an error
-        guess = NaN
+        guess = nan
         try:
             newton(residual_method=cubic_problem_residual,
                    solve_method=solve_with_frozen_jacobian,
@@ -349,7 +349,7 @@ class CubicScalarTest(unittest.TestCase):
             self.assertTrue(True)
 
         # tests that if we give it an Inf with raise_naninf=True (set above), it does in fact raise an error
-        guess = Inf
+        guess = inf
         try:
             newton(residual_method=cubic_problem_residual,
                    solve_method=solve_with_frozen_jacobian,

@@ -103,7 +103,7 @@ the code below.
             else:
                 C = -0.5 * dt / self._dt_nm1
                 update = dt * ((1. - C) * rhs_n + C * self._rhs_nm1)
-                error = np.linalg.norm(update - dt * rhs_n, ord=np.Inf)
+                error = np.linalg.norm(update - dt * rhs_n, ord=np.inf)
             
             self._dt_nm1 = np.copy(dt)
             self._rhs_nm1 = np.copy(rhs_n)
@@ -180,7 +180,7 @@ resolve more accurately.
             k2 = rhs(t + dt, state + dt * k1)
             weighted_rhs_1 = k1
             weighted_rhs_2 = 0.5 * (k1 + k2)
-            temporal_error = np.linalg.norm(dt * (weighted_rhs_2 - weighted_rhs_1), ord=np.Inf)
+            temporal_error = np.linalg.norm(dt * (weighted_rhs_2 - weighted_rhs_1), ord=np.inf)
             
             # now include the heuristic in the error estimate
             y = state[1]
