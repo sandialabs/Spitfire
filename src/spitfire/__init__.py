@@ -15,6 +15,8 @@ from .chemistry.tabulation import build_adiabatic_eq_library, \
     build_nonadiabatic_defect_eq_library, \
     build_nonadiabatic_defect_transient_slfm_library, \
     build_nonadiabatic_defect_steady_slfm_library
+from .chemistry.soot import tabulate_soot_radiation_model, tabulate_soot_source_coefficients, compute_soot_source_terms
+from .chemistry.gas_radiation import tabulate_gas_radiation_model
 
 try:
     from pytabprops import ClippedGaussMixMdl, BetaMixMdl, LagrangeInterpolant1D, StateTable
