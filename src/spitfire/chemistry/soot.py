@@ -303,12 +303,7 @@ def tabulate_soot_radiation_model(mechanism, output_library, modelname='linear_a
     return output_library
 
 
-def compute_soot_source_terms(library, soot_number_density, soot_mass_fraction, clip=True, verbose=True):
-    if not isinstance(soot_number_density, float):
-        raise ValueError("soot_number_density must be a float")
-    if not isinstance(soot_mass_fraction, float):
-        raise ValueError("soot_mass_fraction must be a float")
-
+def _detect_soot_model(library, verbose):
     properties = library.props
     soot_kinetics = None
     soot_props = ['coag', 'nucl_C2H2', 'surf_C2H2', 'surf_O2', 'surf_OH']
@@ -328,21 +323,126 @@ def compute_soot_source_terms(library, soot_number_density, soot_mass_fraction, 
             print(f'Detected soot model "{soot_kinetics}" in the table.')
     else:
         raise ValueError(f'Could not detect soot model in the library.')
+    return soot_kinetics, soot_props
 
-    ns_clip = np.min([np.max([soot_number_density, 1.e-16]), 1.e6]) if clip else soot_number_density
-    ys_clip = np.min([np.max([soot_mass_fraction, 1.e-16]), 1.]) if clip else soot_mass_fraction
-    area_fac = np.power(ns_clip, 1./3.) * np.power(ys_clip, 2./3.)
+
+def _get_default_mult_dict():
+    return dict({'nucl': 1.0,
+                  'coag': 1.0,
+                  'cond': 1.0,
+                  'c2h2': 1.0,
+                  'o2': 1.0,
+                  'oh': 1.0,
+                  'o': 1.0,
+                  'a1': 1.0})
+
+
+def _soot_src_aksit_moss(ns, ys, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, input_mult_dict=None):
+    mult_dict = _get_default_mult_dict()
+    if input_mult_dict is not None:
+        mult_dict.update(input_mult_dict)
+    area_fac = np.power(ns, 1./3.) * np.power(ys, 2./3.)
+    nucl_mole_rate = mult_dict['nucl'] * nucl_C2H2
+    coag_mole_rate = -mult_dict['coag'] * coag * np.power(ns, 11./6.) * np.power(ys, 1./6.)
+    nucl_mass_rate = mult_dict['nucl'] * 144.0 * nucl_C2H2
+    cond_rate = np.zeros_like(nucl_mass_rate)
+    surf_c2h2_rate = mult_dict['c2h2'] * surf_C2H2 * area_fac
+    surf_o2_rate = -mult_dict['o2'] * surf_O2 * area_fac
+    surf_oh_rate = -mult_dict['oh'] * surf_OH * area_fac
+    surf_o_rate = np.zeros_like(surf_o2_rate)
+    surf_a1_rate = np.zeros_like(surf_c2h2_rate)
+
+    src_dict = dict({
+        'S_Ns': nucl_mole_rate + coag_mole_rate,
+        'S_Ys': nucl_mass_rate + cond_rate + surf_c2h2_rate + surf_a1_rate + surf_o2_rate + surf_oh_rate + surf_o_rate,
+        'S_Ns_nucl': nucl_mole_rate,
+        'S_Ns_coag': coag_mole_rate,
+        'S_Ys_nucl': nucl_mass_rate,
+        'S_Ys_cond': cond_rate,
+        'S_Ys_c2h2': surf_c2h2_rate,
+        'S_Ys_o2': surf_o2_rate,
+        'S_Ys_oh': surf_oh_rate,
+        'S_Ys_o': surf_o_rate,
+        'S_Ys_a1': surf_a1_rate
+    })
+    return src_dict
+
+
+def _soot_src_aksit_moss_benzene(ns, ys, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, surf_A1, input_mult_dict=None):
+    mult_dict = _get_default_mult_dict()
+    if input_mult_dict is not None:
+        mult_dict.update(input_mult_dict)
+    area_fac = np.power(ns, 1./3.) * np.power(ys, 2./3.)
+    nucl_mole_rate = mult_dict['nucl'] * nucl_C2H2
+    coag_mole_rate = -mult_dict['coag'] * coag * np.power(ns, 11./6.) * np.power(ys, 1./6.)
+    nucl_mass_rate = mult_dict['nucl'] * 144.0 * nucl_C2H2
+    cond_rate = np.zeros_like(nucl_mass_rate)
+    surf_c2h2_rate = mult_dict['c2h2'] * surf_C2H2 * area_fac
+    surf_o2_rate = -mult_dict['o2'] * surf_O2 * area_fac
+    surf_oh_rate = -mult_dict['oh'] * surf_OH * area_fac
+    surf_o_rate = np.zeros_like(surf_o2_rate)
+    surf_a1_rate = mult_dict['a1'] * surf_A1 * area_fac
+
+    src_dict = dict({
+        'S_Ns': nucl_mole_rate + coag_mole_rate,
+        'S_Ys': nucl_mass_rate + cond_rate + surf_c2h2_rate + surf_a1_rate + surf_o2_rate + surf_oh_rate + surf_o_rate,
+        'S_Ns_nucl': nucl_mole_rate,
+        'S_Ns_coag': coag_mole_rate,
+        'S_Ys_nucl': nucl_mass_rate,
+        'S_Ys_cond': cond_rate,
+        'S_Ys_c2h2': surf_c2h2_rate,
+        'S_Ys_o2': surf_o2_rate,
+        'S_Ys_oh': surf_oh_rate,
+        'S_Ys_o': surf_o_rate,
+        'S_Ys_a1': surf_a1_rate
+    })
+    return src_dict
+
+def _soot_src_pah_alpha(ns, ys, dimer_src, coag, sg, ox_O2, ox_OH, ox_O, input_mult_dict=None):
+    mult_dict = _get_default_mult_dict()
+    if input_mult_dict is not None:
+        mult_dict.update(input_mult_dict)
+    area_fac = np.power(ns, 1./3.) * np.power(ys, 2./3.)
+    MD = 361.4
+    dimer_fac = 1.e-6
+    nucl_mole_rate = mult_dict['nucl'] * dimer_fac * dimer_src * 0.5 / MD
+    coag_mole_rate = -mult_dict['coag'] * coag * np.power(ns, 11./6.) * np.power(ys, 1./6.)
+    nucl_mass_rate = mult_dict['nucl'] * dimer_fac * dimer_src
+    cond_rate = np.zeros_like(nucl_mass_rate)
+    surf_c2h2_rate = mult_dict['c2h2'] * sg * area_fac
+    surf_o2_rate = -mult_dict['o2'] * ox_O2 * area_fac
+    surf_oh_rate = -mult_dict['oh'] * ox_OH * area_fac
+    surf_o_rate = -mult_dict['o'] * ox_O * area_fac
+    surf_a1_rate = np.zeros_like(surf_c2h2_rate)
+
+    src_dict = dict({
+        'S_Ns': nucl_mole_rate + coag_mole_rate,
+        'S_Ys': nucl_mass_rate + cond_rate + surf_c2h2_rate + surf_a1_rate + surf_o2_rate + surf_oh_rate + surf_o_rate,
+        'S_Ns_nucl': nucl_mole_rate,
+        'S_Ns_coag': coag_mole_rate,
+        'S_Ys_nucl': nucl_mass_rate,
+        'S_Ys_cond': cond_rate,
+        'S_Ys_c2h2': surf_c2h2_rate,
+        'S_Ys_o2': surf_o2_rate,
+        'S_Ys_oh': surf_oh_rate,
+        'S_Ys_o': surf_o_rate,
+        'S_Ys_a1': surf_a1_rate
+    })
+    return src_dict
+
+
+def compute_soot_source_terms(library, soot_number_density, soot_mass_fraction, clip=True, input_mult_dict=None, verbose=True):
+    soot_kinetics, soot_props = _detect_soot_model(library, verbose)
+    ns_clip = np.minimum(np.maximum(soot_number_density, 1.e-16), 1.e6) if clip else soot_number_density
+    ys_clip = np.minimum(np.maximum(soot_mass_fraction, 1.e-16), 1.) if clip else soot_mass_fraction
+
+    if ns_clip<0. or ys_clip<0.:
+        raise ValueError("Cannot have negative soot_number_density or soot_mass_fraction.")
 
     if soot_kinetics=='aksit-moss':
-        SN = library['nucl_C2H2'] - library['coag'] * np.power(ns_clip, 11./6.) * np.power(ys_clip, 1./6.)
-        SY = 144. * library['nucl_C2H2'] + area_fac * (library['surf_C2H2'] - library['surf_O2'] - library['surf_OH'])
+        src_dict = _soot_src_aksit_moss(ns_clip, ys_clip, library['nucl_C2H2'], library['coag'], library['surf_C2H2'], library['surf_O2'], library['surf_OH'], input_mult_dict)
     elif soot_kinetics=='aksit-moss-benzene':
-        SN = library['nucl_C2H2'] - library['coag'] * np.power(ns_clip, 11./6.) * np.power(ys_clip, 1./6.)
-        SY = 144. * library['nucl_C2H2'] + area_fac * (library['surf_C2H2'] + library['surf_A1'] - library['surf_O2'] - library['surf_OH'])
+        src_dict = _soot_src_aksit_moss_benzene(ns_clip, ys_clip, library['nucl_C2H2'], library['coag'], library['surf_C2H2'], library['surf_O2'], library['surf_OH'], library['surf_A1'], input_mult_dict)
     elif soot_kinetics=='pah-alpha':
-        MD = 361.4
-        dimer_fac = 1.e-6
-        SN = dimer_fac * library['dimer_src'] * 0.5 / MD - library['coag'] * np.power(ns_clip, 11./6.) * np.power(ys_clip, 1./6.)
-        SY = dimer_fac * library['dimer_src'] + area_fac * (library['sg'] - library['ox_O2'] - library['ox_OH'] - library['ox_O'])
-
-    return SN, SY
+        src_dict = _soot_src_pah_alpha(ns_clip, ys_clip, library['dimer_src'], library['coag'], library['sg'], library['ox_O2'], library['ox_OH'], library['ox_O'], input_mult_dict)
+    return src_dict
