@@ -2281,7 +2281,7 @@ def apply_mixing_model(library, mixing_spec, added_suffix=_mean_suffix, num_proc
             if prop in turb_lib.props:
                 turb_lib[prop] /= turb_lib['soot_correction']
                 turb_lib[prop][turb_lib['soot_correction']<=positive_thresh] = positive_thresh
-    for prop in ['surf_C2H2', 'surf_A1', 'surf_O2', 'surf_OH', 'nucl_C2H2', 'sg']:
+    for prop in ['surf_C2H2', 'surf_A1', 'surf_O2', 'surf_OH', 'nucl_C2H2', 'sg', 'ox_O2', 'ox_OH', 'ox_O']:
         if prop in turb_lib.props:
             turb_lib[prop][turb_lib[prop]<positive_thresh] = positive_thresh
 
