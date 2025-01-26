@@ -5,14 +5,14 @@ from cantera import one_atm
 from cantera import stefan_boltzmann as sigma
 
 
-def tabulate_gas_radiation_model(mechanism, output_library, modelname='Barlow_GreyGas'):
+def tabulate_gas_radiation_model(mechanism, input_library, modelname='Barlow_GreyGas'):
     """Adds gas radiation properties to a library
 
         Parameters
         ----------
         mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
             the mechanism
-        output_library: a spitfire.chemistry.library Library instance
+        input_library: a spitfire.chemistry.library Library instance
             a library with T, Y, and either density or pressure (pressure is used if both are present)
         modelname: str
             the gas radiation model. Supported models include: 'Barlow_GreyGas' (default)
@@ -27,8 +27,9 @@ def tabulate_gas_radiation_model(mechanism, output_library, modelname='Barlow_Gr
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
         raise TypeError('Input argument "mechanism" must be a ChemicalMechanismSpec')
-    if not isinstance(output_library, Library):
-        raise TypeError('Input argument "output_library" must be a Library')
+    if not isinstance(input_library, Library):
+        raise TypeError('Input argument "input_library" must be a Library')
+    output_library = Library.copy(input_library)
     ctsol, lib_shape = get_ct_solution_array(mechanism, output_library)
 
     if modelname == 'Barlow_GreyGas':

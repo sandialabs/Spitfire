@@ -1,4 +1,4 @@
-from spitfire import get_ct_solution_array
+from spitfire import get_ct_solution_array, compute_dissipation_rate, Library
 from spitfire.chemistry.analysis import compute_density
 import numpy as np
 from cantera import avogadro as Na
@@ -32,22 +32,19 @@ def _get_default_species_aliases():
     return default_species_aliases
 
 
-def tabulate_soot_source_coefficients(mechanism, output_library, modelname, percent_soot_leakage=0., verbose=True):
+def tabulate_soot_source_coefficients(mechanism, input_library, modelname, percent_soot_leakage=1., verbose=True):
     """Adds soot source term coefficients to a library
 
         Parameters
         ----------
         mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
             the mechanism
-        output_library: a spitfire.chemistry.library Library instance
+        input_library: a spitfire.chemistry.library Library instance
             a library with T, Y, and either density or pressure (pressure is used if both are present)
         modelname: str
             the soot kinetics model. Supported models include: 'Aksit_Moss', 'Aksit_Moss_Benzene', and 'PAH_alpha' (an alpha-stage model)
         percent_soot_leakage: float
             the percent of soot allowed to leak into fuel-lean regions of the flame.
-            This is similar to the ideas presented in (H.M. Colmán, A. Attili, M.E. Mueller,
-            Large Eddy Simulation of turbulent nonpremixed sooting flames:
-            presumed subfilter PDF model for finite-rate oxidation of soot, Combust. Flame, 258 (2023) 112602.).
 
         Returns
         -------
@@ -58,6 +55,7 @@ def tabulate_soot_source_coefficients(mechanism, output_library, modelname, perc
             - 'surf_': surface growth or oxidation for the species following the underscore
             - 'nucl_': nucleation for the species following the underscore
     """
+    output_library = Library.copy(input_library)
     soot_species_aliases = _get_default_species_aliases()
     rhos = 1800.
     if 'density' not in output_library.props:
@@ -215,11 +213,11 @@ it is associated with very little credibility evidence and had not undergone suf
     else:
         raise ValueError("Unsupported soot kinetics model.")
 
-    if percent_soot_leakage>0.:
+    if percent_soot_leakage>=0. and percent_soot_leakage<1.:
         if 'dissipation_rate_stoich' not in output_library.dim_names:
             raise ValueError("Soot leakage correction requires the library to have a 'dissipation_rate_stoich' dimension.")
 
-        output_library['soot_correction'] = output_library.get_empty_dataset()
+        output_library['soot_subfilter'] = output_library.get_empty_dataset()
         growth_terms = ['surf_C2H2']
         if 'surf_A1' in output_library.props:
             growth_terms.append('surf_A1')
@@ -234,29 +232,39 @@ it is associated with very little credibility evidence and had not undergone suf
 
         zvals = output_library.mixture_fraction_values
         ndims = len(output_library.dims)
+        fuel = output_library.extra_attributes['fuel_stream']
+        oxidizer = output_library.extra_attributes['oxy_stream']
+        zst = mechanism.stoich_mixture_fraction(fuel, oxidizer)
+        diss_rate_form = output_library.extra_attributes['dissipation_rate_form']
         for ix in range(output_library.dissipation_rate_stoich_npts):
             def correction_1d(lib_slice):
                 coeff_line = coeff_sum[lib_slice]
                 kox_line = kox[lib_slice]
-                func = lambda x: interp1d(zvals, coeff_line, kind=2)(x)
-                iguess = np.argmax(func(zvals)>=0)-1
+                func = lambda x, order: interp1d(zvals, coeff_line, kind=order)(x)
+                iguess = np.argmax(func(zvals, 2)>=0)-1
                 zguess = zvals[iguess]
-                zsoot = fsolve(func, zguess)[0]
-                chi = output_library.dissipation_rate_stoich_values[ix]
+                try:
+                    zsoot = fsolve(func, zguess, args=(2))[0]
+                except:
+                    zsoot = fsolve(func, zguess, args=(1))[0]
+                if zsoot<1.e-12 or zsoot>1.-1.e-12:
+                    raise ValueError("Couldn't find Zsoot for soot subfilter. Possibly too close to extinction.")
+                chi_st = output_library.dissipation_rate_stoich_values[ix]
+                chi = compute_dissipation_rate(zsoot, form=diss_rate_form, stoich_dissipation_rate=chi_st, stoich_mixture_fraction=zst)
                 dz2 = 0.5 * chi / interp1d(zvals, kox_line, kind=3)(zsoot)
                 return 0.5*(1.+percent_soot_leakage) + 0.5*(1.-percent_soot_leakage) * np.tanh((zvals - (zsoot - dz2)) / dz2)
             if ndims==2:
                 lib_slice = tuple([slice(None), ix])
-                output_library['soot_correction'][lib_slice] = correction_1d(lib_slice)
+                output_library['soot_subfilter'][lib_slice] = correction_1d(lib_slice)
             elif ndims==3 and 'enthalpy_defect_stoich'==output_library.dim_names[-1]:
                 for ig in range(output_library.enthalpy_defect_stoich_npts):
                     lib_slice = tuple([slice(None), ix, ig])
-                    output_library['soot_correction'][lib_slice] = correction_1d(lib_slice)
+                    output_library['soot_subfilter'][lib_slice] = correction_1d(lib_slice)
             else:
                 raise ValueError("Ensure your library is laminar.")
 
         for sgox in growth_terms + ox_terms:
-            output_library[sgox] *= output_library['soot_correction']
+            output_library[sgox] *= output_library['soot_subfilter']
 
     return output_library
 
@@ -265,14 +273,14 @@ def _linear_soot_radiation_model(temperature, rho, rhos, intercept, slope, min_v
     return np.maximum(intercept + slope * temperature, min_value) * rho / rhos
 
 
-def tabulate_soot_radiation_model(mechanism, output_library, modelname='linear_absorption_coefficient', input_modelargs=None):
+def tabulate_soot_radiation_model(mechanism, input_library, modelname='linear_absorption_coefficient', input_modelargs=None):
     """Adds soot radiation properties to a library
 
         Parameters
         ----------
         mechanism: spitfire.chemistry.mechanism ChemicalMechanismSpec instance
             the mechanism
-        output_library: a spitfire.chemistry.library Library instance
+        input_library: a spitfire.chemistry.library Library instance
             a library with T, Y, and either density or pressure (pressure is used if both are present)
         modelname: str
             the soot radiation model. Supported models include: 'linear_absorption_coefficient' (default)
@@ -288,6 +296,7 @@ def tabulate_soot_radiation_model(mechanism, output_library, modelname='linear_a
             - 'soot_abs_coeff': absorption coefficient
             - 'soot_rad_source': radiation source
     """
+    output_library = Library.copy(input_library)
     if modelname=='linear_absorption_coefficient':
         if 'density' not in output_library.props:
             compute_density(mechanism, output_library)
@@ -432,6 +441,34 @@ def _soot_src_pah_alpha(ns, ys, dimer_src, coag, sg, ox_O2, ox_OH, ox_O, input_m
 
 
 def compute_soot_source_terms(library, soot_number_density, soot_mass_fraction, clip=True, input_mult_dict=None, verbose=True):
+    """
+    Compute the soot source terms in a library for a given soot_number_density and soot_mass_fraction.
+
+        Parameters
+        ----------
+        library: a spitfire.chemistry.library Library instance
+            a library with soot source term coefficients, computed from running tabulate_soot_source_coefficients
+        soot_number_density: float
+            a soot number density (kmol soot / kg air) with which to evaluate the soot source terms
+        soot_mass_fraction: float
+            a soot mass fraction with which to evaluate the soot source terms
+        clip: boolean
+            whether or not to clip the soot_number_density (between 1e-16 and 1e6) and soot_mass_fraction (between 1e-16 and 1); default True
+        input_mult_dict: dictionary
+            a dictionary of multipliers for any of the source term coefficients present in a library. surface growth and oxidation multipliers
+            are specified by the species name. Supported keys, showing the default unity multipliers, include
+            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'c2h2': 1.0, 'o2': 1.0, 'oh': 1.0, 'o': 1.0, 'a1': 1.0}
+        verbose: boolean
+            whether or not to print the detected soot model on a library; default True
+
+        Returns
+        -------
+        src_dict: dictionary
+            A dictionary of the evaluated source terms for the soot number density ('S_Ns') and soot mass fraction ('S_Ys') along with various contributions to
+            those source terms including nucleation ('S_Ns_nucl' and 'S_Ys_nucl'), coagualtion ('S_Ns_coag'), condensation ('S_Ys_cond'),
+            surface growth ('S_Ys_c2h2' and 'S_Ys_a1'), and oxidation ('S_Ys_o2', 'S_Ys_oh', and 'S_Ys_o'). Terms that aren't relevant to the library's soot model 
+            will be populated with zeros.
+    """
     soot_kinetics, soot_props = _detect_soot_model(library, verbose)
     ns_clip = np.minimum(np.maximum(soot_number_density, 1.e-16), 1.e6) if clip else soot_number_density
     ys_clip = np.minimum(np.maximum(soot_mass_fraction, 1.e-16), 1.) if clip else soot_mass_fraction

@@ -21,6 +21,9 @@ class TestSoot(unittest.TestCase):
         self.bs = build_adiabatic_bs_library(flamelet_specs, verbose=False)
         self.slfm = build_adiabatic_slfm_library(flamelet_specs, verbose=False, diss_rate_values=np.logspace(0, 1, 4), diss_rate_log_scaled=True)
 
+        flamelet_specs['dissipation_rate_form'] = 'constant'
+        self.slfm_const = build_adiabatic_slfm_library(flamelet_specs, verbose=False, diss_rate_values=np.logspace(0, 1, 4), diss_rate_log_scaled=True)
+
 
     def test_gas_radiation(self):
         accepted_models = ['Barlow_GreyGas']
@@ -37,7 +40,7 @@ class TestSoot(unittest.TestCase):
         except ValueError:
             self.assertTrue(True)
 
-        tabulate_gas_radiation_model(self.mech, self.bs)
+        self.bs = tabulate_gas_radiation_model(self.mech, self.bs)
         self.assertTrue('gas_abs_coeff' in self.bs.props)
         self.assertTrue('gas_rad_source' in self.bs.props)
         self.assertTrue(np.abs(self.bs['gas_abs_coeff']).max()>0.)
@@ -48,7 +51,7 @@ class TestSoot(unittest.TestCase):
             lib_no_species[prop] = self.bs[prop]
         for sp in ['CH4', 'H2O', 'CO', 'CO2']:
             lib_no_species[f'mass fraction {sp}'] = np.zeros(lib_no_species.shape)
-        tabulate_gas_radiation_model(self.mech, lib_no_species)
+        lib_no_species = tabulate_gas_radiation_model(self.mech, lib_no_species)
         self.assertTrue(np.abs(lib_no_species['gas_abs_coeff']).max()==0.)
         self.assertTrue(np.abs(lib_no_species['gas_rad_source']).max()==0.)
 
@@ -68,13 +71,13 @@ class TestSoot(unittest.TestCase):
         except ValueError:
             self.assertTrue(True)
 
-        tabulate_soot_radiation_model(self.mech, self.bs)
+        self.bs = tabulate_soot_radiation_model(self.mech, self.bs)
         self.assertTrue('soot_abs_coeff' in self.bs.props)
         self.assertTrue('soot_rad_source' in self.bs.props)
         self.assertTrue(np.abs(self.bs['soot_abs_coeff']).max()==0.)
         self.assertTrue(np.abs(self.bs['soot_rad_source']).max()==0.)
 
-        tabulate_soot_radiation_model(self.mech, self.bs, input_modelargs={'slope':1735., 'intercept':-3.75e5})
+        self.bs = tabulate_soot_radiation_model(self.mech, self.bs, input_modelargs={'slope':1735., 'intercept':-3.75e5})
         self.assertTrue(np.abs(self.bs['soot_abs_coeff']).max()>0.)
         self.assertTrue(np.abs(self.bs['soot_rad_source']).max()>0.)
 
@@ -112,7 +115,7 @@ class TestSoot(unittest.TestCase):
         tol = 1.e-16
 
         soot_terms = ['coag', 'nucl_C2H2', 'surf_C2H2', 'surf_O2', 'surf_OH']
-        tabulate_soot_source_coefficients(self.mech, self.bs, 'Aksit_Moss', 0., verbose=False)
+        self.bs = tabulate_soot_source_coefficients(self.mech, self.bs, 'Aksit_Moss', 1., verbose=False)
         for prop in soot_terms:
             self.assertTrue(prop in self.bs.props)
         try:
@@ -177,7 +180,7 @@ class TestSoot(unittest.TestCase):
             self.assertTrue(True)
 
         soot_terms += ['surf_A1']
-        tabulate_soot_source_coefficients(cmech, lib_with_A1, 'Aksit_Moss_Benzene', 0., verbose=False)
+        lib_with_A1 = tabulate_soot_source_coefficients(cmech, lib_with_A1, 'Aksit_Moss_Benzene', 1., verbose=False)
         for prop in soot_terms:
             self.assertTrue(prop in lib_with_A1.props)
         try:
@@ -201,7 +204,7 @@ class TestSoot(unittest.TestCase):
         self.assertTrue(test_dict['S_Ys']  - (144.*nucl_C2H2 + area_fac*(surf_C2H2 + surf_A1 - surf_O2 - surf_OH)) <= tol)
 
         soot_terms = ['coag', 'ox_O', 'ox_OH', 'ox_O2', 'sg', 'beta_n', 'beta_c_pre', 'dimer_src']
-        tabulate_soot_source_coefficients(cmech, lib_with_A1, 'PAH_alpha', 0., verbose=False)
+        lib_with_A1 = tabulate_soot_source_coefficients(cmech, lib_with_A1, 'PAH_alpha', 1., verbose=False)
         for prop in soot_terms:
             self.assertTrue(prop in lib_with_A1.props)
         try:
@@ -233,19 +236,21 @@ class TestSoot(unittest.TestCase):
 
         try:
             tabulate_soot_source_coefficients(self.mech, self.slfm, 'Aksit_Moss', percent_test)
+            tabulate_soot_source_coefficients(self.mech, self.slfm_const, 'Aksit_Moss', percent_test)
             self.assertTrue(True)
         except ValueError:
             self.assertTrue(False)
-        self.assertTrue('soot_correction' in self.slfm.props)
-        self.assertTrue(self.slfm['soot_correction'].min() - percent_test < 1.e-16)
+        self.slfm = tabulate_soot_source_coefficients(self.mech, self.slfm, 'Aksit_Moss', percent_test)
+        self.assertTrue('soot_subfilter' in self.slfm.props)
+        self.assertTrue(self.slfm['soot_subfilter'].min() - percent_test < 1.e-16)
 
         turblib = apply_mixing_model(Library.squeeze(self.slfm[:,0]),
                                      {'mixture_fraction':PDFSpec('clipgauss',scaled_variance_values=np.array([0.5]),mean_values=np.array([0.,0.01,1.]))})
         positive_thresh = 1.e-16
         for prop in ['nucl_C2H2', 'surf_C2H2', 'surf_O2', 'surf_OH']:
             self.assertTrue(turblib[prop].min() >= positive_thresh)
-        self.assertTrue(turblib['soot_correction'].min() >= percent_test)
-        self.assertTrue(turblib['soot_correction'].max() <= 1.)
+        self.assertTrue(turblib['soot_subfilter'].min() >= percent_test)
+        self.assertTrue(turblib['soot_subfilter'].max() <= 1.)
 
 
 if __name__ == '__main__':
