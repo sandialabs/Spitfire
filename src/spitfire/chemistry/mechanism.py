@@ -697,7 +697,8 @@ class ChemicalMechanismSpec(object):
         present_atom_names = self._cantera_wrapper.solution.element_names
         for atom in present_atom_names:
             if atom not in self._element_stoichiometry:
-                raise KeyError(f'Error computing stoichiometric fuel/oxidizer ratio. Atom "{atom}" is not present in the element stoichiometry map, {self._element_stoichiometry}.')
+                raise KeyError(f'Error computing stoichiometric fuel/oxidizer ratio. Atom "{atom}" is not present in the element stoichiometry map, {self._element_stoichiometry}. ' + 
+                               f'All atoms must be included in the stoichiometry map. Atoms present in your mechanism are {present_atom_names}.')
         atom_names = [candidate_atom_name for candidate_atom_name in self._element_stoichiometry.keys() if candidate_atom_name in present_atom_names]
         fuel_atoms = self._get_atoms_in_stream(fuel_stream, atom_names)
         oxy_atoms = self._get_atoms_in_stream(oxy_stream, atom_names)
