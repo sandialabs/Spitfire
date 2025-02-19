@@ -87,19 +87,32 @@ class ChemicalMechanismSpec(object):
         self._mech_data['reactions'] = list()
         self._mech_data['transport-model'] = None
 
+        self._element_stoichiometry = {'O': -1.0, 'H': 0.5, 'C': 2.0, 'Al': 1.5, 'U': 1.0, 'Ar': 0.0, 'N': 0.0, 'He': 0.0}
+
         self._griffon = PyCombustionKernels()
         self._populate_griffon_mechanism_data(*self._extract_cantera_mechanism_data(self._cantera_wrapper.solution))
 
     @property
     def mech_data(self):
         return self._mech_data
+    
+    @property
+    def element_stoichiometry(self):
+        return self._element_stoichiometry
+    
+    @element_stoichiometry.setter
+    def element_stoichiometry(self, custom_stoichiometry):
+        if custom_stoichiometry is not None:
+            self._element_stoichiometry = custom_stoichiometry
 
     def __getstate__(self):
-        return dict({'mech_data': self._mech_data})
+        return dict({'mech_data': self._mech_data, 'element_stoichiometry': self._element_stoichiometry})
 
     def __setstate__(self, state):
         mech_data = state['mech_data']
         self.__init__(cantera_solution=ChemicalMechanismSpec._build_cantera_solution(mech_data))
+        if 'element_stoichiometry' in state:
+            self._element_stoichiometry = state['element_stoichiometry']
 
     @classmethod
     def from_solution(cls, solution: ct.Solution):
@@ -680,27 +693,23 @@ class ChemicalMechanismSpec(object):
         return atom_amounts
 
     def stoich_molar_fuel_to_oxy_ratio(self, fuel_stream, oxy_stream):
-        """Get the molar ratio of fuel to oxidizer at stoichiometric conditions.
-            Assumes C, O, and H combustion of single fuel and single oxidizer streams."""
-        atom_names = ['H', 'O']
-        if 'C' in self._cantera_wrapper.solution.element_names:
-            atom_names.append('C')
-        if 'Al' in self._cantera_wrapper.solution.element_names:
-            atom_names.append('Al')
+        """Get the molar ratio of fuel to oxidizer at stoichiometric conditions. Built-in support is included for oxidation of hydrocarbon, aluminum, and uranium."""
+        present_atom_names = self._cantera_wrapper.solution.element_names
+        for atom in present_atom_names:
+            if atom not in self._element_stoichiometry:
+                raise KeyError(f'Error computing stoichiometric fuel/oxidizer ratio. Atom "{atom}" is not present in the element stoichiometry map, {self._element_stoichiometry}.')
+        atom_names = [candidate_atom_name for candidate_atom_name in self._element_stoichiometry.keys() if candidate_atom_name in present_atom_names]
         fuel_atoms = self._get_atoms_in_stream(fuel_stream, atom_names)
         oxy_atoms = self._get_atoms_in_stream(oxy_stream, atom_names)
-        if 'C' not in self._cantera_wrapper.solution.element_names:
-            fuel_atoms['C'] = 0
-            oxy_atoms['C'] = 0
-        if 'Al' not in self._cantera_wrapper.solution.element_names:
-            fuel_atoms['Al'] = 0
-            oxy_atoms['Al'] = 0
-        return -(oxy_atoms['O'] - 0.5 * oxy_atoms['H'] - 2.0 * oxy_atoms['C'] - 1.5 * oxy_atoms['Al']) / (
-                fuel_atoms['O'] - 0.5 * fuel_atoms['H'] - 2.0 * fuel_atoms['C'] - 1.5 * fuel_atoms['Al'])
+        for atom in present_atom_names:
+            if atom not in fuel_atoms:
+                fuel_atoms[atom] = 0.0
+            if atom not in oxy_atoms:
+                oxy_atoms[atom] = 0.0
+        return -sum([self._element_stoichiometry[atom] * oxy_atoms[atom] for atom in atom_names]) / sum([self._element_stoichiometry[atom] * fuel_atoms[atom] for atom in atom_names])
 
     def stoich_mass_fuel_to_oxy_ratio(self, fuel_stream, oxy_stream):
-        """Get the mass ratio of fuel to oxidizer at stoichiometric conditions.
-            Assumes C, O, and H combustion of single fuel and single oxidizer streams."""
+        """Get the mass ratio of fuel to oxidizer at stoichiometric conditions."""
         mf = fuel_stream.mean_molecular_weight
         mx = oxy_stream.mean_molecular_weight
         return mf / mx * self.stoich_molar_fuel_to_oxy_ratio(fuel_stream, oxy_stream)
@@ -716,7 +725,9 @@ class ChemicalMechanismSpec(object):
             As an example, this can be used to dilute a fuel with Nitrogen to hit a particular stoichiometric mixture fraction.
 
             Note that it is not possible to reach all stoichiometric mixture fractions with any fuel combinations!
-            In such a case this function will throw an error."""
+            In such a case this function will throw an error.
+            
+            This function currently only supports hydrocarbon oxidation."""
         atom_names = ['H', 'O']
         if 'C' in self._cantera_wrapper.solution.element_names:
             atom_names.append('C')
