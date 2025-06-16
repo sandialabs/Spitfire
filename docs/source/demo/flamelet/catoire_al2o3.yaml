@@ -1,0 +1,598 @@
+units: {length: cm, quantity: mol, activation-energy: K}
+
+phases:
+- name: gas
+  thermo: ideal-gas
+  elements: [C, H, N, O, Al, Ar]
+  species: [AL, ALH, ALH2, ALH3, ALO, AL2O, AL2O2, AL2O3, AL2O3(l), ALO2, ALOH,
+            CO, CO2, H, H2, H2O, HO2, H2O2, O, O2, OH, N2, AR, C]
+  kinetics: gas
+  reactions: all
+  transport: mixture-averaged
+  state:
+    T: 300.0
+    P: 1.01325e+05
+
+species:
+- name: AL
+  composition: {Al: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 600.0, 5000.0]
+    data:
+    - [2.736825, -5.912374e-04, -4.033938e-07, 2.322343e-09, -1.705599e-12, 3.886795e+04, 4.36388]
+    - [2.559589, -1.063224e-04, 7.202828e-08, -2.121105e-11, 2.289429e-15, 3.890214e+04, 5.234522]
+  transport:
+    model: gas
+    geometry: atom
+    diameter: 2.655
+    well-depth: 2836.0
+    polarizability: 8.34
+    rotational-relaxation: 1.0
+  note: g12/97
+
+- name: AR
+  composition: {Ar: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 600.0, 5000.0]
+    data:
+    - [2.50000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, -7.45375000E+02, 4.366E+00]
+    - [2.50000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, -7.45375000E+02, 4.366E+00]
+  transport:
+    model: gas
+    geometry: atom
+    diameter: 3.33
+    well-depth: 136.5
+    dipole: 0.0
+    polarizability: 0.0
+    rotational-relaxation: 0.0
+  note: g12/97
+
+- name: C
+  composition: {C: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [2.498584, 8.085776e-05, -2.697697e-07, 3.040729e-10, -1.1066518e-13,
+      8.545878e+04, 4.753459]
+    - [2.602087, -1.787081e-04, 9.087041e-08, -1.1499333e-11, 3.310844e-16,
+      8.542154e+04, 4.195177]
+    note: '121086'
+  transport:
+    model: gas
+    geometry: atom
+    well-depth: 71.4
+    diameter: 3.298
+    note: (*)
+
+- name: AL2O3(l)
+  composition: {Al: 2, O: 3}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 2327.0, 6000.0] 
+    data:
+    - [2.31482410E+01, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, -2.11405200E+05, -1.38602050E+02]
+    - [2.31482410E+01, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, -2.11405200E+05, -1.38602050E+02]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 4.264
+    well-depth: 352.0
+    polarizability: 9.5
+    rotational-relaxation: 1.0
+  note: coda89
+
+# - name: AL2O3(s)
+#   composition: {Al: 2, O: 3}
+#   thermo:
+#     model: NASA7
+#     temperature-ranges: [300.0, 1000.0, 2327.0]
+#     data:
+#     - [1.18336660E+01, 3.77088780E-03, -1.78631910E-07, -5.60088070E-10, 1.40768250E-13, -2.05711310E+05, -6.35998350E+01]
+#     - [-4.91383090E+00, 7.93984430E-02, -1.32379180E-04, 1.04467500E-07, -3.15663300E-11, -2.02626220E+05, 1.54780730E+01]
+#   transport:
+#     model: gas
+#     geometry: linear
+#     diameter: 4.264
+#     well-depth: 352.0
+#     polarizability: 9.5
+#     rotational-relaxation: 1.0
+
+- name: ALO
+  composition: {Al: 1, O: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [3.34913178, -7.30811097e-05, 7.10157373e-06, -1.06139198e-08, 4.70712402e-12,
+      7057.28468, 6.97458001]
+    - [2.87812691, 1.9692028e-03, -3.86303536e-07, 7.31791832e-12, 2.48454782e-15,
+      7288.72515, 9.56556843]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.203
+    well-depth: 1381.2
+    dipole: 4.32
+    polarizability: 6.7
+    rotational-relaxation: 1.0
+  note: tpis96
+
+- name: ALO2
+  composition: {Al: 1, O: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [4.34294502, 8.65076281e-03, -8.91492593e-06, 3.12927133e-09, 9.49015044e-14,
+      -6256.26126, 5.43603439]
+    - [6.82788443, 7.33105641e-04, -3.13759379e-07, 5.96366292e-11, -3.91258986e-15,
+      -6862.25611, -7.06432998]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.564
+    well-depth: 984.0
+    polarizability: 9.33
+    rotational-relaxation: 1.0
+  note: tpis96
+
+- name: AL2O
+  composition: {Al: 2, O: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [4.07405095, 0.0112981458, -1.66855499e-05, 1.20474407e-08, -3.43957451e-12,
+      -1.94653414e+04, 4.50607534]
+    - [6.83557723, 6.85036558e-04, -2.693207e-07, 4.60912632e-11, -2.87128689e-15,
+      -2.00793927e+04, -9.02360368]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.344
+    well-depth: 2231.0
+    polarizability: 12.6
+    rotational-relaxation: 1.0
+  note: tpis96
+
+- name: AL2O2
+  composition: {Al: 2, O: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [4.83765565, 0.0167010188, -2.23411191e-05, 1.48421603e-08, -3.9619641e-12,
+      -5.04957125e+04, 2.97081413]
+    - [9.14886135, 1.38425788e-03, -5.42174706e-07, 9.25638703e-11, -5.75686436e-15,
+      -5.15186949e+04, -18.4651707]
+  transport:
+    model: gas
+    geometry: nonlinear
+    diameter: 4.089
+    well-depth: 915.2
+    dipole: 5.9
+    polarizability: 11.1
+    rotational-relaxation: 1.0
+  note: tpis96
+
+- name: AL2O3
+  composition: {Al: 2, O: 3}
+  thermo:
+    model: NASA7
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+    data:
+    - [5.63487396, 0.0244276632, -3.39723369e-05, 2.31682578e-08, -6.27929522e-12,
+      -6.8283885e+04, 0.014750103]
+    - [11.8224768, 1.72547969e-03, -6.77407352e-07, 1.15824576e-10, -7.21083594e-15,
+      -6.97100145e+04, -30.5568543]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 4.264
+    well-depth: 352.0
+    polarizability: 9.5
+    rotational-relaxation: 1.0
+  note: tpis96
+
+- name: H2
+  composition: {H: 2}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [4.07832321e+04, -800.918604, 8.21470201, -0.01269714457, 1.753605076e-05,
+      -1.20286027e-08, 3.36809349e-12, 2682.484665, -30.43788844]
+    - [5.60812801e+05, -837.150474, 2.974416128, 1.252249124e-03, -3.74071619e-07,
+      5.9366252e-11, -3.6069941e-15, 5333.579765, -2.203423607]
+    - [4.96688412e+08, -3.147547149e+05, 79.84011868, -8.41478921e-03, 4.75324835e-07,
+      -1.371873492e-11, 1.605461756e-16, 2.48841819e+06, -669.5738053]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 2.92
+    well-depth: 38.0
+    polarizability: 0.79
+    rotational-relaxation: 280.0
+  note: TPIS78
+
+- name: H
+  composition: {H: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 20000.0]
+    data:
+    - [2.5, 0.0, 0.0, 0.0, 0.0, 2.547162e+04, -0.4601176]
+  transport:
+    model: gas
+    geometry: atom
+    diameter: 2.05
+    well-depth: 145.0
+  note: L 7/88
+
+- name: O
+  composition: {O: 1}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [-7953.6113, 160.7177787, 1.966226438, 1.01367031e-03, -1.110415423e-06,
+      6.5175075e-10, -1.584779251e-13, 2.840362437e+04, 8.40424182]
+    - [2.619020262e+05, -729.872203, 3.317238047, -4.28133436e-04, 1.036104594e-07,
+      -9.43830433e-12, 2.725038297e-16, 3.391923852e+04, -0.6733645943]
+    - [1.779004264e+08, -1.082328257e+05, 28.10774707, -2.975232262e-03,
+      1.854997534e-07, -5.79623154e-12, 7.191720164e-17, 8.890845011e+05,
+      -218.1782582]
+  transport:
+    model: gas
+    geometry: atom
+    diameter: 2.75
+    well-depth: 80.0
+  note: L 1/90
+
+- name: O2
+  composition: {O: 2}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [-3.42556342e+04, 484.700097, 1.119010961, 4.29388924e-03, -6.83630052e-07,
+      -2.0233727e-09, 1.039040018e-12, -3391.45487, 18.4969947]
+    - [-1.037939022e+06, 2344.830282, 1.818550331, 1.267847582e-03, -2.188067988e-07,
+      2.053719572e-11, -8.19346705e-16, -1.689723411e+04, 17.38701324]
+    - [4.9752943e+08, -2.866106874e+05, 66.90214898, -6.16995902e-03, 3.016396027e-07,
+      -7.4214166e-12, 7.27817577e-17, 2.293537589e+06, -553.0623888]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.46
+    well-depth: 107.4
+    polarizability: 1.6
+    rotational-relaxation: 3.8
+  note: TPIS89
+
+- name: OH
+  composition: {O: 1, H: 1}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [-1998.85899, 93.0013616, 3.050854229, 1.529529288e-03, -3.157890998e-06,
+      3.31544618e-09, -1.138762683e-12, 2991.214235, 4.67411079]
+    - [1.017393379e+06, -2509.957276, 5.115526213, 1.30529993e-04, -8.28432226e-08,
+      2.006475941e-11, -1.556993656e-15, 2.019011743e+04, -11.01307959]
+    - [2.847234193e+08, -1.859532612e+05, 50.08135018, -5.14237498e-03,
+      2.875536589e-07, -8.22881796e-12, 9.56722902e-17, 1.468378257e+06,
+      -402.3570895]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 2.75
+    well-depth: 80.0
+  note: RUS 78
+
+- name: H2O
+  composition: {H: 2, O: 1}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [-3.94796083e+04, 575.573102, 0.931782653, 7.22271286e-03, -7.34255737e-06,
+      4.95504349e-09, -1.336933246e-12, -3.30397431e+04, 17.24205775]
+    - [1.034972096e+06, -2412.698562, 4.643024717, 2.291998307e-03, -6.83683048e-07,
+      9.42646893e-11, -4.82238053e-15, -1.384960996e+04, -7.966671376]
+    - [-9.205361141, -8.212940219e-03, 7.520114761, -9.473312606e-10, 8.30891443e-14,
+      -3.455632135e-18, 5.512416018e-23, -3.72159787e+04, -25.94039495]
+  transport:
+    model: gas
+    geometry: nonlinear
+    diameter: 2.6
+    well-depth: 572.4
+    dipole: 1.84
+    rotational-relaxation: 4.0
+  note: L 8/89
+
+- name: HO2
+  composition: {H: 1, O: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [2.979963, 4.996697e-03, -3.790997e-06, 2.354192e-09, -8.089024e-13,
+      176.2273, 9.222724]
+    - [4.072191, 2.131296e-03, -5.308145e-07, 6.112269e-11, -2.841164e-15,
+      -157.9727, 3.476029]
+    note: '20387'
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 107.4
+    diameter: 3.458
+    rotational-relaxation: 1.0
+    note: (*)
+
+- name: H2O2
+  composition: {H: 2, O: 2}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [3.388753, 6.569226e-03, -1.4850125e-07, -4.625805e-09, 2.471514e-12,
+      -1.766314e+04, 6.785363]
+    - [4.573167, 4.336136e-03, -1.4746888e-06, 2.348903e-10, -1.4316536e-14,
+      -1.800696e+04, 0.5011369]
+    note: '120186'
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 107.4
+    diameter: 3.458
+    rotational-relaxation: 3.8
+
+- name: ALH
+  composition: {Al: 1, H: 1}
+  thermo:
+    # model: NASA7
+    # temperature-ranges: [300.0, 1000.0, 5000.0]
+    # data:
+    # - [0.03392644E+02, 0.12153990E-02, -0.04676595E-05, 0.08691624E-09, -0.06022668E-13, 
+    #    0.03006845E+06, 0.02758899E+02 ]
+    # - [0.03071503E+02, 0.02165549E-01,-0.03275638E-04, 0.04136983E-07,-0.01877120E-10, 
+    #    0.03021221E+06, 0.04548855E+02]
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0] # https://ntrs.nasa.gov/api/citations/20020085330/downloads/20020085330.pdf
+    data:
+    - [-3.759114030E+04, 5.089002230E+02, 1.128086896E+00, 3.988660910E-03, -2.150790303E-07, -2.176790819E-09, 1.020805902E-12, 2.644431827E+04, 1.650021856E+01]
+    - [6.802018430E+06, -2.178416933E+04, 3.032713047E+01, -1.503343597E-02, 4.492142360E-06, -6.178450370E-10, 3.115205260E-14, 1.658301221E+05, -1.876766425E+02]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 2.655
+    well-depth: 2836.0
+    polarizability: 8.34
+    rotational-relaxation: 1.0
+  note: g12/97
+
+- name: ALH2
+  composition: {Al: 1, H: 2}
+  thermo:
+    # model: NASA7
+    # temperature-ranges: [300.0, 600.0, 1500.0]
+    # data:
+    # - [0.04486543E+02, 0.03128831E-01, -0.01969438E-05, -0.10160304E-08, 0.03497468E-11,
+    #    0.01960959E+06, 0.08167897E+01]
+    # - [0.02442136E+02, 0.09915913E-01, 0.02471082E-05, -0.02119583E-06, 0.01710233E-09,
+    #    0.01997587E+06, 0.10652699E+02]
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0] # https://ntrs.nasa.gov/api/citations/20020085330/downloads/20020085330.pdf
+    data:
+    - [1.455182996E+04, -2.153768996E+02, 5.144370230E+00, -3.965222030E-03, 1.340900203E-05, -1.216744854E-08, 3.743107130E-12, 3.311037940E+04, -3.608799711E+00]
+    - [1.432910601E+05, -2.365907684E+03, 9.085667190E+00, -1.308536612E-03, 4.777191360E-07, -7.324721890E-11, 3.997900940E-15, 4.485951850E+04, -3.220814285E+01]
+  transport:
+    model: gas
+    geometry: nonlinear
+    diameter: 2.655
+    well-depth: 2836.0
+    polarizability: 8.34
+    rotational-relaxation: 1.0
+  note: g12/97
+
+- name: ALH3
+  composition: {Al: 1, H: 3}
+  thermo:
+    # model: NASA7
+    # temperature-ranges: [300.0, 600.0, 1500.0]
+    # data:
+    # - [0.04186837E+02, 0.06159249E-01, -0.03877593E-06, -0.02061928E-07, 0.06600276E-11,
+    #    0.07908078E+05, 0.05134396E+01 ]
+    # - [0.10083231E+01, 0.16403245E-01, 0.01976746E-04, -0.03528558E-06, 0.02753377E-09,
+    #    0.08484656E+05, 0.15858377E+02]
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0] # https://ntrs.nasa.gov/api/citations/20020085330/downloads/20020085330.pdf
+    data:
+    - [1.481207909E+04, -2.836495340E+01, 2.507597126E+00, 7.315920510E-03, 2.331766687E-06, -6.389209890E-09, 2.456885069E-12, 1.463189428E+04, 8.313187700E+00]
+    - [5.885458550E+05, -4.595785660E+03, 1.320893344E+01, -1.226849004E-03, 2.626580824E-07, -2.943725869E-11, 1.341177648E-15, 3.991716950E+04, -6.181829295E+01]
+  transport:
+    model: gas
+    geometry: nonlinear
+    diameter: 2.655
+    well-depth: 2836.0
+    polarizability: 8.34
+    rotational-relaxation: 1.0
+  note: g12/97
+
+- name: ALOH
+  composition: {Al: 1, O: 1, H: 1}
+  thermo:
+    model: NASA7
+    temperature-ranges: [300.0, 1000.0, 5000.0]
+    data:
+    - [2.613221100E+00, 2.771689400E-03, 7.415783000E-06, -1.135460200E-08, 4.556955900E-12,
+       -2.258679700E+04, 1.007533030E+01]
+    - [3.686067400E+00, 3.363682200E-03, -1.246624400E-06, 2.138220500E-10, -1.389831900E-14,
+       -2.304610500E+04, 3.690155590E+00]
+  transport:
+    model: gas
+    geometry: nonlinear
+    diameter: 2.655
+    well-depth: 2836.0
+    polarizability: 8.34
+    rotational-relaxation: 1.0
+  note: g12/97
+  
+- name: N2
+  composition: {N: 2}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [2.210371497e+04, -381.846182, 6.08273836, -8.53091441e-03, 1.384646189e-05,
+      -9.62579362e-09, 2.519705809e-12, 710.846086, -10.76003744]
+    - [5.87712406e+05, -2239.249073, 6.065560013, -6.1396855e-04, 1.491806679e-07,
+      -1.923105485e-11, 1.061954386e-15, 1.282570769e+04, -15.86459736]
+    - [8.31013916e+08, -6.42073354e+05, 202.0249285, -0.03065092046, 2.486903333e-06,
+      -9.70595411e-11, 1.437538881e-15, 4.938692375e+06, -1672.098193]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.62
+    well-depth: 97.53
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+  note: '121286'
+
+- name: CO
+  composition: {C: 1, O: 1}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [1.489045326e+04, -292.2285939, 5.72452717, -8.17623503e-03, 1.456903469e-05,
+      -1.087746302e-08, 3.027941827e-12, -1.303131878e+04, -7.85924135]
+    - [4.61919725e+05, -1944.704863, 5.915320214, -5.66428283e-04, 1.39881454e-07,
+      -1.787680361e-11, 9.62093557e-16, -2472.767652, -13.87241027]
+    - [8.86866296e+08, -7.50037784e+05, 249.5459811, -0.039563511, 3.29777208e-06,
+      -1.318409933e-10, 1.998937948e-15, 5.701406204e+06, -2060.703524]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.65
+    well-depth: 98.1
+    polarizability: 1.95
+    rotational-relaxation: 1.8
+  note: TPIS79
+  
+- name: CO2
+  composition: {C: 1, O: 2}
+  thermo:
+    model: NASA9
+    temperature-ranges: [200.0, 1000.0, 6000.0, 2.0e+04]
+    data:
+    - [4.94365054e+04, -626.411601, 5.30172524, 2.503813816e-03, -2.127308728e-07,
+      -7.68998878e-10, 2.849677801e-13, -4.52819846e+04, -7.04827944]
+    - [1.176962419e+05, -1788.791477, 8.288669069, -9.22315678e-05, 4.86367688e-09,
+      -1.891053312e-12, 6.33003659e-16, -3.909358323e+04, -26.51992151]
+    - [-1.544423287e+09, 1.016847056e+06, -256.1440841, 0.0336940108, -2.181184337e-06,
+      6.99142084e-11, -8.8423515e-16, -8.043236236e+06, 2254.187764]
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.76
+    well-depth: 244.0
+    polarizability: 2.65
+    rotational-relaxation: 2.1
+  note: L 7/88
+
+# Catoire Al mech
+# New species: ALH3 ALH2 ALH ALOH
+### top lines commented out: Ea in K
+
+reactions:
+# 5
+- equation: ALH3 + H <=> ALH2 + H2
+  rate-constant: {A: 4.75e9, b: 1.5, Ea: 0.0}
+  
+# 25
+- equation: ALH + H <=> AL + H2
+  rate-constant: {A: 1e13, b: 0., Ea: 0.0}
+
+# 28
+- equation: ALH2 + H <=> ALH + H2
+  rate-constant: {A: 2e13, b: 0., Ea: 0.0}
+  
+# 39
+- equation: AL + CO2 <=> ALO + CO
+  rate-constant: {A: 1.74e14, b: 0., Ea: 3221.}
+  
+# 40
+- equation: ALO + CO2 <=> ALO2 + CO
+  rate-constant: {A: 1.5e10, b: 0., Ea: -4.e2}
+  
+# 41
+- equation: AL + O2 <=> ALO + O
+  rate-constant: {A: 9.72e13, b: 0., Ea: 80.5}  
+
+# 42
+- equation: AL + O + M <=> ALO + M
+  type: three-body
+  rate-constant: {A: 3.0e+17, b: -1.0, Ea: 0.0}
+  efficiencies: {H2: 2.8, O2: 1.1, CO2: 4.3, CO: 2.1}
+  
+# 43
+- equation: ALO + O2 <=> ALO2 + O  
+  rate-constant: {A: 4.62e14, b: 0.0, Ea: 1.0008e4}
+
+# 51
+- equation: AL + H2O <=> ALOH + H
+  rate-constant: {A: 1.14e12, b: 0., Ea: 4.428e2}
+
+# 52
+- equation: AL + H2O <=> ALO + H2
+  rate-constant: {A: 9.6e13, b: 0., Ea: 2868.6}
+
+# 75
+- equation: AL2O3 <=> AL2O2 + O
+  rate-constant: {A: 3.0e+15, b: 0.0, Ea: 49144.4}
+  
+# 76
+- equation: AL2O3 <=> ALO2 + ALO
+  rate-constant: {A: 3.0e+15, b: 0.0, Ea: 63915.4}
+  
+# 77
+- equation: AL2O3(l) <=> AL2O2 + O
+  rate-constant: {A: 3e15, b: 0.0, Ea: 36864.6}
+  
+# 78
+- equation: AL2O3(l) <=> ALO2 + ALO
+  rate-constant: {A: 3e15, b: 0.0, Ea: 51635.6}
+
+# 79
+- equation: AL2O2 <=> ALO + ALO
+  rate-constant: {A: 1.0e+15, b: 0.0, Ea: 59335.7}
+  
+# 80
+- equation: AL2O2 <=> AL + ALO2
+  rate-constant: {A: 1.0e+15, b: 0.0, Ea: 74937.1}
+  
+# 81
+- equation: AL2O2 <=> AL2O + O
+  rate-constant: {A: 1.0e+15, b: 0.0, Ea: 52466.}
+
+# 82
+- equation: ALO2 <=> ALO + O
+  rate-constant: {A: 1.0e+15, b: 0.0, Ea: 44564.6}
+
+# 83
+- equation: AL2O <=> ALO + AL
+  rate-constant: {A: 1.0e+15, b: 0.0, Ea: 67035.7}
+  
+# 86
+- equation: ALOH <=> ALO + H
+  rate-constant: {A: 1e15, b: 0., Ea: 57725.2}
+  
+# 87
+- equation: ALOH <=> AL + OH
+  rate-constant: {A: 1e15, b: 0., Ea: 66431.8}
+  

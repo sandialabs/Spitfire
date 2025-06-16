@@ -113,7 +113,7 @@ def build_adiabatic_bs_library(flamelet_specs, verbose=True):
     return flamelet.make_library_from_interior_state(flamelet.initial_interior_state)
 
 
-def _build_nonadiabatic_defect_unstrained_library(initialization, flamelet_specs, n_defect_st=16, verbose=True):
+def _build_nonadiabatic_defect_unstrained_library(initialization, flamelet_specs, n_defect_st=16, verbose=True, stoich_heatloss_multiplier=1.):
     flamelet_specs = FlameletSpec(**flamelet_specs) if isinstance(flamelet_specs, dict) else copy.copy(flamelet_specs)
 
     m = flamelet_specs.mech_spec
@@ -140,6 +140,7 @@ def _build_nonadiabatic_defect_unstrained_library(initialization, flamelet_specs
     h_ad_st = interp1d(z, enthalpy_ad)(z_st)
     h_ce_st = interp1d(z, enthalpy_cooled_eq)(z_st)
     defect_ext = h_ad_st - h_ce_st
+    defect_ext *= stoich_heatloss_multiplier
 
     # build the library with equilibrium solutions at with enthalpies offset by the triangular defect form
     defect_range = np.linspace(-defect_ext, 0, n_defect_st)[::-1]
@@ -147,6 +148,9 @@ def _build_nonadiabatic_defect_unstrained_library(initialization, flamelet_specs
     g_dim = Dimension(_enthalpy_defect_name + _stoich_suffix, defect_range)
     output_library = Library(z_dim, g_dim)
     output_library.extra_attributes['mech_spec'] = m
+    output_library.extra_attributes['dissipation_rate_form'] = flamelet_specs.dissipation_rate_form
+    output_library.extra_attributes['fuel_stream'] = flamelet_specs.fuel_stream
+    output_library.extra_attributes['oxy_stream'] = flamelet_specs.oxy_stream
 
     for p in adiabatic_lib.props:
         output_library[p] = output_library.get_empty_dataset()
@@ -176,7 +180,7 @@ def _build_nonadiabatic_defect_unstrained_library(initialization, flamelet_specs
                 g_library['mass fraction ' + m.species_names[ispec]][iz] = m.gas.Y[ispec]
 
         for p in g_library.props:
-            if p != 'defected_enthapy':
+            if p != 'defected_enthalpy':
                 output_library[p][:, ig] = g_library[p].ravel()
         output_library['enthalpy_defect'][:, ig] = defected_enthalpy - enthalpy_ad
         output_library['enthalpy_cons'][:, ig] = enthalpy_ad
@@ -186,7 +190,119 @@ def _build_nonadiabatic_defect_unstrained_library(initialization, flamelet_specs
     return output_library
 
 
-def build_nonadiabatic_defect_eq_library(flamelet_specs, n_defect_st=16, verbose=True):
+def _build_superadiabatic_subadiabatic_unstrained_library(initialization, flamelet_specs, n_defect_st, superad_dT, subad_dT, stoich_heatloss_multiplier=1., verbose=True):
+    thresh = 1.e-14
+    if isinstance(flamelet_specs, dict):
+        flamelet_specs = FlameletSpec(**flamelet_specs)
+    adiabatic_libfun = build_adiabatic_eq_library if initialization=='equilibrium' else build_adiabatic_bs_library
+    fs_ad = flamelet_specs.copy()
+    fs_subad = flamelet_specs.copy()
+    fs_superad = flamelet_specs.copy()
+
+    m = flamelet_specs.mech_spec
+    fuel = flamelet_specs.fuel_stream
+    oxy = flamelet_specs.oxy_stream
+    zst = m.stoich_mixture_fraction(fuel, oxy)
+
+    subad_dT_fuel = subad_dT['fuel'] if isinstance(subad_dT, dict) else subad_dT
+    subad_dT_oxy  = subad_dT['oxy']  if isinstance(subad_dT, dict) else subad_dT
+    superad_dT_fuel = superad_dT['fuel'] if isinstance(superad_dT, dict) else superad_dT
+    superad_dT_oxy  = superad_dT['oxy']  if isinstance(superad_dT, dict) else superad_dT
+
+    for dT in [subad_dT_fuel, subad_dT_oxy, superad_dT_fuel, superad_dT_oxy]:
+        if dT<0.:
+            raise ValueError("Temperature differences superad_dT and subad_dT must be positive.")
+
+    if isinstance(n_defect_st, dict):
+        if 'n_subad' not in n_defect_st or 'n_superad' not in n_defect_st:
+            raise ValueError("n_defect_st dictionary must contain keys 'n_subad' and 'n_superad'.")
+        n_superad = n_defect_st['n_superad']
+        n_subad = n_defect_st['n_subad']
+    else:
+        n_subad = n_defect_st
+        if (superad_dT_fuel>0. or superad_dT_oxy>0.):
+            raise ValueError("When including superadiabatic states, n_defect_st must be specified as \
+a dictionary with the number of superadiabatic and subadiabatic states to tabulate: {'n_superad':#, 'n_subad':#}")
+        else:
+            n_superad = 0
+
+    # adiabatic
+    if verbose:
+        print('Building adiabatic state')
+    lib = adiabatic_libfun(fs_ad, verbose)
+    ctsol, _ = sca.get_ct_solution_array(fs_ad.mech_spec, lib)
+    lib['enthalpy'] = ctsol.enthalpy_mass.reshape(lib.shape)
+    gamma0_enthalpycons = lib['enthalpy'].copy()
+    lib['enthalpy_cons'] = gamma0_enthalpycons.copy()
+    lib['enthalpy_defect'] = lib['enthalpy'] - lib['enthalpy_cons']
+    lib['mixture_fraction'] = lib.mixture_fraction_grid.copy()
+
+    # SUBadiabatic
+    if verbose:
+        print('Building SUBadiabatic states')
+    fs_subad.oxy_stream.TP = fs_subad.oxy_stream.T-subad_dT_oxy, fs_subad.oxy_stream.P
+    fs_subad.fuel_stream.TP = fs_subad.fuel_stream.T-subad_dT_fuel, fs_subad.fuel_stream.P
+    if isinstance(n_defect_st, dict):
+        offset = 1 if (np.abs(subad_dT_fuel)<=thresh and np.abs(subad_dT_oxy)<=thresh) else 0
+    else:
+        offset = 0 if (np.abs(subad_dT_fuel)<=thresh and np.abs(subad_dT_oxy)<=thresh) else -1
+    nonad = _build_nonadiabatic_defect_unstrained_library(initialization, fs_subad, n_subad+offset, verbose, stoich_heatloss_multiplier)
+    if subad_dT_fuel != 0. or subad_dT_oxy != 0.:
+        for ig in range(nonad.enthalpy_defect_stoich_npts):
+            nonad['enthalpy_cons'][:,ig] = gamma0_enthalpycons.copy()
+        nonad['enthalpy_defect'] = nonad['enthalpy'] - nonad['enthalpy_cons']
+
+    # SUPERadiabatic
+    if verbose:
+        print('Building SUPERadiabatic states')
+    superad_ustruc = dict()
+    if n_superad>0:
+        single_dT_fuel = superad_dT_fuel/n_superad
+        single_dT_oxy = superad_dT_oxy/n_superad
+        for idx in range(n_superad):
+            fs_superad.oxy_stream.TP = fs_superad.oxy_stream.T+single_dT_oxy, fs_superad.oxy_stream.P
+            fs_superad.fuel_stream.TP = fs_superad.fuel_stream.T+single_dT_fuel, fs_superad.fuel_stream.P
+            eqlib = adiabatic_libfun(fs_superad, verbose)
+            ctsol, _ = sca.get_ct_solution_array(fs_superad.mech_spec, eqlib)
+            eqlib['enthalpy'] = ctsol.enthalpy_mass.reshape(eqlib.shape)
+            eqlib['enthalpy_cons'] = gamma0_enthalpycons.copy()
+            eqlib['enthalpy_defect'] = eqlib['enthalpy'] - eqlib['enthalpy_cons']
+            eqlib['mixture_fraction'] = eqlib.mixture_fraction_grid.copy()
+            gst = float(interp1d(eqlib.mixture_fraction_values, eqlib['enthalpy_defect'])(zst))
+            superad_ustruc[gst] = dict()
+            for prop in eqlib.props:
+                superad_ustruc[gst][prop] = eqlib[prop].copy()
+
+    # make single lib
+    if np.abs(subad_dT_fuel)<=thresh and np.abs(subad_dT_oxy)<=thresh:
+        gst_subad = nonad.enthalpy_defect_stoich_values
+    else:
+        gst_subad = np.zeros(nonad.shape[1])
+        for i in range(gst_subad.size):
+            gst_subad[i] = float(interp1d(nonad.mixture_fraction_values, nonad['enthalpy_defect'][:,i])(zst))
+        gst_subad = np.hstack((0., gst_subad))
+    gst_superad = np.array(list(superad_ustruc.keys()))[::-1]
+    gst_full = np.hstack((gst_superad, gst_subad))
+    full = Library(lib.dims[0], Dimension(nonad.dims[1].name, gst_full))
+    for prop in lib.props:
+        full[prop] = full.get_empty_dataset()
+    for gst in superad_ustruc:
+        idx = np.argmax(np.abs(gst_full - gst)<1.e-12)
+        for prop in full.props:
+            full[prop][:,idx] = superad_ustruc[gst][prop].copy()
+    for prop in full.props:
+        full[prop][:,n_superad] = lib[prop].copy()
+    offset = 1 if (np.abs(subad_dT_fuel)<=thresh and np.abs(subad_dT_oxy)<=thresh) else 0
+    for idx in range(offset,nonad.enthalpy_defect_stoich_npts):
+        for prop in full.props:
+            full[prop][:,idx+n_superad+1-offset] = nonad[prop][:,idx].copy()
+
+    for attr in nonad.extra_attributes:
+        full.extra_attributes[attr] = nonad.extra_attributes[attr]
+    return full
+
+
+def build_nonadiabatic_defect_eq_library(flamelet_specs, n_defect_st=16, verbose=True, stoich_heatloss_multiplier=1., superad_dT=0., subad_dT=0.):
     """Build a flamelet library with the equilibrium (infinitely fast) chemistry assumption
         and heat loss effects captured through a presumed triangular form of the enthalpy defect.
 
@@ -194,8 +310,25 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs, n_defect_st=16, verbose
     ----------
     flamelet_specs : FlameletSpec or dictionary of arguments for a FlameletSpec
         flamelet specifications
-    n_defect_st : Int
+    n_defect_st : Int or dictionary
         the number of stoichiometric enthalpy defect values to include in the table (default: 16)
+        If superadiabatic states are requested, this must be a dictionary specifying the number of
+        superadiabatic and subadiabatic states separately as {'n_superad':#, 'n_subad':#}
+        (a zero stoichiometric enthalpy defect is always included by default).
+    stoich_heatloss_multiplier : float
+        multiplies the stoichiometric heat loss range for tabulation determined from the difference in
+        stoichiometric enthalpy between the cooled (linear temperature profile) and adiabatic states (default: 1.)
+    superad_dT: float or dictionary
+        superadiabatic states are added to the library when superad_dT is nonzero. Each state is generated by first raising the boundary temperatures by
+        superad_dT/n_defect_st['n_superad'] and solving for the steady adiabatic state. This is repeated until the full superad_dT is reached at 
+        the boundaries relative to the original flamelet_specs state. The conserved enthalpy for the whole library is defined by the flamelet_specs 
+        adiabatic state, making the newly generated states superadiabatic. superad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
+        the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
+    subad_dT: float or dictionary
+        temperature difference to subtract from the pure stream temperatures before computing the transient heat loss. This defines new
+        degenerate points for the library below the adiabatic state given by the flamelet_specs. The conserved enthalpy for the whole 
+        library is defined by the flamelet_specs adiabatic state. subad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
+        the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
 
     Returns
     -------
@@ -203,10 +336,13 @@ def build_nonadiabatic_defect_eq_library(flamelet_specs, n_defect_st=16, verbose
         a chemistry library with the "mixture_fraction" and "enthalpy_defect_stoich" dimensions
 
     """
-    return _build_nonadiabatic_defect_unstrained_library('equilibrium', flamelet_specs, n_defect_st, verbose)
+    thresh = 1.e-14
+    if isinstance(subad_dT,float) and isinstance(superad_dT,float) and np.abs(subad_dT)<=thresh and np.abs(superad_dT)<=thresh:
+        return _build_nonadiabatic_defect_unstrained_library('equilibrium', flamelet_specs, n_defect_st, verbose, stoich_heatloss_multiplier)
+    else:
+        return _build_superadiabatic_subadiabatic_unstrained_library('equilibrium', flamelet_specs, n_defect_st, superad_dT, subad_dT, stoich_heatloss_multiplier, verbose)
 
-
-def build_nonadiabatic_defect_bs_library(flamelet_specs, n_defect_st=16, verbose=True):
+def build_nonadiabatic_defect_bs_library(flamelet_specs, n_defect_st=16, verbose=True, stoich_heatloss_multiplier=1.):
     """Build a flamelet library with the Burke-Schumann chemistry assumption
         and heat loss effects captured through a presumed triangular form of the enthalpy defect.
 
@@ -216,6 +352,9 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs, n_defect_st=16, verbose
         flamelet specifications
     n_defect_st : Int
         the number of stoichiometric enthalpy defect values to include in the table (default: 16)
+    stoich_heatloss_multiplier : float
+        multiplies the stoichiometric heat loss range for tabulation determined from the difference in
+        stoichiometric enthalpy between the cooled (linear temperature profile) and adiabatic states (default: 1.)
 
     Returns
     -------
@@ -223,7 +362,9 @@ def build_nonadiabatic_defect_bs_library(flamelet_specs, n_defect_st=16, verbose
         a chemistry library with the "mixture_fraction" and "enthalpy_defect_stoich" dimensions
 
     """
-    return _build_nonadiabatic_defect_unstrained_library('Burke-Schumann', flamelet_specs, n_defect_st, verbose)
+    if isinstance(n_defect_st, dict):
+          raise ValueError("specifying n_defect_st as a dictionary is not supported for Burke-Schumann.")
+    return _build_nonadiabatic_defect_unstrained_library('Burke-Schumann', flamelet_specs, n_defect_st, verbose, stoich_heatloss_multiplier)
 
 
 def build_adiabatic_slfm_library(flamelet_specs,
@@ -326,6 +467,9 @@ def build_adiabatic_slfm_library(flamelet_specs,
 
         output_library = Library(z_dim, x_dim)
         output_library.extra_attributes['mech_spec'] = m
+        output_library.extra_attributes['dissipation_rate_form'] = flamelet_specs.dissipation_rate_form
+        output_library.extra_attributes['fuel_stream'] = flamelet_specs.fuel_stream
+        output_library.extra_attributes['oxy_stream'] = flamelet_specs.oxy_stream
 
         for quantity in table_dict[chi_st]:
             output_library[quantity] = output_library.get_empty_dataset()
@@ -481,6 +625,9 @@ def _expand_enthalpy_defect_dimension_steady(chi_st, managed_dict, flamelet_spec
     h_dim = Dimension(_enthalpy_defect_name + _stoich_suffix, np.array(hvalues))
     steady_lib = Library(z_dim, h_dim)
     steady_lib.extra_attributes['mech_spec'] = flamelet_specs.mech_spec
+    steady_lib.extra_attributes['dissipation_rate_form'] = flamelet_specs.dissipation_rate_form
+    steady_lib.extra_attributes['fuel_stream'] = flamelet_specs.fuel_stream
+    steady_lib.extra_attributes['oxy_stream'] = flamelet_specs.oxy_stream
     for p in table_dict[chi_st]:
         if p != 'adiabatic_state':
             steady_lib[p] = steady_lib.get_empty_dataset()
@@ -615,12 +762,18 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
 
     if verbose:
         print(' Done.\nInterpolating onto structured grid ... \nProgress: 0%', end='', flush=True)
-    defect_st_space = np.linspace(min_g_st, max_g_st, n_defect_stoich)
+    if isinstance(n_defect_stoich, dict):
+        n_subad = n_defect_stoich['n_subad']
+        n_superad  = n_defect_stoich['n_superad']
+        defect_st_space = np.hstack(( np.linspace(min_g_st, 0., n_subad+1)[:-1], np.linspace(0., max_g_st, n_superad+1) ))
+    else:
+        n_subad = n_defect_stoich
+        defect_st_space = np.linspace(min_g_st, max_g_st, n_subad)
     if extend:
         defect_spacing = np.abs(defect_st_space[1] - defect_st_space[0])
         times_spacing = 2
-        defect_st_space = np.linspace(min_g_st - times_spacing * defect_spacing, max_g_st,
-                                      n_defect_stoich + times_spacing)
+        defect_st_append = np.linspace(min_g_st - times_spacing * defect_spacing, min_g_st - defect_spacing, times_spacing)
+        defect_st_space = np.hstack((defect_st_append, defect_spacing))
     for chi_st in chi_st_space:
         chi_to_g_list_dict[chi_st] = list(chi_to_g_list_dict[chi_st])
     chi_st_space = list(chi_st_space)
@@ -676,25 +829,145 @@ def _build_nonadiabatic_defect_slfm_library(flamelet_specs,
                                             integration_args=None,
                                             n_defect_st=32,
                                             extend_defect_dim=False,
-                                            diss_rate_log_scaled=True):
+                                            diss_rate_log_scaled=True,
+                                            superad_dT=0.,
+                                            subad_dT=0.):
     if isinstance(flamelet_specs, dict):
         flamelet_specs = FlameletSpec(**flamelet_specs)
+
+    subad_dT_fuel = subad_dT['fuel'] if isinstance(subad_dT, dict) else subad_dT
+    subad_dT_oxy  = subad_dT['oxy']  if isinstance(subad_dT, dict) else subad_dT
+    superad_dT_fuel = superad_dT['fuel'] if isinstance(superad_dT, dict) else superad_dT
+    superad_dT_oxy  = superad_dT['oxy']  if isinstance(superad_dT, dict) else superad_dT
+
+    for dT in [subad_dT_fuel, subad_dT_oxy, superad_dT_fuel, superad_dT_oxy]:
+        if dT<0.:
+            raise ValueError("Temperature differences superad_dT and subad_dT must be positive.")
+    if isinstance(n_defect_st, dict):
+        if 'n_subad' not in n_defect_st or 'n_superad' not in n_defect_st:
+            raise ValueError("n_defect_st dictionary must contain keys 'n_subad' and 'n_superad'.")
+    if (superad_dT_fuel>0. or superad_dT_oxy>0.):
+        if not isinstance(n_defect_st, dict):
+            raise ValueError("When including superadiabatic states, n_defect_st must be specified as \
+a dictionary with the number of superadiabatic and subadiabatic states to tabulate: {'n_superad':#, 'n_subad':#}")
+        else:
+            num_superad_T = n_defect_st['n_superad']
+    else:
+        num_superad_T = 0
 
     m = flamelet_specs.mech_spec
     fuel = flamelet_specs.fuel_stream
     oxy = flamelet_specs.oxy_stream
+    zst = m.stoich_mixture_fraction(fuel, oxy)
 
     cput00 = _write_library_header('nonadiabatic (defect) SLFM', m, fuel, oxy, verbose)
 
-    ugt = _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
-                                                               heat_loss_expansion,
-                                                               diss_rate_values,
-                                                               diss_rate_ref,
-                                                               verbose,
-                                                               solver_verbose,
-                                                               h_stoich_spacing,
-                                                               num_procs,
-                                                               integration_args)
+    fs_subad = flamelet_specs.copy()
+    fs_subad.oxy_stream.TP = fs_subad.oxy_stream.T-subad_dT_oxy, fs_subad.oxy_stream.P
+    fs_subad.fuel_stream.TP = fs_subad.fuel_stream.T-subad_dT_fuel, fs_subad.fuel_stream.P
+
+    subad_ustruc = _build_unstructured_nonadiabatic_defect_slfm_library(fs_subad,
+                                                                        heat_loss_expansion,
+                                                                        diss_rate_values,
+                                                                        diss_rate_ref,
+                                                                        verbose,
+                                                                        solver_verbose,
+                                                                        h_stoich_spacing,
+                                                                        num_procs,
+                                                                        integration_args)
+
+    # enforce monotonicity
+    keydelete = []
+    chi_gam_dict = {}
+    for chi in diss_rate_values:
+        chi_gam_dict[chi] = {'gst':[], 'key':[]}
+    for k in subad_ustruc.keys():
+        chist, gst = k
+        chiidx = np.argwhere(np.abs(np.log(chist)-np.log(diss_rate_values))<1.e-12)[0][0]
+        chi_gam_dict[diss_rate_values[chiidx]]['gst'].append(gst)
+        chi_gam_dict[diss_rate_values[chiidx]]['key'].append(k)
+    for k in chi_gam_dict:
+        gst = np.array(chi_gam_dict[k]['gst'])
+        d_gst = gst[1:] - gst[:-1]
+        while np.any(d_gst>=0.):
+            i_remove = np.argwhere(d_gst>=0.)[0]
+            for ir in i_remove:
+                keydelete.append(chi_gam_dict[k]['key'][ir])
+            gst = np.delete(gst, i_remove)
+            d_gst = gst[1:] - gst[:-1]
+    for k in keydelete:
+        subad_ustruc.pop(k)
+
+    def format_slfm_lib_into_ustruc_lib(slfm_lib, enthalpy_cons_at_gamma0):
+        ustruc_lib = dict()
+        ctsol, _ = sca.get_ct_solution_array(m, slfm_lib)
+        slfm_lib['enthalpy'] = ctsol.enthalpy_mass.reshape(slfm_lib.shape)
+        slfm_lib['enthalpy_cons'] = enthalpy_cons_at_gamma0.copy()
+        slfm_lib['enthalpy_defect'] = slfm_lib['enthalpy'] - slfm_lib['enthalpy_cons']
+        slfm_lib['mixture_fraction'] = slfm_lib.mixture_fraction_grid
+
+        for ichi in range(slfm_lib.dissipation_rate_stoich_npts):
+            chist = slfm_lib.dissipation_rate_stoich_values[ichi]
+            gst = float(interp1d(slfm_lib.mixture_fraction_values, slfm_lib['enthalpy_defect'][:,ichi])(zst))
+            ustruc_lib[(chist, gst)] = dict()
+            for prop in slfm_lib.props:
+                ustruc_lib[(chist, gst)][prop] = slfm_lib[prop][:,ichi].copy()
+        return ustruc_lib
+    
+    if subad_dT_fuel>0. or subad_dT_oxy>0.:
+        gamma0_lib = build_adiabatic_slfm_library(flamelet_specs.copy(),
+                                                  diss_rate_values=diss_rate_values,
+                                                  diss_rate_ref=diss_rate_ref,
+                                                  verbose=verbose,
+                                                  solver_verbose=solver_verbose)
+        ctsol, _ = sca.get_ct_solution_array(m, gamma0_lib)
+        gamma0_enthalpycons = ctsol.enthalpy_mass.reshape(gamma0_lib.shape)
+        gamma0_ustruc = format_slfm_lib_into_ustruc_lib(gamma0_lib, gamma0_enthalpycons)
+
+        # redefining enthalpy_cons and enthalpy_defect
+        temp_ustruc = dict()
+        for k in subad_ustruc:
+            chist = k[0]
+            chiidx = np.argwhere(np.abs(np.log(chist)-np.log(diss_rate_values))<1.e-12)[0][0]
+            hcons = gamma0_enthalpycons[:,chiidx].copy()
+            gamma = subad_ustruc[k]['enthalpy'] - hcons
+            gst = float(interp1d(gamma0_lib.mixture_fraction_values, gamma)(zst))
+
+            temp_ustruc[(chist, gst)] = dict()
+            for prop in subad_ustruc[k]:
+                temp_ustruc[(chist, gst)][prop] = subad_ustruc[k][prop].copy()
+            temp_ustruc[(chist, gst)]['enthalpy_cons'] = hcons
+            temp_ustruc[(chist, gst)]['enthalpy_defect'] = gamma.copy()
+
+        subad_ustruc = temp_ustruc
+        subad_ustruc.update(gamma0_ustruc)
+    else:
+        nz = flamelet_specs.grid_points if flamelet_specs.grid_points is not None else flamelet_specs.grid.size()
+        gamma0_enthalpycons = np.zeros((nz, diss_rate_values.size))
+        for k in subad_ustruc:
+            if np.abs(k[1])<1.e-12: # gst=0.
+                chiidx = np.argwhere(np.abs(np.log(k[0])-np.log(diss_rate_values))<1.e-12)[0][0]
+                gamma0_enthalpycons[:,chiidx] = subad_ustruc[k]['enthalpy_cons'].copy()
+
+    superad_ustruc = dict()
+    if num_superad_T>0:
+        single_dT_fuel = superad_dT_fuel/num_superad_T
+        single_dT_oxy = superad_dT_oxy/num_superad_T
+        fs_superad = flamelet_specs.copy()
+
+        for idx in range(num_superad_T):
+            fs_superad.oxy_stream.TP = fs_superad.oxy_stream.T+single_dT_oxy, fs_superad.oxy_stream.P
+            fs_superad.fuel_stream.TP = fs_superad.fuel_stream.T+single_dT_fuel, fs_superad.fuel_stream.P
+            slfm_lib = build_adiabatic_slfm_library(fs_superad,
+                                                    diss_rate_values=diss_rate_values,
+                                                    diss_rate_ref=diss_rate_ref,
+                                                    verbose=verbose,
+                                                    solver_verbose=solver_verbose)
+            superad_ustruc.update(format_slfm_lib_into_ustruc_lib(slfm_lib, gamma0_enthalpycons))
+
+    ugt = dict()
+    ugt.update(subad_ustruc)
+    ugt.update(superad_ustruc)
 
     structured_defect_table, x_values, g_values = _interpolate_to_structured_defect_dimension(ugt,
                                                                                               n_defect_st,
@@ -710,6 +983,9 @@ def _build_nonadiabatic_defect_slfm_library(flamelet_specs,
 
     output_library = Library(z_dim, x_dim, g_dim)
     output_library.extra_attributes['mech_spec'] = m
+    output_library.extra_attributes['dissipation_rate_form'] = flamelet_specs.dissipation_rate_form
+    output_library.extra_attributes['fuel_stream'] = flamelet_specs.fuel_stream
+    output_library.extra_attributes['oxy_stream'] = flamelet_specs.oxy_stream
 
     for quantity in structured_defect_table[key0]:
         values = output_library.get_empty_dataset()
@@ -734,7 +1010,9 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                      integration_args=None,
                                                      n_defect_st=32,
                                                      extend_defect_dim=False,
-                                                     diss_rate_log_scaled=True):
+                                                     diss_rate_log_scaled=True,
+                                                     superad_dT=0.,
+                                                     subad_dT=0.):
     """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through rapid, transient extinction (as opposed to quasisteady heat loss)
 
@@ -753,14 +1031,28 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
         whether or not to show detailed progress of sub-solvers in generating the library
     h_stoich_spacing : float
         the stoichiometric enthalpy spacing used in subsampling the transient solution history of each extinction solve
-    n_defect_st : Int
-        the number of stoichiometric enthalpy defect values to include in the library
+    n_defect_st : Int or dictionary
+        the number of stoichiometric enthalpy defect values to include in the table (default: 32)
+        If superadiabatic states are requested, this must be a dictionary specifying the number of
+        superadiabatic and subadiabatic states separately as {'n_superad':#, 'n_subad':#}
+        (a zero stoichiometric enthalpy defect is always included by default).
     integration_args : kwargs
         extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
     num_procs : Int
         how many processors over which to distribute the parallel extinction solves
     extend_defect_dim : bool
         whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
+    superad_dT: float or dictionary
+        superadiabatic states are added to the library when superad_dT is nonzero. Each state is generated by first raising the boundary temperatures by
+        superad_dT/n_defect_st['n_superad'] and solving for the steady adiabatic state. This is repeated until the full superad_dT is reached at 
+        the boundaries relative to the original flamelet_specs state. The conserved enthalpy for the whole library is defined by the flamelet_specs 
+        adiabatic state, making the newly generated states superadiabatic. superad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
+        the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
+    subad_dT: float or dictionary
+        temperature difference to subtract from the pure stream temperatures before computing the transient heat loss. This defines new
+        degenerate points for the library below the adiabatic state given by the flamelet_specs. The conserved enthalpy for the whole 
+        library is defined by the flamelet_specs adiabatic state. subad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
+        the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
 
     Returns
     -------
@@ -780,7 +1072,9 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                    integration_args,
                                                    n_defect_st,
                                                    extend_defect_dim,
-                                                   diss_rate_log_scaled=diss_rate_log_scaled)
+                                                   diss_rate_log_scaled=diss_rate_log_scaled,
+                                                   superad_dT=superad_dT,
+                                                   subad_dT=subad_dT)
 
 
 def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
@@ -793,7 +1087,9 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
                                                   integration_args=None,
                                                   n_defect_st=32,
                                                   extend_defect_dim=False,
-                                                  diss_rate_log_scaled=True):
+                                                  diss_rate_log_scaled=True,
+                                                  superad_dT=0.,
+                                                  subad_dT=0.):
     """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through quasisteady extinction
 
@@ -812,14 +1108,28 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
         whether or not to show detailed progress of sub-solvers in generating the library
     h_stoich_spacing : float
         the stoichiometric enthalpy spacing used in subsampling the transient solution history of each extinction solve
-    n_defect_st : Int
-        the number of stoichiometric enthalpy defect values to include in the library
+    n_defect_st : Int or dictionary
+        the number of stoichiometric enthalpy defect values to include in the table (default: 32)
+        If superadiabatic states are requested, this must be a dictionary specifying the number of
+        superadiabatic and subadiabatic states separately as {'n_superad':#, 'n_subad':#}
+        (a zero stoichiometric enthalpy defect is always included by default).
     integration_args : kwargs
         extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
     num_procs : Int
         how many processors over which to distribute the parallel extinction solves
     extend_defect_dim : bool
         whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
+    superad_dT: float or dictionary
+        superadiabatic states are added to the library when superad_dT is nonzero. Each state is generated by first raising the boundary temperatures by
+        superad_dT/n_defect_st['n_superad'] and solving for the steady adiabatic state. This is repeated until the full superad_dT is reached at 
+        the boundaries relative to the original flamelet_specs state. The conserved enthalpy for the whole library is defined by the flamelet_specs 
+        adiabatic state, making the newly generated states superadiabatic. superad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
+        the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
+    subad_dT: float or dictionary
+        temperature difference to subtract from the pure stream temperatures before computing the transient heat loss. This defines new
+        degenerate points for the library below the adiabatic state given by the flamelet_specs. The conserved enthalpy for the whole 
+        library is defined by the flamelet_specs adiabatic state. subad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
+        the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
 
     Returns
     -------
@@ -839,7 +1149,9 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
                                                    integration_args,
                                                    n_defect_st,
                                                    extend_defect_dim,
-                                                   diss_rate_log_scaled=diss_rate_log_scaled)
+                                                   diss_rate_log_scaled=diss_rate_log_scaled,
+                                                   superad_dT=superad_dT,
+                                                   subad_dT=subad_dT)
 
 
 try:
