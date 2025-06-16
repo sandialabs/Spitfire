@@ -25,6 +25,7 @@ from scipy.sparse.linalg import splu as superlu_factor
 from numpy.linalg import norm
 from spitfire.griffon.griffon import py_btddod_full_factorize, py_btddod_full_solve, \
     py_btddod_scale_and_add_diagonal
+from copy import deepcopy
 
 _pressure_depr_warning = 'Deprecation warning in building Spitfire Flamelet instance. ' + \
                          'Specifying pressure in flamelet construction is no longer used, ' + \
@@ -236,6 +237,10 @@ class FlameletSpec(object):
         state['fuel_stream'] = mech_spec.stream('TPY', (state.pop('fuelT'), pressure, state.pop('fuelY')))
         self.__init__(**state)
 
+    def copy(self):
+        fs = FlameletSpec()
+        fs.__setstate__(deepcopy(self.__getstate__()))
+        return fs
 
 def compute_dissipation_rate(mixture_fraction,
                              max_dissipation_rate,
