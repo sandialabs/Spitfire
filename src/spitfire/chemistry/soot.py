@@ -494,9 +494,9 @@ def soot_src_pah_alpha(soot_number_density, soot_mass_fraction, dimer_src, coag,
     """
     Evaluates source terms using the PAH_alpha model for the soot_number_density (:math:`N_s`) and soot_mass_fraction (:math:`Y_s`) as shown below
     
-    :math:`\\dot{S}_{N_s} = 1.e-6\\mathrm{dimer\_src}\\frac{0.5}{361.4} - \\mathrm{coag} N_s^{11/6} Y_s^{1/6}`
+    :math:`\\dot{S}_{N_s} = \\mathrm{dimer\_src}(\\mathrm{dimer\_fac})\\frac{0.5}{361.4} - \\mathrm{coag} N_s^{11/6} Y_s^{1/6}`
 
-    :math:`\\dot{S}_{Y_s} = 1.e-6\\mathrm{dimer\_src} + (\\mathrm{sg} - \\mathrm{ox\_O2} - \\mathrm{ox\_OH} - \\mathrm{ox\_O}) N_s^{1/3} Y_s^{2/3}`
+    :math:`\\dot{S}_{Y_s} = \\mathrm{dimer\_src}(\\mathrm{dimer\_fac}) + (\\mathrm{sg} - \\mathrm{ox\_O2} - \\mathrm{ox\_OH} - \\mathrm{ox\_O}) N_s^{1/3} Y_s^{2/3}`
 
         Parameters
         ----------
