@@ -4,8 +4,8 @@ Soot Models
 
 Soot Source Terms
 ------------------
-Spitfire supports a few methods for computing coefficients of soot growth/oxidation/nucleation/etc. in a flamelet library.
-These coefficients can be used in the source terms of transport equations for the number and mass density of soot particles.
+Spitfire supports a few methods for computing coefficients of soot growth, oxidation, nucleation, etc. in a flamelet library.
+These coefficients can be used in the source terms of transport equations for the number density and mass fraction of soot particles.
 This two-equation approach arises from representing soot as a monodisperse population of spherical particles.
 The source term for the soot number density (:math:`N_s`, in kmol soot / kg air) involves nucleation and coagulation while the source term for the 
 soot mass fraction (:math:`Y_s`) involves nucleation, condensation, surface growth, and oxidation.
@@ -17,7 +17,7 @@ These can be generally written for laminar flow as
     :label: soot_eqns
 
 When we compute filtered source terms for turbulent flow, we convolve each tabulated coefficient separately,
-then substitute these into the laminar equation along with a filtered :math:`\tilde{Y}_s` and :math:`\tilde{N}_s`.
+then substitute these into :eq:`soot_eqns` along with a filtered :math:`\tilde{Y}_s` and :math:`\tilde{N}_s`.
 This can be thought of as assuming delta PDFs for :math:`Y_s` and :math:`N_s` and including them as dimensions in the convolutions with statistical independence from the 
 other table dimensions (mixture fraction, stoichiometric dissipation rate, etc.).
 
@@ -27,12 +27,13 @@ Spitfire supports three models for computing these source term coefficients:
   - PAH_alpha
 
 The coefficients are added to a library, given a chemical mechanism and soot model name, through the function ``tabulate_soot_source_coefficients``.
+The corresponding source term function can then be grabbed using ``get_soot_source_term_evaluator``.
 
-Aksit Moss models
+Aksit-Moss models
 ++++++++++++++++++++++++++++
 
-The Aksit Moss models [AksitMoss]_ use acetylene-based nucleation and surface growth rates with empirically-determined parameters.
-Only slight modifications are made to the original model when the effect of benzene is included.
+The Aksit-Moss models [AksitMoss]_ use acetylene-based nucleation and surface growth rates with empirically-determined parameters.
+They can also incorporate aromatic contributions based on benzene concentrations.
 
 .. [AksitMoss] J.B. Moss and I.M. Aksit,
     Modelling soot formation in a laminar diffusion flame burning a surrogate kerosene fuel,
@@ -46,18 +47,18 @@ In both Aksit-Moss models, the coagulation coefficient (coag) is given by
     \mathrm{coag} = \sqrt{\frac{24 V T R_u  N_a}{\rho_s}}\rho^2
     :label: coag_eqn
 
-where :math:`\rho_s` is the density of soot (1800 kg/kmol) and :math:`V` is the volume factor
+where :math:`\rho_s` is the density of soot (:math:`1800 \ \mathrm{kg}/\mathrm{m}^3`) and :math:`V` is the volume factor
 
 .. math::
     V = \left(\frac{6}{\pi \rho_s N_a}\right)^{1/3}
     :label: V_eqn
 
-Thermodynamic instability of PAH, along with oxidation below temperatures of about 2000 K, leads to the phenomena referred to as the soot bell curve.
+Thermodynamic instability of PAH, along with oxidation below temperatures of about 2000 K, leads to the phenomenon referred to as the soot bell curve.
 We use a correction factor :math:`B(T)` applied multiplicatively to the nucleation and surface growth rates to account for this.
 This bell curve multiplier is written as
 
 .. math::
-    B(T) &= \mathrm{max}\left(1 - \exp{\left( \left(\frac{\Delta T_\mathrm{act}}{T_c} - \frac{\Delta T_\mathrm{act}}{T}\right)\right)}, 0\right) \\
+    B(T) &= \mathrm{max}\left(1 - \exp{\left( \frac{\Delta T_\mathrm{act}}{T_c} - \frac{\Delta T_\mathrm{act}}{T}\right)}, 0\right) \\
     \Delta T_\mathrm{act} &= 16000\ \mathrm{K} \\
     T_c &= 2050\ \mathrm{K}
     :label: B_eqn
@@ -84,8 +85,8 @@ with an area factor
 The mass of an incipient particle is given directly as :math:`M_p =144` kg/kmol,
 which multiplies the molar :math:`\mathrm{nucl_{\mathrm{C}_2\mathrm{H}_2}}` to get the mass nucleation rate.
 
-The Aksit_Moss_Benzene model uses a nucleation coefficient that is twice that of Aksit_Moss.
-The surface growth in Aksit_Moss_Benzene depends on both acetylene and benzene (A1).
+The Aksit_Moss_Benzene model uses a nucleation coefficient that is twice that of Aksit_Moss in order to account for the contribution of aromatic components.
+The surface growth in Aksit_Moss_Benzene also incorporates aromatic contributions by depending on both acetylene and benzene (A1).
 The coefficient for acetylene growth is identical to Aksit_Moss while the coefficient for benzene growth is given by
 
 .. math::
@@ -100,6 +101,9 @@ In both Aksit-Moss models, oxidation depends on the concentrations of both oxyge
     \mathrm{surf}_{\mathrm{OH}} &= \rho A k_{\mathrm{OH}} [\mathrm{OH}] \\
     k_{\mathrm{OH}} &= 4.2325 \sqrt{T}
     :label: ox_eqn
+
+The ``get_soot_source_term_evaluator`` function will return the ``soot_src_aksit_moss`` function for library coefficients generated with the Aksit_Moss model
+and will return the ``soot_src_aksit_moss_benzene`` function for library coefficients generated with the Aksit_Moss_Benzene model.
 
 
 Newer PAH-based models
@@ -127,16 +131,16 @@ using the density of soot :math:`\rho_s` and average molecular weight (MW) of th
 Mass nucleation is given by the sum over PAH species :math:`i`:
 
 .. math::
-    \mathrm{dimer}_\mathrm{src} = \sum_i 2 MW_i (\gamma_i \beta_{i-i} [\mathrm{PAH}_i]^2 N_a)
+    \mathrm{dimer}\_\mathrm{src} = \sum_i 2 MW_i (\gamma_i \beta_{i-i} [\mathrm{PAH}_i]^2 N_a)
     :label: dimer_pah
 
 for the following species with their sticking coefficients :math:`\gamma_i` in parenthesis:
-naphthalene(0.001), acenaphthalene (0.003), biphenyl (0.0085), phenanthrene (0.015), acephenanthrylene (0.025), pyrene (0.025), flouranthene (0.025), and cyclopentapyrene (0.039).
-Molar nucleation is then given by :math:`\frac{0.5}{361.4} \mathrm{dimer}_\mathrm{src}`.
+naphthalene (0.001), acenaphthalene (0.003), biphenyl (0.0085), phenanthrene (0.015), acephenanthrylene (0.025), pyrene (0.025), flouranthene (0.025), and cyclopentapyrene (0.039).
+Molar nucleation is then given by :math:`\frac{0.5}{361.4} \mathrm{dimer}\_\mathrm{src}`.
 We note that these nucleation rates tend to dominate and over-predict soot production.
-Therefore, when evaluating the source terms with ``compute_soot_source_terms`` a factor of :math:`10^{-6}` is applied to both nucleation rates.
+Therefore, when evaluating the source terms with ``soot_src_pah_alpha`` a factor of :math:`10^{-6}` is applied to both nucleation rates by default through the argument ``dimer_fac``.
 
-Coagulation is the same as in the Aksit Moss models.
+Coagulation is the same as in the Aksit-Moss models.
 
 The surface area factor for the surface growth and oxidation rates is
 
@@ -187,22 +191,33 @@ In the equations below, :math:`M_{\mathrm{O}_2}` is the molecular weight of oxyg
     \mathrm{ox}_{\mathrm{O}} = 0.2 M_C \sqrt{\left( \frac{R_u T}{2 \pi M_O} \right)} [\mathrm{O}] G_A
     :label: o_pah
 
+The ``get_soot_source_term_evaluator`` function will return the ``soot_src_pah_alpha`` function for library coefficients generated with the PAH_alpha model.
+
 
 Correcting for soot leakage
 ++++++++++++++++++++++++++++
 
 Soot particles are formed at fuel-rich mixtures and then oxidized as they move toward fuel-lean mixtures.
-Many soot models assume infinitely fast oxidation, which means soot is never present near the oxidizer stream.
-However, in reality, unoxidized soot can leak into lean mixtures, such as in smoking flames.
+In many scenarios, such as smoking flames, this oxidation happens at a finite rate leading to unoxidized soot leaking into lean mixtures.
 One manner in which this can happen is when radiative heat losses are large enough to substantially lower oxidation rates through the lower temperatures,
 such as happens in flames with large residence times and Damköhler numbers.
 Local extinction events, such as through fast turbulent transport, can also lead to suppressed oxidation.
-Finite-rate oxidation models are needed to account for these kinds of phenomena.
+Finite-rate oxidation models are important for modeling these kinds of phenomena.
 
-Subfilter PDF models have been proposed to capture finite-rate oxidation of soot particles, such as by Colmán et. al. [Col2023]_.
-This approach starts by finding the mixture fraction value, termed :math:`Z_\mathrm{soot}`, at which the soot surface growth and soot oxidation rates are equivalent.
-A Heaviside function centered at :math:`Z_\mathrm{soot}` represents infinitely fast oxidation, where no soot is present for :math:`Z<Z_\mathrm{soot}`.
-Using something like a hyperbolic tangent function smooths this transition and starts to allow for finite-rate oxidation or the presence of soot at :math:`Z<Z_\mathrm{soot}`.
+Recent developments in soot modeling for turbulent flames have introduced the concept of a soot subfilter PDF.
+This can account for the effect of soot leaking into the oxidizer side of the flame on both the soot growth and oxidation rates,
+which in turn reduces the tendency of flamelet models to over-predict soot oxidation [Col2023]_.
+The approach starts by finding the mixture fraction value, termed :math:`Z_\mathrm{soot}`, at which the soot surface growth and soot oxidation rates are equivalent.
+The subfilter is then defined as a hyperbolic tangent function of mixture fraction, parameterized by :math:`Z_\mathrm{soot}` and a soot oxidation Damköhler number
+, :math:`\zeta`, which determines the width of the transition
+
+.. math::
+    \zeta = \frac{\chi (Z_\mathrm{soot})}{2 k_\mathrm{ox}(Z_\mathrm{soot})}.
+    :label: zeta_eqn
+
+In :eq:`zeta_eqn`, :math:`k_\mathrm{ox}` is the sum of oxidation coefficients at a given mixture fraction, and :math:`\chi` is the scalar dissipation rate function of mixture fraction.
+In practice, we interpolate :math:`k_\mathrm{ox}` over mixture fraction for a given Spitfire library in order to evaluate it at :math:`Z_\mathrm{soot}`
+while the algebraic form of :math:`\chi(Z)` is known.
 
 .. [Col2023] Hernando Maldonado Colmán, Antonio Attili, and Michael E. Mueller,
     Large Eddy Simulation of turbulent nonpremixed sooting flames: Presumed subfilter PDF model for finite-rate oxidation of soot,
@@ -210,45 +225,24 @@ Using something like a hyperbolic tangent function smooths this transition and s
     Volume 258,
     2023
 
-Spitfire supports soot leakage when tabulating soot source term coefficients through the ``percent_soot_leakage`` argument of ``tabulate_soot_source_coefficients``.
-When this argument is nonzero, a soot subfilter is defined as
+Spitfire builds on the work of Colmán et. al. [Col2023]_, by including a ``soot_leakage_fraction`` as an additional parameter to the soot subfilter :math:`C_s(Z)`
 
 .. math::
-    C_s(Z) &= 0.5(1+\mathrm{percent\_soot\_leakage}) + 0.5(1-\mathrm{percent\_soot\_leakage})\tanh((Z - Z_\mathrm{soot} + \zeta)/\zeta) \\
-    \zeta &= \frac{\chi (Z_\mathrm{soot})}{2 k_\mathrm{ox}(Z_\mathrm{soot})}
+    C_s(Z) = 0.5(1+\mathrm{soot\_leakage\_fraction}) + 0.5(1-\mathrm{soot\_leakage\_fraction})\tanh((Z - Z_\mathrm{soot} + \zeta)/\zeta).
     :label: corr_eqn
 
-where :math:`k_\mathrm{ox}` is the sum of oxidation coefficients which we interpolate over mixture fraction and evaluate at :math:`Z_\mathrm{soot}`.
-This soot subfilter then multiplies all surface growth and oxidation coefficients in the library.
-The soot subfilter is also added to the library as the property 'soot_subfilter'.
+Running ``tabulate_soot_source_coefficients`` with :math:`0\leq\mathrm{soot}\_\mathrm{leakage}\_\mathrm{fraction}<1` creates a subfilter that multiplies all surface growth and oxidation coefficients
+in the library and gets added itself to the library as the property 'soot_subfilter'.
+A soot leakage fraction of 1 is equivalent to not applying a soot subfilter, in which case oxidation and growth rates are not modified compared to the original soot model.
+Decreasing this fraction corresponds to increasing oxidation rates, which further limits the amount of soot that would be available for oxidation at :math:`Z<Z_\mathrm{soot}`.
+This leads to smaller tabulated oxidation coefficients for lean mixtures.
+A fraction of 0 represents infinitely fast oxidation, where no soot is present for :math:`Z<Z_\mathrm{soot}` and the subfilter resembles a Heaviside.
 When building a turbulent library, the corrected surface growth and oxidation coefficients (:math:`\mathrm{surf}_i C_s`) are convolved with the mixture fraction PDF
 and normalized by the convolution of the soot subfilter itself with that same PDF:
 
 .. math::
     \widetilde{\mathrm{surf}_i} = \frac{\int \mathrm{surf}_i C_s P_z dZ}{\int C_s P_z dZ}
     :label: turb_corr_eqn
-
-
-Soot Radiation Models
-----------------------
-Absorption and radiation soot coefficients can be added onto a library through the function ``tabulate_soot_radiation_model``.
-Spitfire currently supports a 'linear_absorption_coefficient' model for soot radiation and absorption.
-
-The absorption coefficient is computed as
-
-.. math::
-    \mathrm{soot\_abs\_coeff} = \mathrm{max}(\mathrm{intercept} + \mathrm{slope} * T, \mathrm{min\_value}) \frac{\rho}{\rho_s}
-    :label: soot_abs_coeff
-
-where the parameters 'intercept', 'slope' and 'min\_value' are provided by the user as desired.
-Default values for all parameters are zero, which would result in zero absorption/radiation if left unchanged.
-Suggested values to feed the function are ``input_modelargs = {'slope': 1735., 'intercept': -3.75e5}``.
-
-The radiation source is then related to the absorption as
-
-.. math::
-    \mathrm{soot\_rad\_source} = \mathrm{soot\_abs\_coeff} \sigma_B T^4 / \pi \ \ (\mathrm{MW}/\mathrm{m}^3)
-    :label: soot_rad_source
 
 
 Gas Radiation Models
@@ -322,6 +316,41 @@ The radiation source is then related to the absorption as
 .. math::
     \mathrm{gas\_rad\_source} = \mathrm{gas\_abs\_coeff} \sigma_B T^4 / \pi \ \ (\mathrm{MW}/\mathrm{m}^3)
     :label: gas_rad_source
+
+
+Soot Radiation Models
+----------------------
+Absorption and radiation soot coefficients can be added onto a library through the function ``tabulate_soot_radiation_model``.
+Spitfire currently supports a 'linear_absorption_coefficient' model for soot radiation and absorption.
+
+The absorption coefficient is computed as
+
+.. math::
+    \mathrm{soot\_abs\_coeff} = \mathrm{max}(\mathrm{intercept} + \mathrm{slope} * T, \mathrm{min\_value}) \frac{\rho}{\rho_s} \ \ (\mathrm{m}^{-1})
+    :label: soot_abs_coeff
+
+where the parameters 'intercept', 'slope' and 'min\_value' are provided by the user as desired.
+Default values for all parameters are zero, which would result in zero absorption/radiation if left unchanged.
+Suggested values to feed the function are ``input_modelargs = {'slope': 1735., 'intercept': -3.75e5}``.
+
+The radiation source is then related to the absorption as
+
+.. math::
+    \mathrm{soot\_rad\_source} = \mathrm{soot\_abs\_coeff} \sigma_B T^4 / \pi \ \ (\mathrm{MW}/\mathrm{m}^3)
+    :label: soot_rad_source
+
+
+In a CFD simulation, the effects of soot on the total absorption coefficient can be represented with
+
+.. math::
+    \mathrm{absorption\_coeff} = \mathrm{gas\_abs\_coeff} + Y_s \mathrm{soot\_abs\_coeff}
+    :label: absorption
+
+and the effects of soot on the total radiation source can be represented with
+
+.. math::
+    \mathrm{radiation\_source} = \mathrm{gas\_rad\_source} + Y_s \mathrm{soot\_rad\_source}
+    :label: radiation
 
 
 Tutorials

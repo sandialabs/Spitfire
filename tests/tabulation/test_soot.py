@@ -1,8 +1,7 @@
 import unittest
 from os.path import abspath, join
 from spitfire import ChemicalMechanismSpec, Library, apply_mixing_model, PDFSpec, build_adiabatic_bs_library, build_adiabatic_slfm_library
-from spitfire import tabulate_gas_radiation_model, tabulate_soot_source_coefficients, tabulate_soot_radiation_model, compute_soot_source_terms
-from spitfire.chemistry.soot import _soot_src_aksit_moss, _soot_src_aksit_moss_benzene, _soot_src_pah_alpha
+from spitfire import tabulate_gas_radiation_model, tabulate_soot_source_coefficients, tabulate_soot_radiation_model, get_soot_source_term_evaluator, soot_src_aksit_moss, soot_src_aksit_moss_benzene, soot_src_pah_alpha
 import numpy as np
 
 
@@ -119,7 +118,8 @@ class TestSoot(unittest.TestCase):
         for prop in soot_terms:
             self.assertTrue(prop in self.bs.props)
         try:
-            src_dict = compute_soot_source_terms(self.bs, ns_test, ys_test, verbose=False)
+            src_eval = get_soot_source_term_evaluator(self.bs, verbose=False)
+            src_dict = src_eval(ns_test, ys_test, self.bs['nucl_C2H2'], self.bs['coag'], self.bs['surf_C2H2'], self.bs['surf_O2'], self.bs['surf_OH'])
             self.assertTrue(True)
         except ValueError:
             self.assertTrue(False)
@@ -133,58 +133,19 @@ class TestSoot(unittest.TestCase):
         surf_C2H2 = src_dict['S_Ys_c2h2'][idx_test] / area_fac
         surf_O2 = -src_dict['S_Ys_o2'][idx_test] / area_fac
         surf_OH = -src_dict['S_Ys_oh'][idx_test] / area_fac
-        test_dict = _soot_src_aksit_moss(ns_test, ys_test, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH)
+        test_dict = soot_src_aksit_moss(ns_test, ys_test, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH)
         self.assertTrue(test_dict['S_Ns']  - (nucl_C2H2 - coag * np.power(ns_test, 11./6.) * np.power(ys_test, 1./6.)) <= tol)
         self.assertTrue(test_dict['S_Ys']  - (144.*nucl_C2H2 + area_fac*(surf_C2H2 - surf_O2 - surf_OH)) <= tol)
-        test_dict = _soot_src_aksit_moss(ns_test, ys_test, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, {'coag':2.})
+        test_dict = soot_src_aksit_moss(ns_test, ys_test, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, {'coag':2.})
         self.assertTrue(test_dict['S_Ns']  - (nucl_C2H2 - 2. * coag * np.power(ns_test, 11./6.) * np.power(ys_test, 1./6.)) <= tol)
-
-        maxallow = 1.
-        perturb = maxallow + 1.e-16
-        src_dict_clip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], ns_test, perturb, clip=True, verbose=False)
-        self.assertTrue(src_dict_clip['S_Ns']  - (nucl_C2H2 - coag * np.power(ns_test, 11./6.) * np.power(maxallow, 1./6.)) <= tol)
-        self.assertTrue(src_dict_clip['S_Ys']  - (144.*nucl_C2H2 + np.power(ns_test, 1./3.) * np.power(maxallow, 2./3.)*(surf_C2H2 - surf_O2 - surf_OH)) <= tol)
-        src_dict_noclip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], ns_test, perturb, clip=False, verbose=False)
-        self.assertTrue(src_dict_noclip['S_Ns']  - (nucl_C2H2 - coag * np.power(ns_test, 11./6.) * np.power(perturb, 1./6.)) <= tol)
-        self.assertTrue(test_dict['S_Ys']  - (144.*nucl_C2H2 + np.power(ns_test, 1./3.) * np.power(perturb, 2./3.)*(surf_C2H2 - surf_O2 - surf_OH)) <= tol)
-
-        minallow = 1.e-16
-        perturb = minallow - 1.e-16
-        src_dict_clip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], ns_test, perturb, clip=True, verbose=False)
-        self.assertTrue(src_dict_clip['S_Ns']  - (nucl_C2H2 - coag * np.power(ns_test, 11./6.) * np.power(minallow, 1./6.)) <= tol)
-        self.assertTrue(src_dict_clip['S_Ys']  - (144.*nucl_C2H2 + np.power(ns_test, 1./3.) * np.power(minallow, 2./3.)*(surf_C2H2 - surf_O2 - surf_OH)) <= tol)
-        try:
-            src_dict_noclip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], ns_test, perturb, clip=False, verbose=False)
-            self.assertTrue(False)
-        except:
-            self.assertTrue(True)
-
-        maxallow = 1.e6
-        perturb = maxallow + 1.e-16
-        src_dict_clip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], perturb, ys_test, clip=True, verbose=False)
-        self.assertTrue(src_dict_clip['S_Ns']  - (nucl_C2H2 - coag * np.power(maxallow, 11./6.) * np.power(ys_test, 1./6.)) <= tol)
-        self.assertTrue(src_dict_clip['S_Ys']  - (144.*nucl_C2H2 + np.power(maxallow, 1./3.) * np.power(ys_test, 2./3.)*(surf_C2H2 - surf_O2 - surf_OH)) <= tol)
-        src_dict_noclip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], perturb, ys_test, clip=False, verbose=False)
-        self.assertTrue(src_dict_noclip['S_Ns']  - (nucl_C2H2 - coag * np.power(perturb, 11./6.) * np.power(ys_test, 1./6.)) <= tol)
-        self.assertTrue(test_dict['S_Ys']  - (144.*nucl_C2H2 + np.power(perturb, 1./3.) * np.power(ys_test, 2./3.)*(surf_C2H2 - surf_O2 - surf_OH)) <= tol)
-
-        minallow = 1.e-16
-        perturb = minallow - 1.e-16
-        src_dict_clip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], perturb, ys_test, clip=True, verbose=False)
-        self.assertTrue(src_dict_clip['S_Ns']  - (nucl_C2H2 - coag * np.power(minallow, 11./6.) * np.power(ys_test, 1./6.)) <= tol)
-        self.assertTrue(src_dict_clip['S_Ys']  - (144.*nucl_C2H2 + np.power(minallow, 1./3.) * np.power(ys_test, 2./3.)*(surf_C2H2 - surf_O2 - surf_OH)) <= tol)
-        try:
-            src_dict_noclip = compute_soot_source_terms(self.bs[idx_test:idx_test+1], perturb, ys_test, clip=False, verbose=False)
-            self.assertTrue(False)
-        except:
-            self.assertTrue(True)
 
         soot_terms += ['surf_A1']
         lib_with_A1 = tabulate_soot_source_coefficients(cmech, lib_with_A1, 'Aksit_Moss_Benzene', 1., verbose=False)
         for prop in soot_terms:
             self.assertTrue(prop in lib_with_A1.props)
         try:
-            src_dict = compute_soot_source_terms(lib_with_A1, ns_test, ys_test, verbose=False)
+            src_eval = get_soot_source_term_evaluator(lib_with_A1, verbose=False)
+            src_dict = src_eval(ns_test, ys_test, lib_with_A1['nucl_C2H2'], lib_with_A1['coag'], lib_with_A1['surf_C2H2'], lib_with_A1['surf_O2'], lib_with_A1['surf_OH'], lib_with_A1['surf_A1'])
             self.assertTrue(True)
         except ValueError:
             self.assertTrue(False)
@@ -199,7 +160,7 @@ class TestSoot(unittest.TestCase):
         surf_O2 = -src_dict['S_Ys_o2'][idx_test] / area_fac
         surf_OH = -src_dict['S_Ys_oh'][idx_test] / area_fac
         surf_A1 = -src_dict['S_Ys_a1'][idx_test] / area_fac
-        test_dict = _soot_src_aksit_moss_benzene(ns_test, ys_test, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, surf_A1)
+        test_dict = soot_src_aksit_moss_benzene(ns_test, ys_test, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, surf_A1)
         self.assertTrue(test_dict['S_Ns']  - (nucl_C2H2 - coag * np.power(ns_test, 11./6.) * np.power(ys_test, 1./6.)) <= tol)
         self.assertTrue(test_dict['S_Ys']  - (144.*nucl_C2H2 + area_fac*(surf_C2H2 + surf_A1 - surf_O2 - surf_OH)) <= tol)
 
@@ -208,7 +169,8 @@ class TestSoot(unittest.TestCase):
         for prop in soot_terms:
             self.assertTrue(prop in lib_with_A1.props)
         try:
-            src_dict = compute_soot_source_terms(lib_with_A1, ns_test, ys_test, verbose=False)
+            src_eval = get_soot_source_term_evaluator(lib_with_A1, verbose=False)
+            src_dict = src_eval(ns_test, ys_test, lib_with_A1['dimer_src'], lib_with_A1['coag'], lib_with_A1['sg'], lib_with_A1['ox_O2'], lib_with_A1['ox_OH'], lib_with_A1['ox_O'])
             self.assertTrue(True)
         except ValueError:
             self.assertTrue(False)
@@ -223,7 +185,7 @@ class TestSoot(unittest.TestCase):
         ox_O2 = -src_dict['S_Ys_o2'][idx_test] / area_fac
         ox_OH = -src_dict['S_Ys_oh'][idx_test] / area_fac
         ox_O = -src_dict['S_Ys_o'][idx_test] / area_fac
-        test_dict = _soot_src_pah_alpha(ns_test, ys_test, dimer_src, coag, sg, ox_O2, ox_OH, ox_O)
+        test_dict = soot_src_pah_alpha(ns_test, ys_test, dimer_src, coag, sg, ox_O2, ox_OH, ox_O)
         self.assertTrue(test_dict['S_Ns']  - (dimer_src * 1.e-6 * 0.5 / 361.4 - coag * np.power(ns_test, 11./6.) * np.power(ys_test, 1./6.)) <= tol)
         self.assertTrue(test_dict['S_Ys']  - (dimer_src * 1.e-6 + area_fac * (sg - ox_O2 - ox_OH - ox_O)) <= tol)
 
