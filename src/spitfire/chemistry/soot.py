@@ -52,8 +52,8 @@ def tabulate_soot_source_coefficients(mechanism, input_library, modelname, soot_
             The library with the following fields added for species relevant to the chosen model:
 
             - 'coag': coagulation
-            - 'surf_': surface growth or oxidation for the species following the underscore
-            - 'nucl_': nucleation for the species following the underscore
+            - 'surf\_': surface growth or oxidation for the species following the underscore
+            - 'nucl\_': nucleation for the species following the underscore
     """
     output_library = Library.copy(input_library)
     soot_species_aliases = soot_species_aliases if soot_species_aliases is not None else _get_default_species_aliases()
@@ -257,18 +257,25 @@ it is associated with very little credibility evidence and had not undergone suf
                 except:
                     zsoot = fsolve(func, zguess, args=(1))[0]
                 if zsoot<1.e-12 or zsoot>1.-1.e-12:
-                    raise ValueError("Couldn't find Zsoot for soot subfilter. Possibly too close to extinction.")
-                chi_st = output_library.dissipation_rate_stoich_values[ix]
-                chi = compute_dissipation_rate(zsoot, form=diss_rate_form, stoich_dissipation_rate=chi_st, stoich_mixture_fraction=zst)
-                dz2 = 0.5 * chi / interp1d(zvals, kox_line, kind=3)(zsoot)
-                return 0.5*(1.+soot_leakage_fraction) + 0.5*(1.-soot_leakage_fraction) * np.tanh((zvals - (zsoot - dz2)) / dz2)
+                    return None
+                else:
+                    chi_st = output_library.dissipation_rate_stoich_values[ix]
+                    chi = compute_dissipation_rate(zsoot, form=diss_rate_form, stoich_dissipation_rate=chi_st, stoich_mixture_fraction=zst)
+                    dz2 = 0.5 * chi / interp1d(zvals, kox_line, kind=3)(zsoot)
+                    return 0.5*(1.+soot_leakage_fraction) + 0.5*(1.-soot_leakage_fraction) * np.tanh((zvals - (zsoot - dz2)) / dz2)
             if ndims==2:
                 lib_slice = tuple([slice(None), ix])
-                output_library['soot_subfilter'][lib_slice] = correction_1d(lib_slice)
+                subfilter = correction_1d(lib_slice)
+                if subfilter is None and verbose:
+                    print(f"Couldn't find Zsoot for index ({ix}): chi_st={output_library.dissipation_rate_stoich_values[ix]:.2e}. Will use a subfilter of 1.")
+                output_library['soot_subfilter'][lib_slice] = np.ones_like(zvals) if subfilter is None else subfilter
             elif ndims==3 and 'enthalpy_defect_stoich'==output_library.dim_names[-1]:
                 for ig in range(output_library.enthalpy_defect_stoich_npts):
                     lib_slice = tuple([slice(None), ix, ig])
-                    output_library['soot_subfilter'][lib_slice] = correction_1d(lib_slice)
+                    subfilter = correction_1d(lib_slice)
+                    if subfilter is None and verbose:
+                        print(f"Couldn't find Zsoot for index ({ix}, {ig}): (chi_st={output_library.dissipation_rate_stoich_values[ix]:.2e}, g_st={output_library.enthalpy_defect_stoich_values[ig]:.2e}). Will use a subfilter of 1.")
+                    output_library['soot_subfilter'][lib_slice] = np.ones_like(zvals) if subfilter is None else subfilter
             else:
                 raise ValueError("Ensure your library is laminar.")
 
@@ -348,11 +355,11 @@ def _get_default_mult_dict():
     return dict({'nucl': 1.0,
                   'coag': 1.0,
                   'cond': 1.0,
-                  'c2h2': 1.0,
-                  'o2': 1.0,
-                  'oh': 1.0,
-                  'o': 1.0,
-                  'a1': 1.0})
+                  'surf_c2h2': 1.0,
+                  'surf_o2': 1.0,
+                  'surf_oh': 1.0,
+                  'surf_o': 1.0,
+                  'surf_a1': 1.0})
 
 
 def soot_src_aksit_moss(soot_number_density, soot_mass_fraction, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, input_mult_dict=None):
@@ -365,24 +372,24 @@ def soot_src_aksit_moss(soot_number_density, soot_mass_fraction, nucl_C2H2, coag
 
         Parameters
         ----------
-        soot_number_density: float
+        soot_number_density: float or array
             a soot number density (kmol soot / kg air)
-        soot_mass_fraction: float
+        soot_mass_fraction: float or array
             a soot mass fraction
-        nucl_C2H2: float
+        nucl_C2H2: float or array
             an acetylene-based nucleation coefficient (:math:`\\mathrm{kmol}/\\mathrm{m}^3/\\mathrm{s}`)
-        coag: float
+        coag: float or array
             a coagulation coefficient (:math:`\\mathrm{kg}^{11/6}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{5/6}`)
-        surf_C2H2: float
+        surf_C2H2: float or array
             an acetylene-based surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        surf_O2: float
+        surf_O2: float or array
             an oxygen-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        surf_OH: float
+        surf_OH: float or array
             a hydroxyl-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
         input_mult_dict: dictionary
             a dictionary of multipliers for any of the source term coefficients present in a library. surface growth and oxidation multipliers
             are specified by the species name. Supported keys, showing the default unity multipliers, include
-            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'c2h2': 1.0, 'o2': 1.0, 'oh': 1.0, 'o': 1.0, 'a1': 1.0}
+            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'surf_c2h2': 1.0, 'surf_o2': 1.0, 'surf_oh': 1.0, 'surf_o': 1.0, 'surf_a1': 1.0}
 
         Returns
         -------
@@ -400,9 +407,9 @@ def soot_src_aksit_moss(soot_number_density, soot_mass_fraction, nucl_C2H2, coag
     coag_mole_rate = -mult_dict['coag'] * coag * np.power(soot_number_density, 11./6.) * np.power(soot_mass_fraction, 1./6.)
     nucl_mass_rate = mult_dict['nucl'] * 144.0 * nucl_C2H2
     cond_rate = np.zeros_like(nucl_mass_rate)
-    surf_c2h2_rate = mult_dict['c2h2'] * surf_C2H2 * area_fac
-    surf_o2_rate = -mult_dict['o2'] * surf_O2 * area_fac
-    surf_oh_rate = -mult_dict['oh'] * surf_OH * area_fac
+    surf_c2h2_rate = mult_dict['surf_c2h2'] * surf_C2H2 * area_fac
+    surf_o2_rate = -mult_dict['surf_o2'] * surf_O2 * area_fac
+    surf_oh_rate = -mult_dict['surf_oh'] * surf_OH * area_fac
     surf_o_rate = np.zeros_like(surf_o2_rate)
     surf_a1_rate = np.zeros_like(surf_c2h2_rate)
 
@@ -432,26 +439,26 @@ def soot_src_aksit_moss_benzene(soot_number_density, soot_mass_fraction, nucl_C2
 
         Parameters
         ----------
-        soot_number_density: float
+        soot_number_density: float or array
             a soot number density (kmol soot / kg air)
-        soot_mass_fraction: float
+        soot_mass_fraction: float or array
             a soot mass fraction
-        nucl_C2H2: float
+        nucl_C2H2: float or array
             an acetylene-based nucleation coefficient (:math:`\\mathrm{kmol}/\\mathrm{m}^3/\\mathrm{s}`)
-        coag: float
+        coag: float or array
             a coagulation coefficient (:math:`\\mathrm{kg}^{11/6}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{5/6}`)
-        surf_C2H2: float
+        surf_C2H2: float or array
             an acetylene-based surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        surf_O2: float
+        surf_O2: float or array
             an oxygen-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        surf_OH: float
+        surf_OH: float or array
             a hydroxyl-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        surf_A1: float
+        surf_A1: float or array
             a benzene-based surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
         input_mult_dict: dictionary
             a dictionary of multipliers for any of the source term coefficients present in a library. surface growth and oxidation multipliers
             are specified by the species name. Supported keys, showing the default unity multipliers, include
-            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'c2h2': 1.0, 'o2': 1.0, 'oh': 1.0, 'o': 1.0, 'a1': 1.0}
+            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'surf_c2h2': 1.0, 'surf_o2': 1.0, 'surf_oh': 1.0, 'surf_o': 1.0, 'surf_a1': 1.0}
 
         Returns
         -------
@@ -469,11 +476,11 @@ def soot_src_aksit_moss_benzene(soot_number_density, soot_mass_fraction, nucl_C2
     coag_mole_rate = -mult_dict['coag'] * coag * np.power(soot_number_density, 11./6.) * np.power(soot_mass_fraction, 1./6.)
     nucl_mass_rate = mult_dict['nucl'] * 144.0 * nucl_C2H2
     cond_rate = np.zeros_like(nucl_mass_rate)
-    surf_c2h2_rate = mult_dict['c2h2'] * surf_C2H2 * area_fac
-    surf_o2_rate = -mult_dict['o2'] * surf_O2 * area_fac
-    surf_oh_rate = -mult_dict['oh'] * surf_OH * area_fac
+    surf_c2h2_rate = mult_dict['surf_c2h2'] * surf_C2H2 * area_fac
+    surf_o2_rate = -mult_dict['surf_o2'] * surf_O2 * area_fac
+    surf_oh_rate = -mult_dict['surf_oh'] * surf_OH * area_fac
     surf_o_rate = np.zeros_like(surf_o2_rate)
-    surf_a1_rate = mult_dict['a1'] * surf_A1 * area_fac
+    surf_a1_rate = mult_dict['surf_a1'] * surf_A1 * area_fac
 
     src_dict = dict({
         'S_Ns': nucl_mole_rate + coag_mole_rate,
@@ -490,6 +497,7 @@ def soot_src_aksit_moss_benzene(soot_number_density, soot_mass_fraction, nucl_C2
     })
     return src_dict
 
+
 def soot_src_pah_alpha(soot_number_density, soot_mass_fraction, dimer_src, coag, sg, ox_O2, ox_OH, ox_O, dimer_fac=1.e-6, input_mult_dict=None):
     """
     Evaluates source terms using the PAH_alpha model for the soot_number_density (:math:`N_s`) and soot_mass_fraction (:math:`Y_s`) as shown below
@@ -500,28 +508,28 @@ def soot_src_pah_alpha(soot_number_density, soot_mass_fraction, dimer_src, coag,
 
         Parameters
         ----------
-        soot_number_density: float
+        soot_number_density: float or array
             a soot number density (kmol soot / kg air)
-        soot_mass_fraction: float
+        soot_mass_fraction: float or array
             a soot mass fraction
-        dimer_src: float
+        dimer_src: float or array
             a PAH-based nucleation coefficient (:math:`\\mathrm{kg}/\\mathrm{m}^3/\\mathrm{s}`)
-        coag: float
+        coag: float or array
             a coagulation coefficient (:math:`\\mathrm{kg}^{11/6}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{5/6}`)
-        sg: float
+        sg: float or array
             a surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        ox_O2: float
+        ox_O2: float or array
             an oxygen-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        ox_OH: float
+        ox_OH: float or array
             a hydroxyl-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        ox_O: float
+        ox_O: float or array
             an oxygen radical-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
-        dimer_fac: float
+        dimer_fac: float or array
             factor (default 1e-6) multiplying the nucleation coefficients; used to correct the model's tendency for nucleation to dominate and over-predict soot
         input_mult_dict: dictionary
             a dictionary of multipliers for any of the source term coefficients present in a library. surface growth and oxidation multipliers
             are specified by the species name. Supported keys, showing the default unity multipliers, include
-            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'c2h2': 1.0, 'o2': 1.0, 'oh': 1.0, 'o': 1.0, 'a1': 1.0}
+            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'surf_c2h2': 1.0, 'surf_o2': 1.0, 'surf_oh': 1.0, 'surf_o': 1.0, 'surf_a1': 1.0}
 
         Returns
         -------
@@ -540,10 +548,10 @@ def soot_src_pah_alpha(soot_number_density, soot_mass_fraction, dimer_src, coag,
     coag_mole_rate = -mult_dict['coag'] * coag * np.power(soot_number_density, 11./6.) * np.power(soot_mass_fraction, 1./6.)
     nucl_mass_rate = mult_dict['nucl'] * dimer_fac * dimer_src
     cond_rate = np.zeros_like(nucl_mass_rate)
-    surf_c2h2_rate = mult_dict['c2h2'] * sg * area_fac
-    surf_o2_rate = -mult_dict['o2'] * ox_O2 * area_fac
-    surf_oh_rate = -mult_dict['oh'] * ox_OH * area_fac
-    surf_o_rate = -mult_dict['o'] * ox_O * area_fac
+    surf_c2h2_rate = mult_dict['surf_c2h2'] * sg * area_fac
+    surf_o2_rate = -mult_dict['surf_o2'] * ox_O2 * area_fac
+    surf_oh_rate = -mult_dict['surf_oh'] * ox_OH * area_fac
+    surf_o_rate = -mult_dict['surf_o'] * ox_O * area_fac
     surf_a1_rate = np.zeros_like(surf_c2h2_rate)
 
     src_dict = dict({
@@ -585,3 +593,240 @@ def get_soot_source_term_evaluator(library, verbose=True):
         return soot_src_aksit_moss_benzene
     elif soot_kinetics=='pah-alpha':
         return soot_src_pah_alpha
+
+
+def jac_soot_src_aksit_moss(soot_number_density, soot_mass_fraction, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, input_mult_dict=None):
+    """
+    Evaluates components of the soot source Jacobian using the Aksit_Moss model for the soot_number_density (:math:`N_s`) and soot_mass_fraction (:math:`Y_s`) as shown below
+    
+    :math:`\\partial{S}_{N_s}/\\partial{N_s} = - (11/6) \\mathrm{coag} N_s^{5/6} Y_s^{1/6}`
+
+    :math:`\\partial{S}_{N_s}/\\partial{Y_s} = - (1/6) \\mathrm{coag} N_s^{11/6} Y_s^{-5/6}`
+
+    :math:`\\partial{S}_{Y_s}/\\partial{N_s} = (1/3) (\\mathrm{surf\_C2H2} - \\mathrm{surf\_O2} - \\mathrm{surf\_OH}) N_s^{-2/3} Y_s^{2/3}`
+
+    :math:`\\partial{S}_{Y_s}/\\partial{Y_s} = (2/3) (\\mathrm{surf\_C2H2} - \\mathrm{surf\_O2} - \\mathrm{surf\_OH}) N_s^{1/3} Y_s^{-1/3}`
+
+        Parameters
+        ----------
+        soot_number_density: float or array
+            a soot number density (kmol soot / kg air)
+        soot_mass_fraction: float or array
+            a soot mass fraction
+        nucl_C2H2: float or array
+            an acetylene-based nucleation coefficient (:math:`\\mathrm{kmol}/\\mathrm{m}^3/\\mathrm{s}`)
+        coag: float or array
+            a coagulation coefficient (:math:`\\mathrm{kg}^{11/6}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{5/6}`)
+        surf_C2H2: float or array
+            an acetylene-based surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        surf_O2: float or array
+            an oxygen-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        surf_OH: float or array
+            a hydroxyl-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        input_mult_dict: dictionary
+            a dictionary of multipliers for any of the source term coefficients present in a library. surface growth and oxidation multipliers
+            are specified by the species name. Supported keys, showing the default unity multipliers, include
+            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'surf_c2h2': 1.0, 'surf_o2': 1.0, 'surf_oh': 1.0, 'surf_o': 1.0, 'surf_a1': 1.0}
+
+        Returns
+        -------
+        jac_dict: dictionary
+            A dictionary of the evaluated source Jacobian terms for the soot number density ('S_Ns') and soot mass fraction ('S_Ys').
+            Keys include 'dSNs_dNs', 'dSNs_dYs', 'dSYs_dNs', 'dSYs_dYs'.
+    """
+    mult_dict = _get_default_mult_dict()
+    if input_mult_dict is not None:
+        mult_dict.update(input_mult_dict)
+
+    area_fac_Ns = (1./3.)*np.power(soot_number_density, -2./3.) * np.power(soot_mass_fraction, 2./3.)
+    area_fac_Ys = (2./3.)*np.power(soot_number_density, 1./3.) * np.power(soot_mass_fraction, -1./3.)
+
+    coag_fac_Ns = (11./6.)*np.power(soot_number_density, 5./6.) * np.power(soot_mass_fraction, 1./6.)
+    coag_fac_Ys = (1./6.)*np.power(soot_number_density, 11./6.) * np.power(soot_mass_fraction, -5./6.)
+
+    coag_mole_rate = -mult_dict['coag'] * coag
+    surf_c2h2_rate = mult_dict['surf_c2h2'] * surf_C2H2
+    surf_o2_rate = -mult_dict['surf_o2'] * surf_O2
+    surf_oh_rate = -mult_dict['surf_oh'] * surf_OH
+
+    dSNs_dNs = coag_mole_rate*coag_fac_Ns
+    dSNs_dYs = coag_mole_rate*coag_fac_Ys
+    dSYs_dNs = (surf_c2h2_rate+surf_o2_rate+surf_oh_rate)*area_fac_Ns
+    dSYs_dYs = (surf_c2h2_rate+surf_o2_rate+surf_oh_rate)*area_fac_Ys
+
+    jac_dict = {
+        'dSNs_dNs': dSNs_dNs,
+        'dSNs_dYs': dSNs_dYs,
+        'dSYs_dNs': dSYs_dNs,
+        'dSYs_dYs': dSYs_dYs,
+    }
+    return jac_dict
+
+
+def jac_soot_src_aksit_moss_benzene(soot_number_density, soot_mass_fraction, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, surf_A1, input_mult_dict=None):
+    """
+    Evaluates components of the soot source Jacobian using the Aksit_Moss_Benzene model for the soot_number_density (:math:`N_s`) and soot_mass_fraction (:math:`Y_s`) as shown below
+    
+    :math:`\\partial{S}_{N_s}/\\partial{N_s} = - (11/6) \\mathrm{coag} N_s^{5/6} Y_s^{1/6}`
+
+    :math:`\\partial{S}_{N_s}/\\partial{Y_s} = - (1/6) \\mathrm{coag} N_s^{11/6} Y_s^{-5/6}`
+
+    :math:`\\partial{S}_{Y_s}/\\partial{N_s} = (1/3) (\\mathrm{surf\_C2H2} + \\mathrm{surf\_A1} - \\mathrm{surf\_O2} - \\mathrm{surf\_OH}) N_s^{-2/3} Y_s^{2/3}`
+
+    :math:`\\partial{S}_{Y_s}/\\partial{Y_s} = (2/3) (\\mathrm{surf\_C2H2} + \\mathrm{surf\_A1} - \\mathrm{surf\_O2} - \\mathrm{surf\_OH}) N_s^{1/3} Y_s^{-1/3}`
+
+        Parameters
+        ----------
+        soot_number_density: float or array
+            a soot number density (kmol soot / kg air)
+        soot_mass_fraction: float or array
+            a soot mass fraction
+        nucl_C2H2: float or array
+            an acetylene-based nucleation coefficient (:math:`\\mathrm{kmol}/\\mathrm{m}^3/\\mathrm{s}`)
+        coag: float or array
+            a coagulation coefficient (:math:`\\mathrm{kg}^{11/6}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{5/6}`)
+        surf_C2H2: float or array
+            an acetylene-based surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        surf_O2: float or array
+            an oxygen-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        surf_OH: float or array
+            a hydroxyl-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        surf_A1: float or array
+            a benzene-based surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        input_mult_dict: dictionary
+            a dictionary of multipliers for any of the source term coefficients present in a library. surface growth and oxidation multipliers
+            are specified by the species name. Supported keys, showing the default unity multipliers, include
+            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'surf_c2h2': 1.0, 'surf_o2': 1.0, 'surf_oh': 1.0, 'surf_o': 1.0, 'surf_a1': 1.0}
+
+        Returns
+        -------
+        jac_dict: dictionary
+            A dictionary of the evaluated source Jacobian terms for the soot number density ('S_Ns') and soot mass fraction ('S_Ys').
+            Keys include 'dSNs_dNs', 'dSNs_dYs', 'dSYs_dNs', 'dSYs_dYs'.
+    """
+    mult_dict = _get_default_mult_dict()
+    if input_mult_dict is not None:
+        mult_dict.update(input_mult_dict)
+
+    area_fac_Ns = (1./3.)*np.power(soot_number_density, -2./3.) * np.power(soot_mass_fraction, 2./3.)
+    area_fac_Ys = (2./3.)*np.power(soot_number_density, 1./3.) * np.power(soot_mass_fraction, -1./3.)
+
+    coag_fac_Ns = (11./6.)*np.power(soot_number_density, 5./6.) * np.power(soot_mass_fraction, 1./6.)
+    coag_fac_Ys = (1./6.)*np.power(soot_number_density, 11./6.) * np.power(soot_mass_fraction, -5./6.)
+
+    coag_mole_rate = -mult_dict['coag'] * coag
+    surf_c2h2_rate = mult_dict['surf_c2h2'] * surf_C2H2
+    surf_o2_rate = -mult_dict['surf_o2'] * surf_O2
+    surf_oh_rate = -mult_dict['surf_oh'] * surf_OH
+    surf_a1_rate = mult_dict['surf_a1'] * surf_A1
+
+    dSNs_dNs = coag_mole_rate*coag_fac_Ns
+    dSNs_dYs = coag_mole_rate*coag_fac_Ys
+    dSYs_dNs = (surf_c2h2_rate+surf_o2_rate+surf_oh_rate+surf_a1_rate)*area_fac_Ns
+    dSYs_dYs = (surf_c2h2_rate+surf_o2_rate+surf_oh_rate+surf_a1_rate)*area_fac_Ys
+
+    jac_dict = {
+        'dSNs_dNs': dSNs_dNs,
+        'dSNs_dYs': dSNs_dYs,
+        'dSYs_dNs': dSYs_dNs,
+        'dSYs_dYs': dSYs_dYs,
+    }
+    return jac_dict
+
+
+def jac_soot_src_pah_alpha(soot_number_density, soot_mass_fraction, dimer_src, coag, sg, ox_O2, ox_OH, ox_O, dimer_fac=1.e-6, input_mult_dict=None):
+    """
+    Evaluates components of the soot source Jacobian using the PAH_alpha model for the soot_number_density (:math:`N_s`) and soot_mass_fraction (:math:`Y_s`) as shown below
+    
+    :math:`\\partial{S}_{N_s}/\\partial{N_s} = - (11/6) \\mathrm{coag} N_s^{5/6} Y_s^{1/6}`
+
+    :math:`\\partial{S}_{N_s}/\\partial{Y_s} = - (1/6) \\mathrm{coag} N_s^{11/6} Y_s^{-5/6}`
+
+    :math:`\\partial{S}_{Y_s}/\\partial{N_s} = (1/3) (\\mathrm{sg} - \\mathrm{ox\_O2} - \\mathrm{ox\_OH} - \\mathrm{ox\_O}) N_s^{-2/3} Y_s^{2/3}`
+
+    :math:`\\partial{S}_{Y_s}/\\partial{Y_s} = (2/3) (\\mathrm{sg} - \\mathrm{ox\_O2} - \\mathrm{ox\_OH} - \\mathrm{ox\_O}) N_s^{1/3} Y_s^{-1/3}`
+
+        Parameters
+        ----------
+        soot_number_density: float or array
+            a soot number density (kmol soot / kg air)
+        soot_mass_fraction: float or array
+            a soot mass fraction
+        dimer_src: float or array
+            a PAH-based nucleation coefficient (:math:`\\mathrm{kg}/\\mathrm{m}^3/\\mathrm{s}`)
+        coag: float or array
+            a coagulation coefficient (:math:`\\mathrm{kg}^{11/6}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{5/6}`)
+        sg: float or array
+            a surface growth coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        ox_O2: float or array
+            an oxygen-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        ox_OH: float or array
+            a hydroxyl-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        ox_O: float or array
+            an oxygen radical-based oxidation coefficient (:math:`\\mathrm{kg}^{4/3}/\\mathrm{m}^3/\\mathrm{s}/\\mathrm{kmol}^{1/3}`)
+        dimer_fac: float or array
+            factor (default 1e-6) multiplying the nucleation coefficients; used to correct the model's tendency for nucleation to dominate and over-predict soot
+        input_mult_dict: dictionary
+            a dictionary of multipliers for any of the source term coefficients present in a library. surface growth and oxidation multipliers
+            are specified by the species name. Supported keys, showing the default unity multipliers, include
+            {'nucl': 1.0, 'coag': 1.0, 'cond': 1.0, 'surf_c2h2': 1.0, 'surf_o2': 1.0, 'surf_oh': 1.0, 'surf_o': 1.0, 'surf_a1': 1.0}
+
+        Returns
+        -------
+        jac_dict: dictionary
+            A dictionary of the evaluated source Jacobian terms for the soot number density ('S_Ns') and soot mass fraction ('S_Ys').
+            Keys include 'dSNs_dNs', 'dSNs_dYs', 'dSYs_dNs', 'dSYs_dYs'.
+    """
+    mult_dict = _get_default_mult_dict()
+    if input_mult_dict is not None:
+        mult_dict.update(input_mult_dict)
+
+    area_fac_Ns = (1./3.)*np.power(soot_number_density, -2./3.) * np.power(soot_mass_fraction, 2./3.)
+    area_fac_Ys = (2./3.)*np.power(soot_number_density, 1./3.) * np.power(soot_mass_fraction, -1./3.)
+
+    coag_fac_Ns = (11./6.)*np.power(soot_number_density, 5./6.) * np.power(soot_mass_fraction, 1./6.)
+    coag_fac_Ys = (1./6.)*np.power(soot_number_density, 11./6.) * np.power(soot_mass_fraction, -5./6.)
+
+    coag_mole_rate = -mult_dict['coag'] * coag
+    surf_c2h2_rate = mult_dict['surf_c2h2'] * sg
+    surf_o2_rate = -mult_dict['surf_o2'] * ox_O2
+    surf_oh_rate = -mult_dict['surf_oh'] * ox_OH
+    surf_o_rate = -mult_dict['surf_o'] * ox_O
+
+    dSNs_dNs = coag_mole_rate*coag_fac_Ns
+    dSNs_dYs = coag_mole_rate*coag_fac_Ys
+    dSYs_dNs = (surf_c2h2_rate+surf_o2_rate+surf_oh_rate+surf_o_rate)*area_fac_Ns
+    dSYs_dYs = (surf_c2h2_rate+surf_o2_rate+surf_oh_rate+surf_o_rate)*area_fac_Ys
+
+    jac_dict = {
+        'dSNs_dNs': dSNs_dNs,
+        'dSNs_dYs': dSNs_dYs,
+        'dSYs_dNs': dSYs_dNs,
+        'dSYs_dYs': dSYs_dYs,
+    }
+    return jac_dict
+
+
+def get_soot_source_term_jacobian_evaluator(library, verbose=True):
+    """
+    Detect the soot model used in the library and return the corresponding Jacobian function
+
+        Parameters
+        ----------
+        library: a spitfire.chemistry.library Library instance
+            a library with soot source term coefficients, computed from running tabulate_soot_source_coefficients
+        verbose: boolean
+            whether or not to print the detected soot model on a library; default True
+
+        Returns
+        -------
+        A function for evaluating soot source term Jacobian
+    """
+    soot_kinetics, _ = _detect_soot_model(library, verbose)
+
+    if soot_kinetics=='aksit-moss':
+        return jac_soot_src_aksit_moss
+    elif soot_kinetics=='aksit-moss-benzene':
+        return jac_soot_src_aksit_moss_benzene
+    elif soot_kinetics=='pah-alpha':
+        return jac_soot_src_pah_alpha

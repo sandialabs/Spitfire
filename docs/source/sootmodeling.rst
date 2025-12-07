@@ -27,7 +27,7 @@ Spitfire supports three models for computing these source term coefficients:
   - PAH_alpha
 
 The coefficients are added to a library, given a chemical mechanism and soot model name, through the function ``tabulate_soot_source_coefficients``.
-The corresponding source term function can then be grabbed using ``get_soot_source_term_evaluator``.
+The corresponding source term function can then be grabbed using ``get_soot_source_term_evaluator`` and, likewise, a source term Jacobian evaluator can be obtained using ``get_soot_source_term_jacobian_evaluator``.
 
 Aksit-Moss models
 ++++++++++++++++++++++++++++

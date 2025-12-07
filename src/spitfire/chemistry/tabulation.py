@@ -22,6 +22,7 @@ import copy
 from functools import partial
 import itertools
 from scipy import integrate
+import pickle
 
 """these names are specific to tabulated chemistry libraries for combustion"""
 _mixture_fraction_name = 'mixture_fraction'
@@ -738,7 +739,7 @@ def _build_unstructured_nonadiabatic_defect_slfm_library(flamelet_specs,
         return serial_dict
 
 
-def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_stoich, verbose=False, extend=False):
+def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_stoich, verbose=False, enthalpy_defect_structuring_slope=0., enforce_enthalpy_defect_monotonicity=False):
     cput00 = perf_counter()
     min_g_st = 1.e305
     max_g_st = -1.e305
@@ -769,11 +770,6 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
     else:
         n_subad = n_defect_stoich
         defect_st_space = np.linspace(min_g_st, max_g_st, n_subad)
-    if extend:
-        defect_spacing = np.abs(defect_st_space[1] - defect_st_space[0])
-        times_spacing = 2
-        defect_st_append = np.linspace(min_g_st - times_spacing * defect_spacing, min_g_st - defect_spacing, times_spacing)
-        defect_st_space = np.hstack((defect_st_append, defect_spacing))
     for chi_st in chi_st_space:
         chi_to_g_list_dict[chi_st] = list(chi_to_g_list_dict[chi_st])
     chi_st_space = list(chi_st_space)
@@ -790,17 +786,41 @@ def _interpolate_to_structured_defect_dimension(unstructured_table, n_defect_sto
             for q in table_g0:
                 structured_table[(chi_st, g_st)][q] = np.zeros(nz)
 
+        if enforce_enthalpy_defect_monotonicity:
+            idx_delete = list()
+            for iz in range(nz):
+                idelete = list()
+                unstruc_y = np.zeros_like(unstruc_g_st_space)
+                for i in range(len(unstruc_g_st_space)):
+                    unstruc_y[i] = unstructured_table[(chi_st, unstruc_g_st_space_sorted[i])]['enthalpy_defect'][iz]
+                first = unstruc_y[0]
+                for i in range(1,unstruc_y.size):
+                    second = unstruc_y[i]
+                    diff = first - second
+                    if diff>0.:
+                        idelete.append(i)
+                    else:
+                        first = unstruc_y[i]
+                idx_delete.append(idelete)
+
         for q in table_g0.keys():
             for iz in range(nz):
                 unstruc_y = np.zeros_like(unstruc_g_st_space)
                 for i in range(len(unstruc_g_st_space)):
                     unstruc_y[i] = unstructured_table[(chi_st, unstruc_g_st_space_sorted[i])][q][iz]
-                if extend and (q == 'enthalpy' or q == 'enthalpy_defect'):
-                    yginterp = interp1d(unstruc_g_st_space_sorted, unstruc_y, kind='linear', fill_value='extrapolate')
-                else:
-                    yginterp = InterpolatedUnivariateSpline(unstruc_g_st_space_sorted, unstruc_y, k=1, ext='const')
+
+                unstruc_y_corrected = np.delete(unstruc_y, idx_delete[iz], axis=0) if enforce_enthalpy_defect_monotonicity else unstruc_y
+                unstruc_g_st_space_sorted_corrected = np.delete(unstruc_g_st_space_sorted, idx_delete[iz], axis=0) if enforce_enthalpy_defect_monotonicity else unstruc_g_st_space_sorted
+
+                yginterp = InterpolatedUnivariateSpline(unstruc_g_st_space_sorted_corrected, unstruc_y_corrected, k=1, ext='const')
+                structuring_slope = enthalpy_defect_structuring_slope if (q=='enthalpy_defect' and iz!=0 and iz!=nz-1) else 0. # slope for extrapolation
                 for g_st_struc in defect_st_space:
-                    structured_table[(chi_st, g_st_struc)][q][iz] = yginterp(g_st_struc)
+                    if g_st_struc<unstruc_g_st_space_sorted_corrected[0]:
+                        ans = structuring_slope*(g_st_struc - unstruc_g_st_space_sorted_corrected[0]) + unstruc_y_corrected[0]
+                    else:
+                        ans = yginterp(g_st_struc)
+                    structured_table[(chi_st, g_st_struc)][q][iz] = ans
+
                     if q == 'density' and structured_table[(chi_st, g_st_struc)][q][iz] < 1.e-14:
                         raise ValueError('density < 1.e-14 detected!')
                     if q == 'temperature' and structured_table[(chi_st, g_st_struc)][q][iz] < 1.e-14:
@@ -828,10 +848,12 @@ def _build_nonadiabatic_defect_slfm_library(flamelet_specs,
                                             num_procs=1,
                                             integration_args=None,
                                             n_defect_st=32,
-                                            extend_defect_dim=False,
+                                            enthalpy_defect_structuring_slope=0.,
                                             diss_rate_log_scaled=True,
                                             superad_dT=0.,
-                                            subad_dT=0.):
+                                            subad_dT=0.,
+                                            enforce_enthalpy_defect_monotonicity=False,
+                                            unstructured_data_filename=None):
     if isinstance(flamelet_specs, dict):
         flamelet_specs = FlameletSpec(**flamelet_specs)
 
@@ -876,27 +898,27 @@ a dictionary with the number of superadiabatic and subadiabatic states to tabula
                                                                         num_procs,
                                                                         integration_args)
 
-    # enforce monotonicity
-    keydelete = []
-    chi_gam_dict = {}
-    for chi in diss_rate_values:
-        chi_gam_dict[chi] = {'gst':[], 'key':[]}
-    for k in subad_ustruc.keys():
-        chist, gst = k
-        chiidx = np.argwhere(np.abs(np.log(chist)-np.log(diss_rate_values))<1.e-12)[0][0]
-        chi_gam_dict[diss_rate_values[chiidx]]['gst'].append(gst)
-        chi_gam_dict[diss_rate_values[chiidx]]['key'].append(k)
-    for k in chi_gam_dict:
-        gst = np.array(chi_gam_dict[k]['gst'])
-        d_gst = gst[1:] - gst[:-1]
-        while np.any(d_gst>=0.):
-            i_remove = np.argwhere(d_gst>=0.)[0]
-            for ir in i_remove:
-                keydelete.append(chi_gam_dict[k]['key'][ir])
-            gst = np.delete(gst, i_remove)
+    if enforce_enthalpy_defect_monotonicity:
+        keydelete = []
+        chi_gam_dict = {}
+        for chi in diss_rate_values:
+            chi_gam_dict[chi] = {'gst':[], 'key':[]}
+        for k in subad_ustruc.keys():
+            chist, gst = k
+            chiidx = np.argwhere(np.abs(np.log(chist)-np.log(diss_rate_values))<1.e-12)[0][0]
+            chi_gam_dict[diss_rate_values[chiidx]]['gst'].append(gst)
+            chi_gam_dict[diss_rate_values[chiidx]]['key'].append(k)
+        for k in chi_gam_dict:
+            gst = np.array(chi_gam_dict[k]['gst'])
             d_gst = gst[1:] - gst[:-1]
-    for k in keydelete:
-        subad_ustruc.pop(k)
+            while np.any(d_gst>=0.):
+                i_remove = np.argwhere(d_gst>=0.)[0]
+                for ir in i_remove:
+                    keydelete.append(chi_gam_dict[k]['key'][ir])
+                gst = np.delete(gst, i_remove)
+                d_gst = gst[1:] - gst[:-1]
+        for k in keydelete:
+            subad_ustruc.pop(k)
 
     def format_slfm_lib_into_ustruc_lib(slfm_lib, enthalpy_cons_at_gamma0):
         ustruc_lib = dict()
@@ -969,10 +991,15 @@ a dictionary with the number of superadiabatic and subadiabatic states to tabula
     ugt.update(subad_ustruc)
     ugt.update(superad_ustruc)
 
+    if unstructured_data_filename is not None:
+        with open(unstructured_data_filename, 'wb') as file_output:
+            pickle.dump(ugt, file_output)
+
     structured_defect_table, x_values, g_values = _interpolate_to_structured_defect_dimension(ugt,
-                                                                                              n_defect_st,
-                                                                                              verbose=verbose,
-                                                                                              extend=extend_defect_dim)
+                                                                                            n_defect_st,
+                                                                                            verbose=verbose,
+                                                                                            enthalpy_defect_structuring_slope=enthalpy_defect_structuring_slope,
+                                                                                            enforce_enthalpy_defect_monotonicity=enforce_enthalpy_defect_monotonicity)
 
     key0 = list(structured_defect_table.keys())[0]
     z_values = structured_defect_table[key0][_mixture_fraction_name]
@@ -1009,10 +1036,12 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                      num_procs=1,
                                                      integration_args=None,
                                                      n_defect_st=32,
-                                                     extend_defect_dim=False,
+                                                     enthalpy_defect_structuring_slope=0.,
                                                      diss_rate_log_scaled=True,
                                                      superad_dT=0.,
-                                                     subad_dT=0.):
+                                                     subad_dT=0.,
+                                                     enforce_enthalpy_defect_monotonicity=False,
+                                                     unstructured_data_filename=None):
     """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through rapid, transient extinction (as opposed to quasisteady heat loss)
 
@@ -1040,8 +1069,8 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
         extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
     num_procs : Int
         how many processors over which to distribute the parallel extinction solves
-    extend_defect_dim : bool
-        whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
+    enthalpy_defect_structuring_slope : float
+        the slope (default: 0.) used in extrapolating the enthalpy defect field for structuring the library over the stoichiometric enthalpy defects
     superad_dT: float or dictionary
         superadiabatic states are added to the library when superad_dT is nonzero. Each state is generated by first raising the boundary temperatures by
         superad_dT/n_defect_st['n_superad'] and solving for the steady adiabatic state. This is repeated until the full superad_dT is reached at 
@@ -1053,6 +1082,11 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
         degenerate points for the library below the adiabatic state given by the flamelet_specs. The conserved enthalpy for the whole 
         library is defined by the flamelet_specs adiabatic state. subad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
         the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
+    enforce_enthalpy_defect_monotonicity: bool
+        (default: False) whether or not to force the change in enthalpy defect over its stoichiometric values to be monotonic for all mixture fraction values.
+    unstructured_data_filename: string
+        (default: None) a filename for saving the unstructured dictionary if desired. The dictionary would contain properties over mixture fraction lines for
+        individual stoichiometric (dissipation, enthalpy defect) keys.
 
     Returns
     -------
@@ -1071,10 +1105,12 @@ def build_nonadiabatic_defect_transient_slfm_library(flamelet_specs,
                                                    num_procs,
                                                    integration_args,
                                                    n_defect_st,
-                                                   extend_defect_dim,
+                                                   enthalpy_defect_structuring_slope=enthalpy_defect_structuring_slope,
                                                    diss_rate_log_scaled=diss_rate_log_scaled,
                                                    superad_dT=superad_dT,
-                                                   subad_dT=subad_dT)
+                                                   subad_dT=subad_dT,
+                                                   enforce_enthalpy_defect_monotonicity=enforce_enthalpy_defect_monotonicity,
+                                                   unstructured_data_filename=unstructured_data_filename)
 
 
 def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
@@ -1086,10 +1122,12 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
                                                   num_procs=1,
                                                   integration_args=None,
                                                   n_defect_st=32,
-                                                  extend_defect_dim=False,
+                                                  enthalpy_defect_structuring_slope=0.,
                                                   diss_rate_log_scaled=True,
                                                   superad_dT=0.,
-                                                  subad_dT=0.):
+                                                  subad_dT=0.,
+                                                  enforce_enthalpy_defect_monotonicity=False,
+                                                  unstructured_data_filename=None):
     """Build a flamelet library with the strained laminar flamelet model including heat loss effects through the enthalpy defect,
     where heat loss profiles are generated through quasisteady extinction
 
@@ -1117,8 +1155,8 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
         extra arguments to be passed to the heat loss integration call (see Flamelet.integrate)
     num_procs : Int
         how many processors over which to distribute the parallel extinction solves
-    extend_defect_dim : bool
-        whether or not to add a buffer layer to the enthalpy defect field to aid in library lookups
+    enthalpy_defect_structuring_slope : float
+        the slope (default: 0.) used in extrapolating the enthalpy defect field for structuring the library over the stoichiometric enthalpy defects
     superad_dT: float or dictionary
         superadiabatic states are added to the library when superad_dT is nonzero. Each state is generated by first raising the boundary temperatures by
         superad_dT/n_defect_st['n_superad'] and solving for the steady adiabatic state. This is repeated until the full superad_dT is reached at 
@@ -1130,6 +1168,11 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
         degenerate points for the library below the adiabatic state given by the flamelet_specs. The conserved enthalpy for the whole 
         library is defined by the flamelet_specs adiabatic state. subad_dT can be specified as a dictionary {'fuel':#, 'oxy':#} to shift
         the boundary temperatures of the fuel and oxidizer by different amounts. (default: 0.)
+    enforce_enthalpy_defect_monotonicity: bool
+        (default: False) whether or not to force the change in enthalpy defect over its stoichiometric values to be monotonic for all mixture fraction values.
+    unstructured_data_filename: string
+        (default: None) a filename for saving the unstructured dictionary if desired. The dictionary would contain properties over mixture fraction lines for
+        individual stoichiometric (dissipation, enthalpy defect) keys.
 
     Returns
     -------
@@ -1148,10 +1191,12 @@ def build_nonadiabatic_defect_steady_slfm_library(flamelet_specs,
                                                    num_procs,
                                                    integration_args,
                                                    n_defect_st,
-                                                   extend_defect_dim,
+                                                   enthalpy_defect_structuring_slope=enthalpy_defect_structuring_slope,
                                                    diss_rate_log_scaled=diss_rate_log_scaled,
                                                    superad_dT=superad_dT,
-                                                   subad_dT=subad_dT)
+                                                   subad_dT=subad_dT,
+                                                   enforce_enthalpy_defect_monotonicity=enforce_enthalpy_defect_monotonicity,
+                                                   unstructured_data_filename=unstructured_data_filename)
 
 
 try:

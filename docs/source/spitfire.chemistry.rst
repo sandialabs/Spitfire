@@ -77,7 +77,7 @@ spitfire.chemistry.soot module
    :show-inheritance:
 
 spitfire.chemistry.gas_radiation module
-------------------------------------
+----------------------------------------
 
 .. automodule:: spitfire.chemistry.gas_radiation
    :members:

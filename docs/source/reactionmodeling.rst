@@ -209,7 +209,7 @@ Equilibrium models are derived by neglecting the dissipation terms as well.
 Here the temperature equation can be replaced with a constant total enthalpy equation (:math:`h_t=0`),
 which is a more basic expression than the temperature equations above.
 Minimizing the Gibbs free energy at each grid point in :math:`\mathcal{Z}` then produces the desired equilibrium solution.
-Spitfire does not provide an equilibrium solver, instead using the well-proven capability of Cantera for equilirium calculations.
+Spitfire does not provide an equilibrium solver, instead using the well-proven capability of Cantera for equilibrium calculations.
 
 
 **Burke-Schumann Models**

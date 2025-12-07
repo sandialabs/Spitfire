@@ -9,13 +9,13 @@ here. <https://github.com/sandialabs/Spitfire/blob/master/license.md>`__
 -  Tabulating and plotting soot source term coefficients
 -  Tabulating and plotting soot radiation and absorption coefficients
 -  Tabulating and plotting gas radiation and absorption coefficients
--  Integrating soot models along particle trajectories
+-  Comparing soot models along particle trajectories
 
 In this demo, we build a nonadiabatic flamelet library then add
 coefficients relevant to soot modeling and absorption/radiation. The
 different model forms are shown in the soot modeling documentation. We
-then demonstrate how these libraries might be used for simulation with
-soot transport.
+then demonstrate how these libraries might be analyzed for use in
+simulation with soot transport.
 
 The nonadiabatic flamelet library
 ---------------------------------
@@ -29,12 +29,10 @@ incorporates benzene, but takes longer to run.
 
     import numpy as np
     import matplotlib.pyplot as plt
-    import pickle
     from scipy.interpolate import interp1d
     from spitfire import build_nonadiabatic_defect_transient_slfm_library, ChemicalMechanismSpec, odesolve, PIController
-    from spitfire import get_soot_source_term_evaluator, tabulate_gas_radiation_model, tabulate_soot_radiation_model, tabulate_soot_source_coefficients
+    from spitfire import get_soot_source_term_evaluator, get_soot_source_term_jacobian_evaluator, tabulate_gas_radiation_model, tabulate_soot_radiation_model, tabulate_soot_source_coefficients
     from spitfire.data.get import datafile
-    from spitfire.chemistry.analysis import get_ct_solution_array
 
 
 .. code:: ipython3
@@ -72,28 +70,28 @@ incorporates benzene, but takes longer to run.
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   4 (chi_stoich =  1.0e-02 1/s)  converged in   3.07 s, T_max = 2234.0
-       2/   4 (chi_stoich =  4.6e-02 1/s)  converged in   0.09 s, T_max = 2193.8
-       3/   4 (chi_stoich =  2.2e-01 1/s)  converged in   0.05 s, T_max = 2147.3
-       4/   4 (chi_stoich =  1.0e+00 1/s)  converged in   0.35 s, T_max = 2097.8
+       1/   4 (chi_stoich =  1.0e-02 1/s)  converged in   2.52 s, T_max = 2234.0
+       2/   4 (chi_stoich =  4.6e-02 1/s)  converged in   0.10 s, T_max = 2193.8
+       3/   4 (chi_stoich =  2.2e-01 1/s)  converged in   0.06 s, T_max = 2147.3
+       4/   4 (chi_stoich =  1.0e+00 1/s)  converged in   0.29 s, T_max = 2097.8
     ----------------------------------------------------------------------------------
-    library built in   3.80 s
+    library built in   3.18 s
     ----------------------------------------------------------------------------------
     expanding (transient) enthalpy defect dimension ...
-    chi_st =  1.0e-02 1/s converged in   7.47 s
-    chi_st =  4.6e-02 1/s converged in   6.90 s
-    chi_st =  2.2e-01 1/s converged in   6.42 s
-    chi_st =  1.0e+00 1/s converged in   5.86 s
+    chi_st =  1.0e-02 1/s converged in   6.65 s
+    chi_st =  4.6e-02 1/s converged in   6.14 s
+    chi_st =  2.2e-01 1/s converged in   5.98 s
+    chi_st =  1.0e+00 1/s converged in   5.42 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in  26.66 s
+    enthalpy defect dimension expanded in  24.20 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--100%
-    Structured enthalpy defect dimension built in   3.90 s
+    Structured enthalpy defect dimension built in   3.76 s
     ----------------------------------------------------------------------------------
-    library built in  34.43 s
+    library built in  31.20 s
     ----------------------------------------------------------------------------------
 
 
@@ -296,308 +294,386 @@ Units are as follows:
 .. image:: soot_modeling_files/soot_modeling_13_2.png
 
 
-Evaluating Soot Source Terms
-----------------------------
+Comparing Soot Models for Transport
+-----------------------------------
 
 Once we have tabulated all relevant soot and radiation coefficients, our
 library is ready to use in simulation for a sooting fire that transports
 a soot mass fraction (unitless) and soot number density (kmol soot / kg
-air). We can compose source terms given the current mass fraction,
-number density, and tabulated coefficients following the equations in
-our soot documentation. The ``get_soot_source_term_evaluator`` function
-will detect which soot model was used to generate a library based on the
+air).
+
+If we have simulation data available from transporting soot, we can use
+it to perform a sensitivity analysis on the soot levels with respect to
+the flamelet model. For example, we can estimate the change in soot
+levels for different leakage fractions or various multipliers on the
+terms composing the soot source terms. We first write the soot equations
+for :math:`\bar{\phi}=(N_s, Y_s)` in terms of the kinetics
+:math:`K = \dot{S}/\rho` and all other effects :math:`T`, such as
+diffusion:
+
+:math:`D_t\bar{\phi} = K(\bar{\phi}) + T(\bar{\phi})`
+
+Assuming we have a solution :math:`\bar{\phi}_o` along a certain
+streamline or particle trajectory, we now want to estimate the change in
+:math:`\bar{\phi}` for a new :math:`K` model, assuming a similar
+streamline. We perform a Taylor series expansion for :math:`K` centered
+about the known state :math:`\bar{\phi}_o` to get
+
+:math:`D_t\bar{\phi} = K(\bar{\phi}_o) + J(\bar{\phi}_o)(\bar{\phi} - \bar{\phi}_o) + T(\bar{\phi})`
+
+with soot source Jacobian :math:`J` respresenting sensitivities of
+:math:`K` to :math:`\bar{\phi}`. We will also assume
+:math:`T(\bar{\phi}) = T(\bar{\phi}_o)` or, in other words, that the
+soot particle trajectory does not change with a new kinetics model. This
+assumption should be fine for solutions :math:`\bar{\phi}` close enough
+to :math:`\bar{\phi}_o`, and allows us to isolate changes due to the
+flamelet model alone. From rearranging the original solution,
+:math:`T(\bar{\phi}_o) = D_t\bar{\phi}_o - K_o(\bar{\phi}_o)`, where
+:math:`K_o(\bar{\phi}_o)` is the original model evaluated at the
+original solution, we get a transport equation using the new model
+
+:math:`D_t\bar{\phi} = K(\bar{\phi}_o) + J(\bar{\phi}_o)(\bar{\phi} - \bar{\phi}_o) + D_t\bar{\phi}_o - K_o(\bar{\phi}_o)`
+
+which could also be written as
+
+:math:`D_t\bar{\phi} - D_t\bar{\phi}_o = K(\bar{\phi}_o) - K_o(\bar{\phi}_o) + J(\bar{\phi}_o)(\bar{\phi} - \bar{\phi}_o)`.
+
+In reading the equation above, we reiterate that
+:math:`K_o(\bar{\phi}_o)` represents the original model used in
+simulation evaluated at the original solution from simulation while
+:math:`K(\bar{\phi}_o)` and :math:`J(\bar{\phi}_o)` would be using the
+new flamelet model evaluated at the original solution. This gives us a
+decent estimate for new soot levels :math:`\bar{\phi}` when using
+various flamelet models, as long as they remain close enough to the
+original solution :math:`\bar{\phi}_o`.
+
+We demonstrate this analysis below for a made up solution
+:math:`\bar{\phi}_o`, providing functions of time for the flamelet
+variables and the soot quantities. These are plotted below over the
+residence time of the soot particle. We also provide the original
+kinetics model as a function of time and use the derivative of an
+interpolant for :math:`\bar{\phi}_o` over time in order to estimate the
+original time derivative :math:`D_t\bar{\phi}_o`. This demo requires the
+``pytabprops`` library to be installed.
+
+.. code:: ipython3
+
+    from pytabprops import StateTable, LagrangeInterpolant1D, LagrangeInterpolant4D
+    from spitfire import apply_mixing_model, PDFSpec
+    
+    ##### 'original' simulation solution quantities:
+    
+    def z_sim(t): # mixture fraction
+        return -(0.4*np.exp(-0.0004*(t-5)**4) + 0.5*np.exp(-0.1*(t-14.5)**2) + 0.9*np.exp(-0.08*(t-17.)**4) - 1.25)
+    
+    def xst_sim(t): # stoichiometric dissipation rate
+        return 0.05*np.exp(-0.4*(t-13.8)**2)+ 0.11*np.exp(-8.*(t-15.2)**2) + 0.01
+    
+    def gst_sim(t): # stoichiometric enthalpy defect
+        return -1.e6*(0.62*np.exp(-0.8*(t-13.)**4) + 1.3*np.exp(-0.3*(t-16.5)**2))
+    
+    def sv_sim(t): # scaled scalar variance
+        return 0.05*np.exp(-0.4*(t-13.5)**2)+ 0.13*np.exp(-8.*(t-15.3)**2) + 0.09
+    
+    def ys_sim(t): # soot mass fraction
+        return 0.0008*np.exp(-0.0008*(t-5)**4) + 0.002*np.exp(-0.1*(t-14.5)**2) + 0.018*np.exp(-8.*(t-15.5)**2) 
+    
+    def ns_sim(t): # soot number density
+        return 1.e-11*(0.3*np.exp(-0.4*(t-14.5)**2) + 3.3*np.exp(-8.*(t-15.4)**2) + 0.03) 
+    
+    def kys_sim(t): # soot mass fraction kinetics model (source term over density)
+        return 0.072*np.exp(-18.*(t-15.5)**2)
+    
+    def kns_sim(t): # soot number density kinetics model (source term over density)
+        return 1.e-11*(1*np.exp(-5.e-8*(t-5.)**8) + 7.5*np.exp(-18.*(t-15.25)**2) + 0.2*np.exp(-1.*(t-12.5)**2) + 0.15*np.exp(-10.*(t-14.5)**2) + 1.*np.exp(-1.*(t-17)**4) - 1.)
+    
+    t_sim = np.linspace(0., 16., 1000) # residence times
+    
+    Ys_sim = ys_sim(t_sim)
+    Ns_sim = ns_sim(t_sim)
+    
+    tbl_orig_rhs = StateTable()
+    tbl_orig_rhs.add_entry('Ys', LagrangeInterpolant1D(1, t_sim, Ys_sim, True), ['t'])
+    tbl_orig_rhs.add_entry('Ns', LagrangeInterpolant1D(1, t_sim, Ns_sim, True), ['t'])
+    def rys_sim(t): # soot mass fraction time derivative
+        return tbl_orig_rhs.derivative('Ys', t)
+    def rns_sim(t): # soot number density time derivative
+        return tbl_orig_rhs.derivative('Ns', t)
+    
+    
+    fig, ax = plt.subplots(1,2, figsize=(10,5))
+    ax[0].plot(t_sim, Ys_sim)
+    ax[1].plot(t_sim, Ns_sim)
+    ax[0].set_ylabel('simulation soot mass fraction')
+    ax[1].set_ylabel('simulation soot number density')
+    for a in ax:
+        a.set_xlabel('residence time (s)')
+        a.grid(color='lightgray')
+    plt.suptitle("'original' simulation solution")
+    plt.show()
+    
+    fig, ax = plt.subplots(2,2, figsize=(10,10))
+    ax[0,0].plot(t_sim, z_sim(t_sim))
+    ax[0,1].plot(t_sim, xst_sim(t_sim))
+    ax[1,0].plot(t_sim, gst_sim(t_sim)/1.e6)
+    ax[1,1].plot(t_sim, sv_sim(t_sim))
+    ax[0,0].set_ylabel('mixture fraction')
+    ax[0,1].set_ylabel('stoichiometric dissipation rate (1/s)')
+    ax[1,0].set_ylabel('stoichiometric enthalpy defect (MJ/kg)')
+    ax[1,1].set_ylabel('scaled scalar variance')
+    for a in ax.ravel():
+        a.set_xlabel('residence time (s)')
+        a.grid(color='lightgray')
+    plt.suptitle("'original' simulation flamelet variables")
+    plt.show()
+
+
+
+
+.. image:: soot_modeling_files/soot_modeling_15_0.png
+
+
+
+.. image:: soot_modeling_files/soot_modeling_15_1.png
+
+
+We add a scalar variance dimension to our flamelet libraries using
+``apply_mixing_model`` with the presumed clipped-Gaussian PDF and remove
+any properties not needed for integrating the soot equations. Now our
+libraries contain all the flamelet variables from the ‘original’
+simulation plotted above.
+
+.. code:: ipython3
+
+    props_keep = ['density', 'nucl_C2H2', 'coag', 'surf_C2H2', 'surf_OH', 'surf_O2'] # properties needed for soot transport equations
+    
+    for prop in lib_p0.props:
+        if prop not in props_keep:
+            lib_p0.remove(prop)
+    
+    for prop in lib_p1.props:
+        if prop not in props_keep:
+            lib_p1.remove(prop)
+    
+    ### convolution integrals
+    varvals = np.linspace(sv_sim(t_sim).min(), sv_sim(t_sim).max(), 4)
+    tlib_p0 = apply_mixing_model(lib_p0, {'mixture_fraction':PDFSpec('clipgauss', scaled_variance_values=varvals)})
+    tlib_p1 = apply_mixing_model(lib_p1, {'mixture_fraction':PDFSpec('clipgauss', scaled_variance_values=varvals)})
+
+
+We can compose source terms given a mass fraction, number density, and
+tabulated coefficients following the equations in our soot
+documentation. The ``get_soot_source_term_evaluator`` function will
+detect which soot model was used to generate a library based on the
 species/coefficients present and return the appropriate function for
 evaluating the source terms for soot mass fraction and soot number
-density. If verbose is True, the soot model detected on the library will
-be printed. Below, we find the “aksit-moss” model and save off the
-appropriate ``soot_src_aksit_moss`` function.
+density. Similarly, ``get_soot_source_term_jacobian_evaluator`` returns
+the Jacobian evaluator. If verbose is True, the soot model detected on
+the library will be printed. Below, we find the “aksit-moss” model and
+save off the appropriate functions.
 
 When evaluated, the source term function will return a dictionary of the
 source terms for the soot number density (‘S_Ns’) and soot mass fraction
 (‘S_Ys’) along with various contributions to those source terms. The
 ‘input_mult_dict’ argument can be used to set multipliers for any of the
-source term coefficients on a library. For example, passing {‘c2h2’:2}
-will double the surface growth coefficient for acetylene before
-evaluating the source terms. More details on the supported soot_src\_…
-functions can be found in the documentation.
+source term coefficients on a library. For example, passing
+{‘surf_c2h2’:2} will double the surface growth coefficient for acetylene
+before evaluating the source terms. More details on the supported
+soot_src\_… functions can be found in the documentation.
 
 .. code:: ipython3
 
-    src_eval = get_soot_source_term_evaluator(lib_p0)
-    src_eval
+    src_eval = get_soot_source_term_evaluator(tlib_p0)
+    jac_eval = get_soot_source_term_jacobian_evaluator(tlib_p0)
 
 
 
 .. parsed-literal::
 
     Detected soot model "aksit-moss" in the table.
+    Detected soot model "aksit-moss" in the table.
 
 
-
-
-.. parsed-literal::
-
-    <function spitfire.chemistry.soot.soot_src_aksit_moss(soot_number_density, soot_mass_fraction, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, input_mult_dict=None)>
-
-
-
-In order to demonstrate the source term model in action, we load some
-particle trajectories over which to transport soot. The
-ex_particle_data.pkl file has three particle trajectories from RANS of a
-2m-diameter sooting pool fire. The two soot equations were transported
-in this simulation, and the result is shown below over each particle’s
-residence time. This gives an idea of the soot observed over each
-particle trajectory. However, these data were generated with a different
-fuel composition and chemical mechanism. We are mainly interested in the
-flamelet inputs (mixture fraction, stoichiometric dissipation rate, and
-stoichiometric enthalpy defect) observed along these trajectories, which
-we also plot, along with the height of the particles, over their
-residence times below. These particles also have a scaled scalar
-variance, but we will ignore this flamelet dimension to simplify the
-demo. It could be added back in if we convolved our libraries over a
-mixture fraction presumed PDF using ``apply_mixing_model``. These data
-provide realistic particle pathways for us to use in comparing different
-soot models a priori.
-
-Using a Lagrangian reference for each of the particles as they travel
-along their trajectories, we can define the following ODEs for soot
-production due to reaction alone
-
-:math:`\frac{\mathrm{d}N_s}{\mathrm{d}t} = \dot{S_{N_s}}/\rho`
-
-:math:`\frac{\mathrm{d}Y_s}{\mathrm{d}t} = \dot{S_{Y_s}}/\rho`
-
-and integrate them along those trajectories in order to estimate soot
-levels from different libraries. We will be comparing soot levels from
-using the 100% and 1% soot leakage models with Aksit-Moss, where we
-expect the 1% soot leakage to produce more soot since oxidation is more
-limited. We would expect higher soot levels when including the effects
-of benzene, but that would require using a different mechanism as
-mentioned at the start of the demo.
-
-This analysis ignores the effects of diffusion with and without
-turbulence, which become more important near edges of the flame.
-Therefore, we can’t expect accurate estimates from reaction alone in
-those regions, especially as the particles travel higher in the flames.
-We will focus on maximum and average soot values around heights of 2.5
-times the pool diameter of 2 meters.
+Next we need to create functions for evaluating :math:`K(\bar{\phi}_o)`
+and :math:`J(\bar{\phi}_o)` in our transport equations. This involves
+evaluating the source term coefficients at the appropriate flamelet
+variables then evaluating the source terms and Jacobian at those
+coefficients and solution variables :math:`\bar{\phi}_o`. In order to
+simplify this evaluation during integration of the soot equations, we
+build interpolants over the residence time.
 
 .. code:: ipython3
 
-    ### loading particle data
-    with open(f'ex_particle_data.pkl', 'rb') as handle:
-        particle_data = pickle.load(handle)
+    def get_interps(library, mult_dict=None):
+        inputs = [z_sim(t_sim), xst_sim(t_sim), gst_sim(t_sim), sv_sim(t_sim)] # flamelet variables from 'original' simulation
+        inputs_arr = np.array(inputs).T
     
-    fig, ax = plt.subplots(1,2, figsize=(10,5))
-    for it in particle_data:
-        ax[0].plot(particle_data[it]['residence_time'], particle_data[it]['sim_Ys'])
-        ax[1].plot(particle_data[it]['residence_time'], particle_data[it]['sim_Ns'])
-    ax[0].set_ylabel('simulation soot mass fraction')
-    ax[1].set_ylabel('simulation soot number density')
-    for a in ax:
-        a.set_xlabel('residence time (s)')
-        a.grid(color='lightgray')
-    plt.show()
-    
-    fig, ax = plt.subplots(2,2, figsize=(10,10))
-    for it in particle_data:
-        ax[0,0].plot(particle_data[it]['residence_time'], particle_data[it]['z'])
-        ax[0,1].plot(particle_data[it]['residence_time'], particle_data[it]['xst'])
-        ax[1,0].plot(particle_data[it]['residence_time'], particle_data[it]['gst']/1.e6)
-        ax[1,1].plot(particle_data[it]['residence_time'], particle_data[it]['height'])
-    ax[0,0].set_ylabel('mixture fraction')
-    ax[0,1].set_ylabel('stoichiometric dissipation rate (1/s)')
-    ax[1,0].set_ylabel('stoichiometric enthalpy defect (MJ/kg)')
-    ax[1,1].set_ylabel('height in flame (m)')
-    for a in ax.ravel():
-        a.set_xlabel('residence time (s)')
-        a.grid(color='lightgray')
-    plt.show()
-
-
-
-
-.. image:: soot_modeling_files/soot_modeling_17_0.png
-
-
-
-.. image:: soot_modeling_files/soot_modeling_17_1.png
-
-
-We first add density onto each of the libraries, which is needed in the
-soot ODEs.
-
-.. code:: ipython3
-
-    ctsol0, lib_shape0 = get_ct_solution_array(mech, lib_p0)
-    lib_p0['density'] = ctsol0.density_mass.reshape(lib_shape0)
-    
-    ctsol1, lib_shape1 = get_ct_solution_array(mech, lib_p1)
-    lib_p1['density'] = ctsol1.density_mass.reshape(lib_shape1)
-
-
-Then we interpolate all of the library properties over the flamelet
-inputs. This allows us to evaluate the libraries at arbitrary flamelet
-parameters during integration. The cell below requires the
-``pytabprops`` library to be installed.
-
-.. code:: ipython3
-
-    from pytabprops import LagrangeInterpolant3D, StateTable
-    
-    def table_interp(lib_to_tab):
+        ### create table for evaluating source coeffs with flamelet variables
         tbl = StateTable()
-        for prop in lib_to_tab.props:
-            interp = LagrangeInterpolant3D(3,
-                                        lib_to_tab.mixture_fraction_values,
-                                        lib_to_tab.dissipation_rate_stoich_values,
-                                        np.abs(lib_to_tab.enthalpy_defect_stoich_values),
-                                        lib_to_tab[prop].ravel(order='F'), 
+        input_names = []
+        input_mesh = []
+        slice_list = []
+        for i,d in enumerate(library.dims):
+            input_names.append(d.name)
+            vals = d.values
+            if 'enthalpy_defect' in input_names[-1]:
+                vals = vals[::-1]
+                slice_list.append(slice(None, None, -1))
+            else:
+                slice_list.append(slice(None, None, None))
+            input_mesh.append(vals)
+    
+        for prop in library.props:
+            dval = library[prop].copy()
+            dval = dval[tuple(slice_list)]
+            interp = LagrangeInterpolant4D(3, 
+                                        *input_mesh,
+                                        dval.ravel(order='F'), 
                                         True)
-            tbl.add_entry(prop, interp, ['z','chi','gamma'])
-            # checking the reconstruction...
-            pred = tbl.query(prop,
-                    lib_to_tab.mixture_fraction_grid,
-                    lib_to_tab.dissipation_rate_stoich_grid,
-                    np.abs(lib_to_tab.enthalpy_defect_stoich_grid))
-            err = np.max(np.abs(pred - lib_to_tab[prop]))
-            if err>1.e-16:
-                print(f'failed reconstruction for {prop} with error {err:.2e}')
-        return tbl
+            tbl.add_entry(prop, interp, input_names)
     
-    tbl_p0 = table_interp(lib_p0)
-    tbl_p1 = table_interp(lib_p1)
+        ### at each residence time evaluate the source terms and Jacobian
+        nucl_C2H2 = tbl.query('nucl_C2H2', *inputs)
+        coag = tbl.query('coag', *inputs)
+        surf_C2H2 = tbl.query('surf_C2H2', *inputs)
+        surf_O2 = tbl.query('surf_O2', *inputs)
+        surf_OH = tbl.query('surf_OH', *inputs)
+        rho = tbl.query('density', *inputs)
+    
+        srcs = src_eval(Ns_sim, Ys_sim,
+                        nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH,
+                        mult_dict)
+        K_Ns = srcs['S_Ns']/rho
+        K_Ys = srcs['S_Ys']/rho
+    
+        jac = jac_eval(Ns_sim, Ys_sim,
+                    nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH,
+                    mult_dict)
+        J_NN = jac['dSNs_dNs']/rho
+        J_NY = jac['dSNs_dYs']/rho
+        J_YN = jac['dSYs_dNs']/rho
+        J_YY = jac['dSYs_dYs']/rho
+        rhos = rho
+    
+        ### save off interpolants for source term, Jacobian, and density over the residence time
+        kind = 1
+        K_Ns_interp = interp1d(t_sim, K_Ns, kind=kind)
+        K_Ys_interp = interp1d(t_sim, K_Ys, kind=kind)
+        J_NN_interp = interp1d(t_sim, J_NN, kind=kind)
+        J_NY_interp = interp1d(t_sim, J_NY, kind=kind)
+        J_YN_interp = interp1d(t_sim, J_YN, kind=kind)
+        J_YY_interp = interp1d(t_sim, J_YY, kind=kind)
+        rho_interp = interp1d(t_sim, rhos, kind=kind)
+    
+        return {'K_Ns':K_Ns_interp, 'K_Ys':K_Ys_interp,
+                'J_NN':J_NN_interp, 'J_NY':J_NY_interp,
+                'J_YN':J_YN_interp, 'J_YY':J_YY_interp,
+                'rho':rho_interp, 'table':tbl}
 
 
-Now we can use Spitfire’s ``odesolve`` to integrate the two ODEs. This
-expects a source term function to take in time and the current state,
-which we define below as ``ode_src``. This function evaluates the
-flamelet parameters given the current time, then uses those to query our
-interpolated coefficients and density. We can then return the source
-terms evaluated with our saved function ``src_eval``. We initialize the
-state to very small soot levels, but this can also be played with
-depending on the initial placement in the flame.
+We will compare solutions for 3 different flamelet models:
 
-.. code:: ipython3
+1. 100% soot leakage
 
-    def particle_interpolants(particle_idx):
-        residence_time = particle_data[particle_idx]['residence_time']
-        z   = particle_data[particle_idx]['z']
-        xst = particle_data[particle_idx]['xst']
-        gst = particle_data[particle_idx]['gst']
-    
-        z_interp   = interp1d(residence_time, z,           kind='linear')
-        xst_interp = interp1d(residence_time, xst,         kind='linear')
-        gst_interp = interp1d(residence_time, np.abs(gst), kind='linear')
-        return z_interp, xst_interp, gst_interp
-    
-    def particle_integrals(tbl):
-        integral_dict = {}
-        for ip in particle_data:
-            integral_dict[ip] = {}
-            residence_time = particle_data[ip]['residence_time']
-            z_interp, xst_interp, gst_interp = particle_interpolants(ip)
-    
-            def ode_src(t, NsYs):
-                z = z_interp(t)
-                x_st = xst_interp(t)
-                g_st = gst_interp(t)
-                inputs = [z, x_st, g_st]
-    
-                rho = tbl.query('density', *inputs)
-                nucl_C2H2 = tbl.query('nucl_C2H2', *inputs)
-                coag = tbl.query('coag', *inputs)
-                surf_C2H2 = tbl.query('surf_C2H2', *inputs)
-                surf_O2 = tbl.query('surf_O2', *inputs)
-                surf_OH = tbl.query('surf_OH', *inputs)
-    
-                soot_number_density = np.min([np.max([NsYs[0], 1.e-16]), 1.e6])
-                soot_mass_fraction  = np.min([np.max([NsYs[1], 1.e-16]), 1.])
-                
-                srcs = src_eval(soot_number_density, soot_mass_fraction, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH)
-                return np.array([srcs['S_Ns'], srcs['S_Ys']])/rho
-    
-            init = 1.e-16*np.ones(2,)
-            ts, NsYs = odesolve(ode_src, init, save_each_step=True, stop_at_time=residence_time.max(),
-                                step_size=PIController(target_error=1.e-10, first_step=1.e-3, max_step=2.5e-2))
-            integral_dict[ip]['t'] = ts
-            integral_dict[ip]['Ns'] = NsYs[:,0]
-            integral_dict[ip]['Ys'] = NsYs[:,1]
-        return integral_dict
-    
-    integrals_p0 = particle_integrals(tbl_p0)
-    integrals_p1 = particle_integrals(tbl_p1)
+2. 1% soot leakage
 
+3. 1% soot leakage including a multiplier of 2 on the acetylene surface
+   growth coefficient
 
-Below we plot the results for soot mass fraction and number density for
-each of the soot models. The peak soot values for both models are
-actually very similar, with the 1% leakage being slightly larger. The
-main difference is the behavior after hitting peak production, where the
-larger oxidation from 100% leakage pulls soot down to essentially zero
-while 1% leakage maintains a larger level. However, after the peak
-production, the particles start to rise higher in the flame, where we
-would expect diffusion to pull down those soot levels even more (similar
-to the trends seen above in the simulation soot profiles).
+We expect these models to show increasing soot levels moving down our
+list.
 
 .. code:: ipython3
 
-    fig, ax = plt.subplots(1,2, figsize=(10,5))
-    for it in integrals_p0:
-        ax[0].plot(integrals_p0[it]['t'], integrals_p0[it]['Ys'], 'k-', label='100% leakage' if it==0 else None)
-        ax[1].plot(integrals_p0[it]['t'], integrals_p0[it]['Ns'], 'k-')
-        ax[0].plot(integrals_p1[it]['t'], integrals_p1[it]['Ys'], 'r--', label='1% leakage' if it==0 else None)
-        ax[1].plot(integrals_p1[it]['t'], integrals_p1[it]['Ns'], 'r--')
-    ax[0].set_ylabel('integrated soot mass fraction')
-    ax[1].set_ylabel('integrated soot number density')
+    ### dictionary for saving off solutions for the different models
+    sol_dict = {
+                '100% leakage':            {'interps':get_interps(tlib_p0),                   'color':'k'},
+                '1% leakage':              {'interps':get_interps(tlib_p1),                   'color':'r'},
+                '1% leakage, 2X surf_c2h2':{'interps':get_interps(tlib_p1, {'surf_c2h2':2.}), 'color':'c'}
+               }
+
+
+Now we can use Spitfire’s ``odesolve`` to integrate the two soot
+equations. We define ``ode_rhs`` to compute
+
+:math:`D_t\bar{\phi} = K(\bar{\phi}_o(t)) - K_o(\bar{\phi}_o(t)) + D_t\bar{\phi}_o(t) + J(\bar{\phi}_o(t))(\bar{\phi} - \bar{\phi}_o(t))`
+
+which, using our interpolants created above, represented with :math:`I`,
+or the known data/functions from simulation, represented with :math:`F`,
+looks like
+
+:math:`D_t\bar{\phi} = I_K(t) - F_{K_o}(t) + F_{D_t\bar{\phi}_o}(t) + I_J(t)(\bar{\phi} - F_{\bar{\phi}_o}(t))`.
+
+We also define a postprocessing function ``clip`` to ensure the solution
+variables remain positive and bounded. The solutions for :math:`N_s` and
+:math:`Y_s` over time get saved for each of the models in our solution
+dictionary created above.
+
+.. code:: ipython3
+
+    def clip(t,q,r,nt):
+        soot_number_density = np.min([np.max([q[0], 1.e-16]), 1.e6])
+        soot_mass_fraction  = np.min([np.max([q[1], 1.e-16]), 1.])
+        return np.array([soot_number_density, soot_mass_fraction])
+    
+    for sol in sol_dict:
+        def ode_rhs(t, phi):
+            clipped = clip(None, phi, None, None)
+            Ns = clipped[0]
+            Ys = clipped[1]
+            Ns_sim = ns_sim(t)
+            Ys_sim = ys_sim(t)
+            diff_Ns = Ns - Ns_sim
+            diff_Ys = Ys - Ys_sim
+    
+            K_Ns_sim = kns_sim(t)
+            K_Ys_sim = kys_sim(t)
+            RHS_Ns_sim = rns_sim(t)
+            RHS_Ys_sim = rys_sim(t)
+    
+            K_Ns = sol_dict[sol]['interps']['K_Ns'](t)
+            K_Ys = sol_dict[sol]['interps']['K_Ys'](t)
+            J_NN = sol_dict[sol]['interps']['J_NN'](t)
+            J_NY = sol_dict[sol]['interps']['J_NY'](t)
+            J_YN = sol_dict[sol]['interps']['J_YN'](t)
+            J_YY = sol_dict[sol]['interps']['J_YY'](t)
+    
+            rhs_Ns = K_Ns - K_Ns_sim + RHS_Ns_sim + J_NN*diff_Ns + J_NY*diff_Ys
+            rhs_Ys = K_Ys - K_Ys_sim + RHS_Ys_sim + J_YN*diff_Ns + J_YY*diff_Ys
+            return np.array([rhs_Ns, rhs_Ys])
+    
+        init = np.array([Ns_sim[0], Ys_sim[0]])
+        ts, NsYs = odesolve(ode_rhs, init, save_each_step=True, stop_at_time=t_sim.max(),
+                            post_step_callback = clip,
+                            step_size=PIController(target_error=1.e-6, first_step=1.e-3, max_step=0.05),
+                            maximum_residual=1.e10)
+        sol_dict[sol]['t'] = ts
+        sol_dict[sol]['Ns'] = NsYs[:,0]
+        sol_dict[sol]['Ys'] = NsYs[:,1]
+
+
+Below we plot the results for soot mass fraction :math:`Y_s` and number
+density :math:`N_s` for each of the soot models. As expected, the 1%
+leakage model leads to more soot than the 100% leakage since it assumes
+lower oxidation rates. We also see how doubling the surface growth
+coefficient leads to further increase in soot mass fraction, as
+expected. There is little difference among :math:`N_s` for the models.
+The only differences come from the contribution of :math:`Y_s` to
+:math:`D_t N_s`.
+
+.. code:: ipython3
+
+    fig, ax = plt.subplots(1,2, figsize=(10,4))
+    for sol in list(sol_dict.keys())[::-1]:
+        ax[0].plot(sol_dict[sol]['t'], sol_dict[sol]['Ys'],'-', linewidth=2, color=sol_dict[sol]['color'], label=sol)
+    for sol in sol_dict:
+        ax[1].plot(sol_dict[sol]['t'], sol_dict[sol]['Ns'],'-', linewidth=2, color=sol_dict[sol]['color'])
     ax[0].legend()
     for a in ax:
-        a.set_xlabel('residence time (s)')
         a.grid(color='lightgray')
-    plt.show()
-
-
-
-
-.. image:: soot_modeling_files/soot_modeling_25_0.png
-
-
-The soot volume fraction is another useful quantity to analyze. This can
-be calculated from
-
-:math:`f_v = Y_s \rho / \rho_s`
-
-where the density of soot
-:math:`\rho_s = 1800 \ \mathrm{kg}/\mathrm{m}^3`. The 1% leakage model
-reaches higher levels as expected.
-
-.. code:: ipython3
-
-    for it in integrals_p0:
-        z_interp, xst_interp, gst_interp = particle_interpolants(it)
-    
-        ts_p0 = integrals_p0[it]['t']
-        z_p0 = z_interp(ts_p0)
-        x_st_p0 = xst_interp(ts_p0)
-        g_st_p0 = gst_interp(ts_p0)
-        inputs_p0 = [z_p0, x_st_p0, g_st_p0]
-    
-        ts_p1 = integrals_p1[it]['t']
-        z_p1 = z_interp(ts_p1)
-        x_st_p1 = xst_interp(ts_p1)
-        g_st_p1 = gst_interp(ts_p1)
-        inputs_p1 = [z_p1, x_st_p1, g_st_p1]
-    
-        rho_p0 = tbl_p0.query('density', *inputs_p0)
-        rho_p1 = tbl_p1.query('density', *inputs_p1)
-        fv_ppm_p0 = integrals_p0[it]['Ys'] * rho_p0 / 1800. * 1.e6
-        fv_ppm_p1 = integrals_p1[it]['Ys'] * rho_p1 / 1800. * 1.e6
-    
-        plt.plot(ts_p0, fv_ppm_p0,'k-', label='100% leakage' if it==0 else None)
-        plt.plot(ts_p1, fv_ppm_p1,'r--', label='1% leakage' if it==0 else None)
-    plt.xlabel('residence time (s)')
-    plt.ylabel('soot volume fraction (ppm)')
-    plt.legend()
-    plt.grid(color='lightgray')
+        a.set_xlabel('residence time (s)')
+    ax[0].set_ylabel('soot mass fraction')
+    ax[1].set_ylabel('soot number density')
     plt.show()
 
 
@@ -606,85 +682,98 @@ reaches higher levels as expected.
 .. image:: soot_modeling_files/soot_modeling_27_0.png
 
 
-Finally we plot the average soot mass fraction of each model for
-different heights in the flame over mixture fraction. Heights are
-documented as factors of the pool diameter D = 2m. Below 2.25D, soot
-levels are low and there is little difference between the models. The
-largest difference happens between 2.25D and 2.5D where the 1% leakage
-model produces almost twice as much soot on average than the 100%
-leakage model, especially at smaller mixture fraction where oxidation is
-taking place. As we continue higher in the flame, the soot levels for
-the 1% leakage model flatten out, which is where we expect diffusion to
-become more important and reduce those levels in reality.
+The soot volume fraction is another useful quantity to analyze. This can
+be calculated from
+
+:math:`f_v = Y_s \rho / \rho_s`
+
+where the density of soot
+:math:`\rho_s = 1800 \ \mathrm{kg}/\mathrm{m}^3`. This is plotted for
+the different models below.
 
 .. code:: ipython3
 
-    D = 2. # 2m diameter
-    
-    zbins = np.linspace(0.,0.5,21)
-    Dbins = np.linspace(1.75,3.25,7)
-    
-    zspace = zbins[1] - zbins[0]
-    zcenters = zbins[:-1] + 0.5*zspace
-    
-    fig, axs = plt.subplots(2,3, figsize=(10,7), sharey=True)
-    for id in range(Dbins.size-1):
-        Ysums_p0 = np.zeros(zbins.size-1)
-        Ycount_p0 = np.zeros(zbins.size-1)
-        Ysums_p1 = np.zeros(zbins.size-1)
-        Ycount_p1 = np.zeros(zbins.size-1)
-        for ip in integrals_p0:
-            h = particle_data[ip]['height']
-            Z = particle_data[ip]['z']
-            t = particle_data[ip]['residence_time']
-            Z_interp = interp1d(t, Z, kind='linear')
-            h_interp = interp1d(t, h, kind='linear')
-    
-            t_p0 = integrals_p0[ip]['t']
-            Z_p0 = Z_interp(t_p0)
-            h_p0 = h_interp(t_p0)
-            Ys_p0 = integrals_p0[ip]['Ys']
-            hidx_p0 = np.argwhere((Dbins[id]*D<=h_p0)&(h_p0<Dbins[id+1]*D))
-            Z_p0 = Z_p0[hidx_p0]
-            Ys_p0 = Ys_p0[hidx_p0]
-    
-            t_p1 = integrals_p1[ip]['t']
-            Z_p1 = Z_interp(t_p1)
-            h_p1 = h_interp(t_p1)
-            Ys_p1 = integrals_p1[ip]['Ys']
-            hidx_p1 = np.argwhere((Dbins[id]*D<=h_p1)&(h_p1<Dbins[id+1]*D))
-            Z_p1 = Z_p1[hidx_p1]
-            Ys_p1 = Ys_p1[hidx_p1]
-    
-            for iz in range(zbins.size-1):
-                zidx_p0 = np.argwhere((Z_p0>=zbins[iz])&(Z_p0<zbins[iz+1]))
-                Ysums_p0[iz] += np.sum(Ys_p0[zidx_p0])
-                Ycount_p0[iz] += Ys_p0[zidx_p0].size
-    
-                zidx_p1 = np.argwhere((Z_p1>=zbins[iz])&(Z_p1<zbins[iz+1]))
-                Ysums_p1[iz] += np.sum(Ys_p1[zidx_p1])
-                Ycount_p1[iz] += Ys_p1[zidx_p1].size
-    
-        Yavg_p0 = Ysums_p0/(Ycount_p0+1.e-16)
-        Yavg_p1 = Ysums_p1/(Ycount_p1+1.e-16)
-    
-        axs.ravel()[id].bar(zcenters-zspace/4., Yavg_p0, width=zspace*0.49,color='k',zorder=10, label='100% leakage')
-        axs.ravel()[id].bar(zcenters+zspace/4., Yavg_p1, width=zspace*0.49,color='r',zorder=10, label='1% leakage')
-        axs.ravel()[id].grid(True, color='lightgray')
-        axs.ravel()[id].set_xlim([zbins.min(), zbins.max()])
-        axs.ravel()[id].set_title(f'{Dbins[id]}D<=h<{Dbins[id+1]}D')
-        axs.ravel()[id].set_ylim([0.,0.005])
-    for id in [0,3]:
-        axs.ravel()[id].set_ylabel("average soot mass fraction")
-    for id in [3,4,5]:
-        axs.ravel()[id].set_xlabel('mixture fraction bins')
-    axs.ravel()[0].legend()
+    for sol in list(sol_dict.keys())[::-1]:
+        fv_ppm = sol_dict[sol]['Ys'] * sol_dict[sol]['interps']['rho'](sol_dict[sol]['t'])/1800.*1.e6
+        plt.plot(sol_dict[sol]['t'], fv_ppm, '-', linewidth=2, color=sol_dict[sol]['color'],  label=sol)
+    plt.legend()
+    plt.grid(color='lightgray')
+    plt.xlabel('residence time (s)')
+    plt.ylabel('soot volume fraction (ppm)')
     plt.show()
 
 
 
 
 .. image:: soot_modeling_files/soot_modeling_29_0.png
+
+
+Finally, we can perform a budget analysis on the source term evaluations
+for each model. We break each source term down into its components and
+see which terms have the largest contributions. We find the surface
+growth is the main contributor for the 1% leakage models, with the
+multiplier of 2 directly doubling this contribution. The 100% leakage
+model has larger oxidation, creating more of a balance between it and
+surface growth. The nucleation and coagulation are the same among the
+models.
+
+.. code:: ipython3
+
+    for sol in sol_dict:
+        tbl = sol_dict[sol]['interps']['table']
+        mult_dict = {'surf_c2h2':2.} if '2X' in sol else None
+    
+        inputs = [z_sim(t_sim), xst_sim(t_sim), gst_sim(t_sim), sv_sim(t_sim)]
+        inputs_arr = np.array(inputs).T
+    
+        nucl_C2H2 = tbl.query('nucl_C2H2', inputs_arr[:,0], inputs_arr[:,1], inputs_arr[:,2], inputs_arr[:,3])
+        coag = tbl.query('coag', inputs_arr[:,0], inputs_arr[:,1], inputs_arr[:,2], inputs_arr[:,3])
+        surf_C2H2 = tbl.query('surf_C2H2', inputs_arr[:,0], inputs_arr[:,1], inputs_arr[:,2], inputs_arr[:,3])
+        surf_O2 = tbl.query('surf_O2', inputs_arr[:,0], inputs_arr[:,1], inputs_arr[:,2], inputs_arr[:,3])
+        surf_OH = tbl.query('surf_OH', inputs_arr[:,0], inputs_arr[:,1], inputs_arr[:,2], inputs_arr[:,3])
+        rho = tbl.query('density', inputs_arr[:,0], inputs_arr[:,1], inputs_arr[:,2], inputs_arr[:,3])
+    
+        src_dict = src_eval(Ns_sim, Ys_sim, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, mult_dict)
+    
+        lw = 1.5
+        fig, ax = plt.subplots(1,2,figsize=(12,6))
+        ax[0].plot(t_sim, src_dict['S_Ns'], 'k-', linewidth=lw+1, label='S_Ns')
+        ax[0].plot(t_sim, src_dict['S_Ns_nucl'], linewidth=lw, label='nucl')
+        ax[0].plot(t_sim, src_dict['S_Ns_coag'], linewidth=lw, label='coag')
+        ax[0].legend()
+        ax[0].set_xlabel('residence time (s)')
+        ax[0].set_ylabel('Ns source components')
+        ax[0].grid(color='lightgray')
+        ax[0].set_yscale('symlog', linthresh=1.e-11)
+        ax[0].set_ylim([-2.e-9, 2.e-9])
+    
+        ax[1].plot(t_sim, src_dict['S_Ys'], 'k-', linewidth=lw+1, label='S_Ys')
+        ax[1].plot(t_sim, src_dict['S_Ys_nucl'], linewidth=lw, label='nucl')
+        ax[1].plot(t_sim, src_dict['S_Ys_c2h2'], linewidth=lw, label='surf_c2h2')
+        ax[1].plot(t_sim, src_dict['S_Ys_o2'], linewidth=lw, label='surf_o2')
+        ax[1].plot(t_sim, src_dict['S_Ys_oh'], linewidth=lw, label='surf_oh')
+        ax[1].set_yscale('symlog', linthresh=1.e-8)
+        ax[1].legend()
+        ax[1].set_xlabel('residence time (s)')
+        ax[1].set_ylabel('Ys source components')
+        ax[1].grid(color='lightgray')
+        ax[1].set_ylim([-1.e-1, 1.e-1])
+    
+        plt.suptitle(sol)
+        plt.show()
+
+
+
+
+.. image:: soot_modeling_files/soot_modeling_31_0.png
+
+
+
+.. image:: soot_modeling_files/soot_modeling_31_1.png
+
+
+
+.. image:: soot_modeling_files/soot_modeling_31_2.png
 
 
 

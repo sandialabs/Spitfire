@@ -15,7 +15,16 @@ from .chemistry.tabulation import build_adiabatic_eq_library, \
     build_nonadiabatic_defect_eq_library, \
     build_nonadiabatic_defect_transient_slfm_library, \
     build_nonadiabatic_defect_steady_slfm_library
-from .chemistry.soot import tabulate_soot_radiation_model, tabulate_soot_source_coefficients, get_soot_source_term_evaluator, soot_src_aksit_moss, soot_src_aksit_moss_benzene, soot_src_pah_alpha
+from .chemistry.soot import tabulate_soot_radiation_model, \
+    tabulate_soot_source_coefficients, \
+    soot_src_aksit_moss, \
+    soot_src_aksit_moss_benzene, \
+    soot_src_pah_alpha, \
+    get_soot_source_term_evaluator, \
+    jac_soot_src_aksit_moss, \
+    jac_soot_src_aksit_moss_benzene, \
+    jac_soot_src_pah_alpha, \
+    get_soot_source_term_jacobian_evaluator
 from .chemistry.gas_radiation import tabulate_gas_radiation_model
 
 try:
