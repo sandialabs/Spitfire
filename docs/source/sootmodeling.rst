@@ -47,7 +47,7 @@ In both Aksit-Moss models, the coagulation coefficient (coag) is given by
     \mathrm{coag} = \sqrt{\frac{24 V T R_u  N_a}{\rho_s}}\rho^2
     :label: coag_eqn
 
-where :math:`\rho_s` is the density of soot (:math:`1800 \ \mathrm{kg}/\mathrm{m}^3`) and :math:`V` is the volume factor
+where :math:`\rho_s` is the density of soot (default :math:`1800 \ \mathrm{kg}/\mathrm{m}^3`) and :math:`V` is the volume factor
 
 .. math::
     V = \left(\frac{6}{\pi \rho_s N_a}\right)^{1/3}
@@ -139,6 +139,8 @@ naphthalene (0.001), acenaphthalene (0.003), biphenyl (0.0085), phenanthrene (0.
 Molar nucleation is then given by :math:`\frac{0.5}{361.4} \mathrm{dimer}\_\mathrm{src}`.
 We note that these nucleation rates tend to dominate and over-predict soot production.
 Therefore, when evaluating the source terms with ``soot_src_pah_alpha`` a factor of :math:`10^{-6}` is applied to both nucleation rates by default through the argument ``dimer_fac``.
+This seems like the result of a fundamental inconsistency and is why this model is not supported beyond alpha-stage readiness.
+Assistance from soot experts would be terrific in productionizing PAH-based models such as this.
 
 Coagulation is the same as in the Aksit-Moss models.
 
@@ -330,8 +332,7 @@ The absorption coefficient is computed as
     :label: soot_abs_coeff
 
 where the parameters 'intercept', 'slope' and 'min\_value' are provided by the user as desired.
-Default values for all parameters are zero, which would result in zero absorption/radiation if left unchanged.
-Suggested values to feed the function are ``input_modelargs = {'slope': 1735., 'intercept': -3.75e5}``.
+Default values for these parameters are 'intercept' = -3.75e5 1/m, 'slope' = 1735 1/(m-K) and 'min\_value' = 0 1/m.
 
 The radiation source is then related to the absorption as
 

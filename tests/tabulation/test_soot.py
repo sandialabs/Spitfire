@@ -75,12 +75,12 @@ class TestSoot(unittest.TestCase):
         self.bs = tabulate_soot_radiation_model(self.mech, self.bs)
         self.assertTrue('soot_abs_coeff' in self.bs.props)
         self.assertTrue('soot_rad_source' in self.bs.props)
-        self.assertTrue(np.abs(self.bs['soot_abs_coeff']).max()==0.)
-        self.assertTrue(np.abs(self.bs['soot_rad_source']).max()==0.)
-
-        self.bs = tabulate_soot_radiation_model(self.mech, self.bs, input_modelargs={'slope':1735., 'intercept':-3.75e5})
         self.assertTrue(np.abs(self.bs['soot_abs_coeff']).max()>0.)
         self.assertTrue(np.abs(self.bs['soot_rad_source']).max()>0.)
+
+        self.bs = tabulate_soot_radiation_model(self.mech, self.bs, input_modelargs={'slope':0., 'intercept':0.})
+        self.assertTrue(np.abs(self.bs['soot_abs_coeff']).max()==0.)
+        self.assertTrue(np.abs(self.bs['soot_rad_source']).max()==0.)
 
 
     def test_soot_kinetics(self):

@@ -70,28 +70,28 @@ incorporates benzene, but takes longer to run.
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   4 (chi_stoich =  1.0e-02 1/s)  converged in   2.52 s, T_max = 2234.0
-       2/   4 (chi_stoich =  4.6e-02 1/s)  converged in   0.10 s, T_max = 2193.8
-       3/   4 (chi_stoich =  2.2e-01 1/s)  converged in   0.06 s, T_max = 2147.3
-       4/   4 (chi_stoich =  1.0e+00 1/s)  converged in   0.29 s, T_max = 2097.8
+       1/   4 (chi_stoich =  1.0e-02 1/s)  converged in   2.59 s, T_max = 2234.0
+       2/   4 (chi_stoich =  4.6e-02 1/s)  converged in   0.08 s, T_max = 2193.8
+       3/   4 (chi_stoich =  2.2e-01 1/s)  converged in   0.05 s, T_max = 2147.3
+       4/   4 (chi_stoich =  1.0e+00 1/s)  converged in   0.30 s, T_max = 2097.8
     ----------------------------------------------------------------------------------
-    library built in   3.18 s
+    library built in   3.22 s
     ----------------------------------------------------------------------------------
     expanding (transient) enthalpy defect dimension ...
     chi_st =  1.0e-02 1/s converged in   6.65 s
-    chi_st =  4.6e-02 1/s converged in   6.14 s
-    chi_st =  2.2e-01 1/s converged in   5.98 s
-    chi_st =  1.0e+00 1/s converged in   5.42 s
+    chi_st =  4.6e-02 1/s converged in   6.51 s
+    chi_st =  2.2e-01 1/s converged in   6.34 s
+    chi_st =  1.0e+00 1/s converged in   5.31 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in  24.20 s
+    enthalpy defect dimension expanded in  24.81 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--100%
-    Structured enthalpy defect dimension built in   3.76 s
+    Structured enthalpy defect dimension built in   3.75 s
     ----------------------------------------------------------------------------------
-    library built in  31.20 s
+    library built in  31.84 s
     ----------------------------------------------------------------------------------
 
 
@@ -146,15 +146,14 @@ has units (1/m) and the radiation coefficient has units
 
 The default model is ``linear_absorption_coefficient``, whose equations
 are outlined in the soot modeling documentation. This model takes
-parameters for the linear slope, intercept, and minimum value. Default
-parameter values are zero, which results in no radiation/absorption. We
-show suggested values below along with plots of the coefficients over
-mixture fraction and all stoichiometric enthalpy defects for a single
+parameters for the linear slope, intercept, and minimum value, for which
+we are using default values. Below we plot the coefficients over mixture
+fraction and all stoichiometric enthalpy defects for a single
 stoichiometric dissipation rate.
 
 .. code:: ipython3
 
-    lib = tabulate_soot_radiation_model(mech, lib, modelname='linear_absorption_coefficient', input_modelargs={'slope':1735., 'intercept':-3.75e5})
+    lib = tabulate_soot_radiation_model(mech, lib, modelname='linear_absorption_coefficient')
 
 
 .. code:: ipython3

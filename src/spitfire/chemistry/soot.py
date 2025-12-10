@@ -32,7 +32,7 @@ def _get_default_species_aliases():
     return default_species_aliases
 
 
-def tabulate_soot_source_coefficients(mechanism, input_library, modelname, soot_leakage_fraction=1., verbose=True, soot_species_aliases=None):
+def tabulate_soot_source_coefficients(mechanism, input_library, modelname, soot_leakage_fraction=1., verbose=True, soot_species_aliases=None, soot_density=1800., AMB_nucleation_factor=2., AMB_A1_factor=20.):
     """Adds soot source term coefficients to a library
 
         Parameters
@@ -45,6 +45,17 @@ def tabulate_soot_source_coefficients(mechanism, input_library, modelname, soot_
             the soot kinetics model. Supported models include: 'Aksit_Moss', 'Aksit_Moss_Benzene', and 'PAH_alpha' (an alpha-stage model)
         soot_leakage_fraction: float
             the fraction of soot allowed to leak into fuel-lean regions of the flame.
+        verbose: bool
+            whether or not to print warnings/messages (default True)
+        soot_species_aliases: dictionary
+            dictionary of aliases for the soot species involved, matching the species name to its abbreviation/formula used in the mechanism.
+            Spitfire has some common aliases it checks if none are provided.
+        soot_density: float
+            density of soot (default = 1800 kg/m^3)
+        AMB_nucleation_factor: float
+            multiplier on the 'Aksit_Moss_Benzene' nucleation (default 2)
+        AMB_A1_factor: float
+            multiplier on the 'Aksit_Moss_Benzene' A1 surface growth (default 20)
 
         Returns
         -------
@@ -57,7 +68,6 @@ def tabulate_soot_source_coefficients(mechanism, input_library, modelname, soot_
     """
     output_library = Library.copy(input_library)
     soot_species_aliases = soot_species_aliases if soot_species_aliases is not None else _get_default_species_aliases()
-    rhos = 1800.
     if 'density' not in output_library.props:
         compute_density(mechanism, output_library)
     rho = output_library['density']
@@ -79,9 +89,9 @@ def tabulate_soot_source_coefficients(mechanism, input_library, modelname, soot_
         multiplier = 1. - np.exp(16.e3 * (1.0 / 2050.0 - 1.0 / T))
         multiplier = np.maximum(multiplier, 0.)
 
-        vol_fac = (6. / np.pi / rhos / Na) ** (1. / 3.)
+        vol_fac = (6. / np.pi / soot_density / Na) ** (1. / 3.)
         area_fac = vol_fac * vol_fac * np.pi * Na
-        output_library['coag'] = np.sqrt(vol_fac * 24. * T * Ru / rhos * Na) * rho ** 2
+        output_library['coag'] = np.sqrt(vol_fac * 24. * T * Ru / soot_density * Na) * rho ** 2
         output_library['nucl_C2H2'] = multiplier * mod_arrhenius_linear(54.0, 0, 21.1e3, soot_species_aliases['acetylene'])
         output_library['surf_C2H2'] = rho * area_fac * multiplier * mod_arrhenius_linear(11.7e3, 0, 12.e3, soot_species_aliases['acetylene'])
         output_library['surf_O2'] = rho * area_fac * mod_arrhenius_linear(500., 0.5, 20.e3, soot_species_aliases['oxygen'])
@@ -91,15 +101,13 @@ def tabulate_soot_source_coefficients(mechanism, input_library, modelname, soot_
         check_req_specs(['benzene', 'acetylene', 'oxygen', 'hydroxyl'], soot_species_aliases)
         multiplier = 1. - np.exp(16.e3 * (1.0 / 2050.0 - 1.0 / T))
         multiplier = np.maximum(multiplier, 0.)
-        nucleation_factor = 2.0
-        A1_factor = 20.0
 
-        vol_fac = (6. / np.pi / rhos / Na) ** (1. / 3.)
+        vol_fac = (6. / np.pi / soot_density / Na) ** (1. / 3.)
         area_fac = vol_fac * vol_fac * np.pi * Na
-        output_library['coag'] = np.sqrt(vol_fac * 24. * T * Ru / rhos * Na) * rho ** 2
-        output_library['nucl_C2H2'] = nucleation_factor * multiplier * mod_arrhenius_linear(54.0, 0, 21.1e3, soot_species_aliases['acetylene'])
+        output_library['coag'] = np.sqrt(vol_fac * 24. * T * Ru / soot_density * Na) * rho ** 2
+        output_library['nucl_C2H2'] = AMB_nucleation_factor * multiplier * mod_arrhenius_linear(54.0, 0, 21.1e3, soot_species_aliases['acetylene'])
         output_library['surf_C2H2'] = rho * area_fac * multiplier * mod_arrhenius_linear(11.7e3, 0, 12.e3, soot_species_aliases['acetylene'])
-        output_library['surf_A1'] = A1_factor * multiplier * rho * area_fac * mod_arrhenius_linear(11.7e3, 0, 12.e3, soot_species_aliases['benzene'])
+        output_library['surf_A1'] = AMB_A1_factor * multiplier * rho * area_fac * mod_arrhenius_linear(11.7e3, 0, 12.e3, soot_species_aliases['benzene'])
         output_library['surf_O2'] = rho * area_fac * mod_arrhenius_linear(500., 0.5, 20.e3, soot_species_aliases['oxygen'])
         output_library['surf_OH'] = rho * area_fac * mod_arrhenius_linear(4.2325, 0.5, 0.0, soot_species_aliases['hydroxyl'])
     elif modelname == 'PAH_alpha':
@@ -139,8 +147,8 @@ it is associated with very little credibility evidence and had not undergone suf
         CD = np.mean([2. * pah_data[pah]['nC'] for pah in pah_data])
         MD = np.mean([2. * pah_data[pah]['mw'] for pah in pah_data])
         mD = MD / Na
-        vD = mD / rhos
-        dD = np.power(6.0 * mD / (np.pi * rhos), 1. / 3.)
+        vD = mD / soot_density
+        dD = np.power(6.0 * mD / (np.pi * soot_density), 1. / 3.)
         di = dD
         dj = dD
         mi = MD / MC
@@ -148,17 +156,17 @@ it is associated with very little credibility evidence and had not undergone suf
         mc = MC / Na
         miot = np.power(mi, 1. / 3.)
         mjot = np.power(mj, 1. / 3.)
-        b1f = 2.2 * np.sqrt(6. * kb * T / rhos)
-        b2f = np.power(3 * mc / (4. * np.pi * rhos), 1. / 6.)
+        b1f = 2.2 * np.sqrt(6. * kb * T / soot_density)
+        b2f = np.power(3 * mc / (4. * np.pi * soot_density), 1. / 6.)
         b3f = np.sqrt(1. / mi + 1. / mj)
         b4f = (miot + mjot) ** 2
         betaN = b1f * b2f * b3f * b4f
         Gm = 1. / Na
-        Gv = 1. / (Na * rhos)
-        Gd = np.power(6. / (np.pi * rhos * Na), 1./3.)
+        Gv = 1. / (Na * soot_density)
+        Gd = np.power(6. / (np.pi * soot_density * Na), 1./3.)
         GA = rho * Na * Gd * Gd
         GsA = np.sqrt(rho * Na) * Gd
-        GV = rho / rhos
+        GV = rho / soot_density
 
         beta = dict()
         dimer_rates = dict()
@@ -167,7 +175,7 @@ it is associated with very little credibility evidence and had not undergone suf
             stick = pah_data[pah]['sticking']
             Mi = pah_data[pah]['mw']
             mi = Mi / Na
-            dPAH = np.power(6.0 * mi / (np.pi * rhos), 1.0 / 3.0)
+            dPAH = np.power(6.0 * mi / (np.pi * soot_density), 1.0 / 3.0)
             beta[pah] = 2.2 * np.sqrt(4. * np.pi * kb * T / (MC / Na * pah_data[pah]['nC'])) * di * di
             beta[pah] = 2.2 * np.sqrt(4. * np.pi * Ru * T / (MC * pah_data[pah]['nC'])) * di * di
 
@@ -209,7 +217,7 @@ it is associated with very little credibility evidence and had not undergone suf
         MO = mechanism.molecular_weight('O')
         Oeff = 0.2
         AO = Oeff * np.sqrt(Ru / (2. * np.pi * MO)) * MC
-        coag = np.sqrt(24. * Ru * T * Na / rhos * Gd) * rho * rho
+        coag = np.sqrt(24. * Ru * T * Na / soot_density * Gd) * rho * rho
 
         output_library['coag'] = coag
         output_library['ox_O'] = AO * GA * np.sqrt(T) * molar_conc['O']
@@ -217,7 +225,7 @@ it is associated with very little credibility evidence and had not undergone suf
         output_library['ox_O2'] = zeta_O2 * GA
         output_library['sg'] = zeta_haca * GA
         output_library['beta_n'] = betaN
-        output_library['beta_c_pre'] = 2.2 * np.sqrt(6. * kb * T / rhos) * np.power(3 * mc / (4. * np.pi * rhos), 1. / 6.)
+        output_library['beta_c_pre'] = 2.2 * np.sqrt(6. * kb * T / soot_density) * np.power(3 * mc / (4. * np.pi * soot_density), 1. / 6.)
         output_library['dimer_src'] = omegaD
     else:
         raise ValueError("Unsupported soot kinetics model.")
@@ -285,11 +293,11 @@ it is associated with very little credibility evidence and had not undergone suf
     return output_library
 
 
-def _linear_soot_radiation_model(temperature, rho, rhos, intercept, slope, min_value):
-    return np.maximum(intercept + slope * temperature, min_value) * rho / rhos
+def _linear_soot_radiation_model(temperature, rho, soot_density, intercept, slope, min_value):
+    return np.maximum(intercept + slope * temperature, min_value) * rho / soot_density
 
 
-def tabulate_soot_radiation_model(mechanism, input_library, modelname='linear_absorption_coefficient', input_modelargs=None):
+def tabulate_soot_radiation_model(mechanism, input_library, modelname='linear_absorption_coefficient', input_modelargs=None, soot_density=1800.):
     """Adds soot radiation properties to a library
 
         Parameters
@@ -300,9 +308,11 @@ def tabulate_soot_radiation_model(mechanism, input_library, modelname='linear_ab
             a library with T, Y, and either density or pressure (pressure is used if both are present)
         modelname: str
             the soot radiation model. Supported models include: 'linear_absorption_coefficient' (default)
-        input_modelargs: dict
+        input_modelargs: dictionary
             a dictionary of arguments for the specified radiation model. For example, the 'linear_absorption_coefficient' model can take
-            an 'intercept', 'slope', and 'min_value'.
+            an 'intercept' (default: -3.75e5 1/m), 'slope' (default: 1735. 1/(m-K)), and 'min_value' (default: 0. 1/m).
+        soot_density: float
+            density of soot (default = 1800 kg/m^3)
 
         Returns
         -------
@@ -316,12 +326,12 @@ def tabulate_soot_radiation_model(mechanism, input_library, modelname='linear_ab
     if modelname=='linear_absorption_coefficient':
         if 'density' not in output_library.props:
             compute_density(mechanism, output_library)
-        modelargs = dict({'intercept': 0.,
-                          'slope': 0.,
+        modelargs = dict({'intercept': -3.75e5,
+                          'slope': 1735.,
                           'min_value': 0.})
         if input_modelargs is not None:
             modelargs.update(input_modelargs)
-        output_library['soot_abs_coeff'] = _linear_soot_radiation_model(output_library['temperature'], output_library['density'], 1800., **modelargs)
+        output_library['soot_abs_coeff'] = _linear_soot_radiation_model(output_library['temperature'], output_library['density'], soot_density, **modelargs)
         output_library['soot_rad_source'] = output_library['soot_abs_coeff'] * sigma / np.pi * np.power(output_library['temperature'], 4)
     else:
         raise ValueError("Unsupported soot radiation model.")
