@@ -70,28 +70,28 @@ incorporates benzene, but takes longer to run.
     - 38 species, 105 reactions
     - stoichiometric mixture fraction: 0.062
     ----------------------------------------------------------------------------------
-       1/   4 (chi_stoich =  1.0e-02 1/s)  converged in   2.59 s, T_max = 2234.0
+       1/   4 (chi_stoich =  1.0e-02 1/s)  converged in   2.57 s, T_max = 2234.0
        2/   4 (chi_stoich =  4.6e-02 1/s)  converged in   0.08 s, T_max = 2193.8
        3/   4 (chi_stoich =  2.2e-01 1/s)  converged in   0.05 s, T_max = 2147.3
-       4/   4 (chi_stoich =  1.0e+00 1/s)  converged in   0.30 s, T_max = 2097.8
+       4/   4 (chi_stoich =  1.0e+00 1/s)  converged in   0.32 s, T_max = 2097.8
     ----------------------------------------------------------------------------------
-    library built in   3.22 s
+    library built in   3.27 s
     ----------------------------------------------------------------------------------
     expanding (transient) enthalpy defect dimension ...
-    chi_st =  1.0e-02 1/s converged in   6.65 s
-    chi_st =  4.6e-02 1/s converged in   6.51 s
-    chi_st =  2.2e-01 1/s converged in   6.34 s
-    chi_st =  1.0e+00 1/s converged in   5.31 s
+    chi_st =  1.0e-02 1/s converged in   7.10 s
+    chi_st =  4.6e-02 1/s converged in   7.87 s
+    chi_st =  2.2e-01 1/s converged in   6.35 s
+    chi_st =  1.0e+00 1/s converged in   5.42 s
     ----------------------------------------------------------------------------------
-    enthalpy defect dimension expanded in  24.81 s
+    enthalpy defect dimension expanded in  26.75 s
     ----------------------------------------------------------------------------------
     Structuring enthalpy defect dimension ... 
     Initializing ... Done.
     Interpolating onto structured grid ... 
     Progress: 0%--10%--20%--30%--40%--100%
-    Structured enthalpy defect dimension built in   3.75 s
+    Structured enthalpy defect dimension built in   3.82 s
     ----------------------------------------------------------------------------------
-    library built in  31.84 s
+    library built in  33.90 s
     ----------------------------------------------------------------------------------
 
 
@@ -482,8 +482,8 @@ soot_src\_… functions can be found in the documentation.
 
 .. code:: ipython3
 
-    src_eval = get_soot_source_term_evaluator(tlib_p0)
-    jac_eval = get_soot_source_term_jacobian_evaluator(tlib_p0)
+    src_eval, soot_props = get_soot_source_term_evaluator(tlib_p0)
+    jac_eval, _ = get_soot_source_term_jacobian_evaluator(tlib_p0)
 
 
 
@@ -532,27 +532,20 @@ build interpolants over the residence time.
             tbl.add_entry(prop, interp, input_names)
     
         ### at each residence time evaluate the source terms and Jacobian
-        nucl_C2H2 = tbl.query('nucl_C2H2', *inputs)
-        coag = tbl.query('coag', *inputs)
-        surf_C2H2 = tbl.query('surf_C2H2', *inputs)
-        surf_O2 = tbl.query('surf_O2', *inputs)
-        surf_OH = tbl.query('surf_OH', *inputs)
+        soot_coeffs = dict()
+        for prop in soot_props:
+            soot_coeffs[prop] = tbl.query(prop, *inputs)
         rho = tbl.query('density', *inputs)
     
-        srcs = src_eval(Ns_sim, Ys_sim,
-                        nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH,
-                        mult_dict)
+        srcs = src_eval(Ns_sim, Ys_sim, **soot_coeffs, input_mult_dict=mult_dict)
         K_Ns = srcs['S_Ns']/rho
         K_Ys = srcs['S_Ys']/rho
     
-        jac = jac_eval(Ns_sim, Ys_sim,
-                    nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH,
-                    mult_dict)
+        jac = jac_eval(Ns_sim, Ys_sim, **soot_coeffs, input_mult_dict=mult_dict)
         J_NN = jac['dSNs_dNs']/rho
         J_NY = jac['dSNs_dYs']/rho
         J_YN = jac['dSYs_dNs']/rho
         J_YY = jac['dSYs_dYs']/rho
-        rhos = rho
     
         ### save off interpolants for source term, Jacobian, and density over the residence time
         kind = 1
@@ -562,7 +555,7 @@ build interpolants over the residence time.
         J_NY_interp = interp1d(t_sim, J_NY, kind=kind)
         J_YN_interp = interp1d(t_sim, J_YN, kind=kind)
         J_YY_interp = interp1d(t_sim, J_YY, kind=kind)
-        rho_interp = interp1d(t_sim, rhos, kind=kind)
+        rho_interp = interp1d(t_sim, rho, kind=kind)
     
         return {'K_Ns':K_Ns_interp, 'K_Ys':K_Ys_interp,
                 'J_NN':J_NN_interp, 'J_NY':J_NY_interp,

@@ -136,7 +136,7 @@ class TestSoot(unittest.TestCase):
             self.assertTrue(prop in lib_no_A1.props)
             self.assertTrue(np.abs(lib_no_A1[prop][idx_test])>0.)
         try:
-            src_eval = get_soot_source_term_evaluator(lib_no_A1, verbose=False)
+            src_eval, _ = get_soot_source_term_evaluator(lib_no_A1, verbose=False)
             src_dict = src_eval(ns_test, ys_test, lib_no_A1['nucl_C2H2'], lib_no_A1['coag'], lib_no_A1['surf_C2H2'], lib_no_A1['surf_O2'], lib_no_A1['surf_OH'])
             self.assertTrue(True)
         except ValueError:
@@ -147,7 +147,7 @@ class TestSoot(unittest.TestCase):
             self.assertTrue(np.abs(src_dict[key]).max()==0.)
 
         try:
-            jac_eval = get_soot_source_term_jacobian_evaluator(lib_no_A1, verbose=False)
+            jac_eval, _ = get_soot_source_term_jacobian_evaluator(lib_no_A1, verbose=False)
             jac_dict = jac_eval(ns_test, ys_test, lib_no_A1['nucl_C2H2'], lib_no_A1['coag'], lib_no_A1['surf_C2H2'], lib_no_A1['surf_O2'], lib_no_A1['surf_OH'])
             self.assertTrue(True)
         except ValueError:
@@ -183,7 +183,7 @@ class TestSoot(unittest.TestCase):
             self.assertTrue(prop in lib_with_A1.props)
             self.assertTrue(np.abs(lib_with_A1[prop][idx_test])>0.)
         try:
-            src_eval = get_soot_source_term_evaluator(lib_with_A1, verbose=False)
+            src_eval, _ = get_soot_source_term_evaluator(lib_with_A1, verbose=False)
             src_dict = src_eval(ns_test, ys_test, lib_with_A1['nucl_C2H2'], lib_with_A1['coag'], lib_with_A1['surf_C2H2'], lib_with_A1['surf_O2'], lib_with_A1['surf_OH'], lib_with_A1['surf_A1'])
             self.assertTrue(True)
         except ValueError:
@@ -194,7 +194,7 @@ class TestSoot(unittest.TestCase):
             self.assertTrue(np.abs(src_dict[key]).max()==0.)
 
         try:
-            jac_eval = get_soot_source_term_jacobian_evaluator(lib_with_A1, verbose=False)
+            jac_eval, _ = get_soot_source_term_jacobian_evaluator(lib_with_A1, verbose=False)
             jac_dict = jac_eval(ns_test, ys_test, lib_with_A1['nucl_C2H2'], lib_with_A1['coag'], lib_with_A1['surf_C2H2'], lib_with_A1['surf_O2'], lib_with_A1['surf_OH'], lib_with_A1['surf_A1'])
             self.assertTrue(True)
         except ValueError:
@@ -226,7 +226,7 @@ class TestSoot(unittest.TestCase):
             self.assertTrue(prop in lib_with_A1.props)
             self.assertTrue(np.abs(lib_with_A1[prop][idx_test])>0.)
         try:
-            src_eval = get_soot_source_term_evaluator(lib_with_A1, verbose=False)
+            src_eval, _ = get_soot_source_term_evaluator(lib_with_A1, verbose=False)
             src_dict = src_eval(ns_test, ys_test, lib_with_A1['dimer_src'], lib_with_A1['coag'], lib_with_A1['sg'], lib_with_A1['ox_O2'], lib_with_A1['ox_OH'], lib_with_A1['ox_O'])
             self.assertTrue(True)
         except ValueError:
@@ -237,7 +237,7 @@ class TestSoot(unittest.TestCase):
             self.assertTrue(np.abs(src_dict[key]).max()==0.)
 
         try:
-            jac_eval = get_soot_source_term_jacobian_evaluator(lib_with_A1, verbose=False)
+            jac_eval, _ = get_soot_source_term_jacobian_evaluator(lib_with_A1, verbose=False)
             jac_dict = jac_eval(ns_test, ys_test, lib_with_A1['dimer_src'], lib_with_A1['coag'], lib_with_A1['sg'], lib_with_A1['ox_O2'], lib_with_A1['ox_OH'], lib_with_A1['ox_O'])
             self.assertTrue(True)
         except ValueError:

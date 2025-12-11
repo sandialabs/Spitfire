@@ -341,7 +341,7 @@ def tabulate_soot_radiation_model(mechanism, input_library, modelname='linear_ab
 def _detect_soot_model(library, verbose):
     properties = library.props
     soot_kinetics = None
-    soot_props = ['coag', 'nucl_C2H2', 'surf_C2H2', 'surf_O2', 'surf_OH']
+    soot_props = ['nucl_C2H2', 'coag', 'surf_C2H2', 'surf_O2', 'surf_OH']
     if all([sp in properties for sp in soot_props]):
         if all([sp in properties for sp in ['surf_A1']]):
             soot_kinetics = 'aksit-moss-benzene'
@@ -349,7 +349,7 @@ def _detect_soot_model(library, verbose):
         else:
             soot_kinetics = 'aksit-moss'
     else:
-        soot_props = ['coag', 'dimer_src', 'sg', 'ox_O', 'ox_O2', 'ox_OH']
+        soot_props = ['dimer_src', 'coag', 'sg', 'ox_O2', 'ox_OH', 'ox_O']
         if all([sp in properties for sp in soot_props]):
             soot_kinetics = 'pah-alpha'
 
@@ -593,16 +593,20 @@ def get_soot_source_term_evaluator(library, verbose=True):
 
         Returns
         -------
-        A function for evaluating soot source terms
+        src_fun: function
+            A function for evaluating soot source terms
+        soot_props: list
+            A list of the properties needed to evaluate src_fun
     """
-    soot_kinetics, _ = _detect_soot_model(library, verbose)
+    soot_kinetics, soot_props = _detect_soot_model(library, verbose)
 
     if soot_kinetics=='aksit-moss':
-        return soot_src_aksit_moss
+        src_fun = soot_src_aksit_moss
     elif soot_kinetics=='aksit-moss-benzene':
-        return soot_src_aksit_moss_benzene
+        src_fun = soot_src_aksit_moss_benzene
     elif soot_kinetics=='pah-alpha':
-        return soot_src_pah_alpha
+        src_fun = soot_src_pah_alpha
+    return src_fun, soot_props
 
 
 def jac_soot_src_aksit_moss(soot_number_density, soot_mass_fraction, nucl_C2H2, coag, surf_C2H2, surf_O2, surf_OH, input_mult_dict=None):
@@ -830,13 +834,17 @@ def get_soot_source_term_jacobian_evaluator(library, verbose=True):
 
         Returns
         -------
-        A function for evaluating soot source term Jacobian
+        jac_fun: function
+            A function for evaluating the soot source Jacobian
+        soot_props: list
+            A list of the properties needed to evaluate jac_fun
     """
-    soot_kinetics, _ = _detect_soot_model(library, verbose)
+    soot_kinetics, soot_props = _detect_soot_model(library, verbose)
 
     if soot_kinetics=='aksit-moss':
-        return jac_soot_src_aksit_moss
+        jac_fun = jac_soot_src_aksit_moss
     elif soot_kinetics=='aksit-moss-benzene':
-        return jac_soot_src_aksit_moss_benzene
+        jac_fun = jac_soot_src_aksit_moss_benzene
     elif soot_kinetics=='pah-alpha':
-        return jac_soot_src_pah_alpha
+        jac_fun = jac_soot_src_pah_alpha
+    return jac_fun, soot_props
