@@ -323,7 +323,7 @@ about the known state :math:`\bar{\phi}_o` to get
 with soot source Jacobian :math:`J` respresenting sensitivities of
 :math:`K` to :math:`\bar{\phi}`. We will also assume
 :math:`T(\bar{\phi}) = T(\bar{\phi}_o)` or, in other words, that the
-soot particle trajectory does not change with a new kinetics model. This
+soot particle trajectory environment does not change with a new kinetics model. This
 assumption should be fine for solutions :math:`\bar{\phi}` close enough
 to :math:`\bar{\phi}_o`, and allows us to isolate changes due to the
 flamelet model alone. From rearranging the original solution,
