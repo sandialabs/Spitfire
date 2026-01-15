@@ -86,13 +86,13 @@ def compute_specific_enthalpy(mechanism, output_library):
 
         Returns
         -------
-        output_library : cantera.SolutionArray instance
+        output_library: a spitfire.chemistry.library Library instance
             the library with the 'enthalpy' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
-        raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
+        raise TypeError('Input argument "mechanism" must be a ChemicalMechanismSpec')
     if not isinstance(output_library, Library):
-        raise TypeError('Input argument "output_library" to explosive_mode_analysis() must be a Library')
+        raise TypeError('Input argument "output_library" must be a Library')
     ctsol, lib_shape = get_ct_solution_array(mechanism, output_library)
     output_library['enthalpy'] = ctsol.enthalpy_mass.reshape(lib_shape)
     return output_library
@@ -110,13 +110,13 @@ def compute_density(mechanism, output_library):
 
         Returns
         -------
-        output_library : cantera.SolutionArray instance
+        output_library: a spitfire.chemistry.library Library instance
             the library with the 'density' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
-        raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
+        raise TypeError('Input argument "mechanism" must be a ChemicalMechanismSpec')
     if not isinstance(output_library, Library):
-        raise TypeError('Input argument "output_library" to explosive_mode_analysis() must be a Library')
+        raise TypeError('Input argument "output_library" must be a Library')
     ctsol, lib_shape = get_ct_solution_array(mechanism, output_library)
     output_library['density'] = ctsol.density.reshape(lib_shape)
     return output_library
@@ -134,13 +134,13 @@ def compute_pressure(mechanism, output_library):
 
         Returns
         -------
-        output_library : cantera.SolutionArray instance
+        output_library: a spitfire.chemistry.library Library instance
             the library with the 'pressure' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
-        raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
+        raise TypeError('Input argument "mechanism" must be a ChemicalMechanismSpec')
     if not isinstance(output_library, Library):
-        raise TypeError('Input argument "output_library" to explosive_mode_analysis() must be a Library')
+        raise TypeError('Input argument "output_library" must be a Library')
     ctsol, lib_shape = get_ct_solution_array(mechanism, output_library)
     output_library['pressure'] = ctsol.P.reshape(lib_shape)
     return output_library
@@ -158,13 +158,13 @@ def compute_viscosity(mechanism, output_library):
 
         Returns
         -------
-        output_library : cantera.SolutionArray instance
+        output_library: a spitfire.chemistry.library Library instance
             the library with the 'viscosity' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
-        raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
+        raise TypeError('Input argument "mechanism" must be a ChemicalMechanismSpec')
     if not isinstance(output_library, Library):
-        raise TypeError('Input argument "output_library" to explosive_mode_analysis() must be a Library')
+        raise TypeError('Input argument "output_library" must be a Library')
     ctsol, lib_shape = get_ct_solution_array(mechanism, output_library)
     output_library['viscosity'] = ctsol.viscosity.reshape(lib_shape)
     return output_library
@@ -182,13 +182,13 @@ def compute_isobaric_specific_heat(mechanism, output_library):
 
         Returns
         -------
-        output_library : cantera.SolutionArray instance
+        output_library: a spitfire.chemistry.library Library instance
             the library with the 'heat capacity cp' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
-        raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
+        raise TypeError('Input argument "mechanism" must be a ChemicalMechanismSpec')
     if not isinstance(output_library, Library):
-        raise TypeError('Input argument "output_library" to explosive_mode_analysis() must be a Library')
+        raise TypeError('Input argument "output_library" must be a Library')
     ctsol, lib_shape = get_ct_solution_array(mechanism, output_library)
     output_library['heat capacity cp'] = ctsol.cp_mass.reshape(lib_shape)
     return output_library
@@ -206,13 +206,13 @@ def compute_isochoric_specific_heat(mechanism, output_library):
 
         Returns
         -------
-        output_library : cantera.SolutionArray instance
+        output_library: a spitfire.chemistry.library Library instance
             the library with the 'heat capacity cv' field added
     """
     if not isinstance(mechanism, ChemicalMechanismSpec):
-        raise TypeError('Input argument "mechanism" to explosive_mode_analysis() must be a ChemicalMechanismSpec')
+        raise TypeError('Input argument "mechanism" must be a ChemicalMechanismSpec')
     if not isinstance(output_library, Library):
-        raise TypeError('Input argument "output_library" to explosive_mode_analysis() must be a Library')
+        raise TypeError('Input argument "output_library" must be a Library')
     ctsol, lib_shape = get_ct_solution_array(mechanism, output_library)
     output_library['heat capacity cv'] = ctsol.cv_mass.reshape(lib_shape)
     return output_library
@@ -246,7 +246,7 @@ def explosive_mode_analysis(mechanism,
 
         Returns
         -------
-        output_library : cantera.SolutionArray instance
+        output_library: a spitfire.chemistry.library Library instance
             The library with the following fields added (if requested)
 
             - 'cema-lexp1': the primary explosive eigenvalue (always computed)

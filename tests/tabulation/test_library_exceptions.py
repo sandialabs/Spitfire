@@ -32,6 +32,49 @@ class TestDimensionExceptions(unittest.TestCase):
         except ValueError:
             self.assertTrue(True)
 
+    def test_dissipation_rate(self):
+        from spitfire import compute_dissipation_rate
+        z = 0.5
+        z_array = np.array([z])
+        chi_max = 1.
+        chi_st = 1.e-1
+        z_st = 0.01
+
+        try:
+            chi = compute_dissipation_rate(z, chi_max)
+            chi = compute_dissipation_rate(z_array, chi_max)
+            self.assertTrue(True)
+        except:
+            self.assertTrue(False)
+
+        for form in ['Peters', 'constant']:
+            try:
+                chi = compute_dissipation_rate(z, chi_max, form=form)
+                chi = compute_dissipation_rate(z, form=form, stoich_dissipation_rate=chi_st, stoich_mixture_fraction=z_st)
+                chi = compute_dissipation_rate(z_array, chi_max, form=form)
+                chi = compute_dissipation_rate(z_array, form=form, stoich_dissipation_rate=chi_st, stoich_mixture_fraction=z_st)
+                self.assertTrue(True)
+            except:
+                self.assertTrue(False)
+
+        try:
+            chi = compute_dissipation_rate(z)
+            self.assertTrue(False)
+        except:
+            self.assertTrue(True)
+
+        try:
+            chi = compute_dissipation_rate(z,stoich_dissipation_rate=chi_st)
+            self.assertTrue(False)
+        except:
+            self.assertTrue(True)
+
+        try:
+            chi = compute_dissipation_rate(z,stoich_dissipation_rate=chi_st, stoich_mixture_fraction=z_st)
+            self.assertTrue(True)
+        except:
+            self.assertTrue(False)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -17,6 +17,7 @@ You may jump to background and API documentation as well as a number of tutorial
 
     reactionmodeling
     mixingmodeling
+    sootmodeling
     timeintegration
     modules
 

@@ -243,8 +243,10 @@ class FlameletSpec(object):
         return fs
 
 def compute_dissipation_rate(mixture_fraction,
-                             max_dissipation_rate,
-                             form='Peters'):
+                             max_dissipation_rate=None,
+                             form='Peters',
+                             stoich_dissipation_rate=None,
+                             stoich_mixture_fraction=None):
     """Compute the scalar dissipation rate across mixture fraction
 
         Parameters
@@ -252,22 +254,37 @@ def compute_dissipation_rate(mixture_fraction,
         mixture_fraction : array_like
             the locations of grid points in mixture fraction space
         max_dissipation_rate : float
-            the maximum value of the dissipation rate
+            the maximum value of the dissipation rate, must provide either this or stoich_dissipation_rate
         form : str, optional
             the form of the dissipation rate's dependency on mixture fraction, defaults to 'Peters', which
             uses the form of N. Peters, Turbulent Combustion, 2000.
             Specifying anything else will yield a constant scalar dissipation rate.
+        stoich_dissipation_rate : float
+            the stoichiometric value of the dissipation rate, must provide either this or max_dissipation_rate
+        stoich_mixture_fraction : float
+            the stoichiometric value of the mixture fraction, required when using stoich_dissipation_rate
 
         Returns
         -------
         x : array_like
             the scalar dissipation rate on the given mixture fraction grid
         """
+    if stoich_dissipation_rate is not None and stoich_mixture_fraction is None:
+        raise ValueError("Must provide stoich_mixture_fraction if using stoich_dissipation_rate.")
+    if max_dissipation_rate is None and stoich_dissipation_rate is None:
+        raise ValueError("Must provide either max_dissipation_rate or stoich_dissipation_rate.")
+
     if form == 'Peters' or form == 'peters':
+        if stoich_dissipation_rate is not None:
+            max_dissipation_rate = stoich_dissipation_rate / np.exp(-2. * (erfinv(2. * stoich_mixture_fraction - 1.)) ** 2) 
         x = max_dissipation_rate * np.exp(-2. * (erfinv(2. * mixture_fraction - 1.)) ** 2)
     else:
-        x = np.zeros_like(mixture_fraction)
-        x[:] = max_dissipation_rate
+        chi_return = max_dissipation_rate if max_dissipation_rate is not None else stoich_dissipation_rate
+        if isinstance(mixture_fraction, float):
+            x = chi_return
+        else:
+            x = np.zeros_like(mixture_fraction)
+            x[:] = chi_return
     return x
 
 

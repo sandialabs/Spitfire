@@ -68,6 +68,22 @@ spitfire.chemistry.tabulation module
    :undoc-members:
    :show-inheritance:
 
+spitfire.chemistry.soot module
+------------------------------------
+
+.. automodule:: spitfire.chemistry.soot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+spitfire.chemistry.gas_radiation module
+----------------------------------------
+
+.. automodule:: spitfire.chemistry.gas_radiation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
