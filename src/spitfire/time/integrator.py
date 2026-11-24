@@ -632,7 +632,7 @@ def odesolve(right_hand_side,
 
             if number_of_time_steps < minimum_time_step_count:
                 continue_time_stepping = True
-            if number_of_time_steps > maximum_time_step_count:
+            elif number_of_time_steps > maximum_time_step_count:
                 continue_time_stepping = False
             elif coerce_dt_at_final_step and current_time >= stop_at_time:
                 continue_time_stepping = False
