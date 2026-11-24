@@ -46,16 +46,18 @@ def _log_footer(verbose,
 
 def _print_debug_mode(debug_verbose, statement):
     if debug_verbose:
-        print('\n  --> DEBUG:', statement, '\n')
+        print('--> DEBUG:', statement)
 
 
-def _check_state_update(debug_verbose, state, dstate,
+def _check_state_update(debug_verbose, state, dstate, residual_norm,
                         time_error, target_error,
                         nonlinear_solve_converged,
                         strict_temporal_error_control,
                         nonlinear_solve_must_converge,
+                        maximum_residual,
                         custom_update_check):
     # check for NaN and Inf
+    # check for residual > maximum allowable residual
     # check for exceeding target error and strict_temporal_error_control
     # check for nonlinear convergence
     # check a custom rule that might check physical realizability (e.g. temperature bounds), for instance
@@ -65,6 +67,9 @@ def _check_state_update(debug_verbose, state, dstate,
     if time_error > target_error and strict_temporal_error_control:
         _print_debug_mode(debug_verbose, 'check_state_update(): strict error exceeded')
         return False
+    elif maximum_residual is not None and residual_norm > maximum_residual:
+        _print_debug_mode(debug_verbose, f'check_state_update(): maximum allowable residual exceeded: {residual_norm:.4e} > {maximum_residual:.4e}')
+        return False
     elif any(logical_or(isinf(dstate), isnan(dstate))):
         _print_debug_mode(debug_verbose, 'check_state_update(): NaN or Inf detected')
         return False
@@ -73,7 +78,6 @@ def _check_state_update(debug_verbose, state, dstate,
         _print_debug_mode(debug_verbose, 'check_state_update(): required nonlinear solve failed to converge')
         return False
     elif custom_update_check is not None:
-        _print_debug_mode(debug_verbose, 'check_state_update(): running custom_rule...')
         return custom_update_check(state, dstate, time_error, nonlinear_solve_converged)
     else:
         return True
@@ -93,7 +97,7 @@ def _process_failed_step(debug_verbose,
         time_step_size *= time_step_reduction_factor_on_failure
         eval_linear_setup = True
         if warn_on_failed_step:
-            print('Warning! Step failed! return_on_failed_step=False so continuing on... retrying step...')
+            _print_debug_mode(debug_verbose, f'Warning! Step failed! return_on_failed_step=False so continuing on... retrying step with size {time_step_size:.4e}...')
         return time_step_size, eval_linear_setup
 
 
@@ -239,6 +243,7 @@ def odesolve(right_hand_side,
              pre_step_callback=None,
              post_step_callback=None,
              step_update_callback=None,
+             step_failure_callback=None,
              method=KennedyCarpenterS6P4Q3(SimpleNewtonSolver()),
              step_size=PIController(),
              linear_setup=None,
@@ -295,8 +300,10 @@ def odesolve(right_hand_side,
             method of the form f(current_time, current_state, number_of_time_steps) called before each step (default: None)
         post_step_callback : callable f(t,q,r,nt)
             method of the form f(current_time, current_state, residual, number_of_time_steps) called after each step, that can optionally return a modified state vector (default: None)
-        step_update_callback : callable f(q,dq,e,te,nsc)
-            method of the form f(state, dstate, time_error, target_error, nonlinear_solve_converged) that checks validity of a state update (default: None)
+        step_update_callback : callable f(q,dq,e,nsc)
+            method of the form f(state, dstate, time_error, nonlinear_solve_converged) that checks validity of a state update (default: None)
+        step_failure_callback : callable f(t,q,nt)
+            method of the form f(last_viable_time, last_viable_state, number_of_time_steps) called when a failed step is encountered (default: None)
         method : spitfire.time.methods.TimeStepper instance
             the time stepper method, defaults to KennedyCarpenterS6P4Q3(SimpleNewtonSolver())
         step_size : float/spitfire.time.stepcontrol
@@ -553,14 +560,13 @@ def odesolve(right_hand_side,
             nlisslow = step_output.slow_nonlinear_convergence
             number_projector_setup += step_output.projector_setups if step_output.projector_setups is not None else 0
             residual = norm(dstate * norm_weighting, ord=np.inf) / time_step_size
-            if maximum_residual is not None and residual > maximum_residual:
-                raise ValueError(f"residual of {residual:.2e} exceeded maximum_residual of {maximum_residual:.2e}.")
 
             recent_time_step_size = time_step_size
-            if _check_state_update(debug_verbose, current_state, dstate,
+            if _check_state_update(debug_verbose, current_state, dstate, residual,
                                    time_error, step_size.target_error(), nlsuccess,
                                    strict_temporal_error_control,
                                    nonlinear_solve_must_converge,
+                                   maximum_residual,
                                    step_update_callback):
                 current_state += dstate
                 current_time += time_step_size
@@ -622,6 +628,8 @@ def odesolve(right_hand_side,
                                                                          return_on_failed_step,
                                                                          time_step_reduction_factor_on_failure,
                                                                          warn_on_failed_step)
+                if step_failure_callback is not None:
+                    step_failure_callback(current_time, current_state, number_of_time_steps)
 
             smallest_step_size = min([smallest_step_size, time_step_size])
             largest_step_size = max([largest_step_size, time_step_size])
